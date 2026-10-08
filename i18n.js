@@ -128,6 +128,7 @@ var P = [
 ["watch.on", "במעקב", "Watching"], ["fav.add", "הוספה למועדפות", "Add to favorites"], ["fav.remove", "הסרה מהמועדפות", "Remove from favorites"],
 ["wk.save", "שמירת הסיכום", "Save this review"], ["wk.saved", "נשמר", "Saved"], ["wk.nodata", "אין נתונים", "No data"], ["wk.saved.t", "הסיכום נשמר ברשימה שלך", "The review was saved to your list"], ["wk.unsaved.t", "הסיכום הוסר מהרשימה", "The review was removed from your list"],
 ["stock.plain", "הסטטוס: {st}. {d}.", "Status: {st}. {d}."], ["stock.more3", "עוד פרטים בתרחיש", "More scenario details"], ["stock.folds", "פרטים נוספים, אפשר לפתוח לפי הצורך", "More details, open what you need"],
+["stock.plain.in", "הסטטוס: {st}. המחיר בתוך האזור.", "Status: {st}. Price is inside the zone."], ["home.stories", "המניות שלי במבט אחד", "Stocks at a glance"], ["qa.journal", "רשומה ביומן", "Journal entry"], ["qa.alert", "התראה חדשה", "New alert"], ["qa.ex", "תרגיל", "Exercise"], ["qa.wait", "חדר המתנה", "Waiting room"], ["radar.more", "עוד סינון ומיון", "More filters and sorting"],
 /* stock page */
 ["bd.title", "פירוק הציון", "Score breakdown"], ["bd.sub", "שישה רכיבים לפי משקלות המודל המוצע. הציון הוא כלי סידור, לא המלצה.", "Six components by the proposed model weights. The score is an organizing tool, not a recommendation."],
 ["l1.title", "עובדות על החברה", "Facts about the company"], ["l1.sub", "נתונים שאפשר לבדוק מול מקור.", "Data you can verify against a source."],

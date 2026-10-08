@@ -11,6 +11,29 @@ function distTxt(s) { var d = D.dist(s); return d.inside ? t("dist.in") : t("dis
 function updTxt(s) { return t("f.updated") + ": " + BL.fmtD(addDays(today(), -s.upd), { day: "numeric", month: "short" }); }
 function kv(k, v, x) { return '<div class="kv"><span class="k">' + k + '</span><span class="v">' + v + "</span>" + (x ? '<span class="xs muted">' + x + "</span>" : "") + "</div>"; }
 function dots(n) { var h = '<span class="dots" aria-hidden="true">'; for (var i = 1; i <= 3; i++) h += '<i class="' + (i <= n ? "on" : "") + '"></i>'; return h + "</span>"; }
+function chg(s) { var d = D.series("sp|" + s.t, 32, 1.8, s.price), a = d[0].c, b = d[d.length - 1].c; return (b - a) / a * 100; }
+function chgChip(s) { var c = chg(s), up = c >= 0; return '<span class="chg ' + (up ? "up" : "dn") + '">' + (up ? "▲ +" : "▼ ") + c.toFixed(1) + "%</span>"; }
+BL.spark = function (s) {
+  var d = D.series("sp|" + s.t, 32, 1.8, s.price).map(function (c) { return c.c; }), mn = Math.min.apply(null, d), mx = Math.max.apply(null, d), W = 120, H = 40;
+  var line = d.map(function (v, i) { return (i ? "L" : "M") + (i * W / (d.length - 1)).toFixed(1) + " " + (3 + (mx - v) / ((mx - mn) || 1) * (H - 6)).toFixed(1); }).join(" ");
+  return '<svg class="spk ' + (d[d.length - 1] >= d[0] ? "up" : "dn") + '" viewBox="0 0 120 40" aria-hidden="true"><path class="sa" d="' + line + " L" + W + " " + H + ' L0 ' + H + ' Z"/><path class="sl" pathLength="1" d="' + line + '"/></svg>';
+};
+function starSvg(on, sz) { return '<svg class="ic" width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="' + (on ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'; }
+function tile(s) {
+  var sc = D.score(s), w = !!S.watch[s.t];
+  return '<article class="tile st-' + s.st + '" role="button" tabindex="0" data-act="open" data-arg="' + s.t + '" aria-label="' + esc(s.t + " " + Lx(s.n)) + '">' +
+    '<div class="th"><span class="av">' + s.t.slice(0, 2) + '</span><div class="tn"><b class="ltr">' + s.t + '</b><span class="xs muted">' + esc(Lx(s.n)) + '</span></div><button class="iconbtn starb' + (w ? " on" : "") + '" data-act="wtog" data-arg="' + s.t + '" aria-pressed="' + w + '" aria-label="' + esc(t(w ? "watch.remove" : "watch.add") + " " + s.t) + '">' + starSvg(w, 22) + "</button></div>" +
+    '<div class="tp"><div class="px"><b class="num ltr">' + money(s.price) + "</b>" + chgChip(s) + "</div>" + BL.spark(s) + "</div>" +
+    '<div class="tf">' + BL.chipSt(s.st) + '<span class="xs muted">' + distTxt(s) + '</span><span class="sring" style="--v:' + sc + '" role="img" aria-label="' + esc(t("f.score") + " " + sc) + '"><b>' + sc + "</b></span></div>" +
+    '<p class="twhy">' + esc(Lx(s.why)) + "</p></article>";
+}
+function stories() {
+  var a = D.stocks.slice().sort(function (x, y) { return (S.watch[y.t] ? 1 : 0) - (S.watch[x.t] ? 1 : 0); });
+  return '<div class="stories">' + a.map(function (s) {
+    var rg = s.st === "zone" ? "zone" : s.st === "near" ? "near" : S.watch[s.t] ? "watch" : "none";
+    return '<button class="story rg-' + rg + '" data-act="open" data-arg="' + s.t + '" aria-label="' + esc(s.t + ", " + t("st." + s.st)) + '"><span class="ring"><span class="av">' + s.t.slice(0, 2) + '</span></span><span class="xs ltr">' + s.t + "</span></button>";
+  }).join("") + "</div>";
+}
 function pubFor(tk) { var a = S.pub.filter(function (p) { return p.t === tk; }); return a.length ? a[a.length - 1] : null; }
 BL.evDate = function (e) { var d = new Date(); return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() + e.d, e.h, e.m)); };
 BL.fmtEv = function (e, tz) { return new Intl.DateTimeFormat(BL.loc(), { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: tz || undefined }).format(BL.evDate(e)); };
@@ -33,34 +56,40 @@ function heroSvg() {
   out += '<g class="cn"><rect x="' + (nx - bw / 2 - 2) + '" y="' + (pad + 30) + '" width="' + (bw + 4) + '" height="' + (ph - 40) + '" rx="6" fill="none" stroke="#F5F1E8" stroke-width="1.5" stroke-dasharray="5 5" opacity=".75"/><text x="' + nx + '" y="' + (pad + 30 + (ph - 40) / 2 + 8) + '" text-anchor="middle" font-size="22" font-weight="700" fill="#F5F1E8">?</text></g></svg>';
   return out;
 }
-function homeCard(title, body, act) { return '<section class="card"><div class="rowf" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">' + title + "</h2>" + (act || "") + "</div>" + body + "</section>"; }
-function goBtn(view, label, arg) { return '<button class="btn sm ghost" data-act="nav" data-arg="' + view + '">' + label + "</button>"; }
+function homeCard(title, body, act, icon) { return '<section class="card hc"><div class="rowf" style="justify-content:space-between;margin-bottom:10px;flex-wrap:nowrap"><div class="rowf" style="flex-wrap:nowrap;gap:10px">' + (icon ? '<span class="hci">' + ic(icon, 20) + "</span>" : "") + '<h2 style="margin:0;font-size:18px">' + title + "</h2></div>" + (act || "") + "</div>" + body + "</section>"; }
+function goBtn(view, label) { return '<button class="btn sm ghost" data-act="nav" data-arg="' + view + '">' + label + "</button>"; }
 
 V.home = {
   html: function () {
     var hr = new Date().getHours(), g = hr < 5 ? "night" : hr < 12 ? "morning" : hr < 17 ? "noon" : hr < 21 ? "evening" : "night";
     var mk = BL.mkt(), name = S.name ? ", " + esc(S.name) : "";
-    var h = '<section class="hero"><div><div class="meta"><span>' + t("greet." + g) + name + "</span><span>" + BL.fmtD(new Date(), { weekday: "long", day: "numeric", month: "long" }) + '</span><span class="chip">' + t("mk." + mk) + '</span><span class="chip">' + t("mk.sim") + "</span></div>" +
+    var h = '<section class="hero"><div><div class="meta"><span>' + t("greet." + g) + name + "</span><span>" + BL.fmtD(new Date(), { weekday: "long", day: "numeric", month: "long" }) + '</span><span class="chip">' + t("mk." + mk) + '</span></div>' +
       "<h1>" + t("tagline") + '</h1><p class="sub">' + t("hero.sub") + '</p><div class="cta"><button class="btn acc" data-act="exercise">' + t("hero.try") + "</button>" +
       (S.joined ? '<button class="btn" data-act="nav" data-arg="journal">' + t("hero.journal") + "</button>" : '<button class="btn" data-act="signup">' + t("hero.join") + "</button>") +
       '</div></div><div class="hchart">' + heroSvg() + '<p class="cap">' + t("hero.cap") + "</p></div></section>";
-    var ch = D.stocks.filter(function (s) { return s.upd <= 2; }).slice(0, 4);
+    h += '<div class="sectitle tight"><h2>' + t("home.stories") + '</h2><span class="sample">' + t("sample") + "</span></div>" + stories();
+    h += '<div class="qas">' +
+      '<button class="qa c1" data-act="jnew"><span class="qi">' + ic("plus", 22) + "</span>" + t("qa.journal") + "</button>" +
+      '<button class="qa c2" data-act="rnew"><span class="qi">' + ic("bell", 22) + "</span>" + t("qa.alert") + "</button>" +
+      '<button class="qa c3" data-act="exercise"><span class="qi">' + ic("learn", 22) + "</span>" + t("qa.ex") + "</button>" +
+      '<button class="qa c4" data-act="nav" data-arg="wait"><span class="qi">' + ic("wait", 22) + "</span>" + t("qa.wait") + "</button></div>";
     var near = D.stocks.filter(function (s) { return s.st === "near" || s.st === "zone"; }).sort(function (a, b) { return D.dist(a).pct - D.dist(b).pct; });
+    if (near.length) h += '<div class="sectitle"><h2>' + t("home.near") + '</h2><button class="btn sm ghost" data-act="nav" data-arg="radar">' + t("nav.radar") + '</button></div><div class="rail">' + near.slice(0, 6).map(tile).join("") + "</div>";
+    var ch = D.stocks.filter(function (s) { return s.upd <= 2; }).slice(0, 4);
     var wl = Object.keys(S.watch).filter(function (k) { return S.watch[k]; });
     var evs = BL.eventsNext(2);
     var nextJ = (S.journal || []).filter(function (e) { return e.rem && e.status === "open" && e.date >= BL.ymd(today()); }).sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); })[0];
     var lesson = D.lessons.filter(function (l) { return l.id === S.last; })[0] || D.lessons[0];
     var done = Object.keys(S.done).filter(function (k) { return S.done[k]; }).length;
     var wkc = D.weeks[0];
-    h += '<div class="sectitle"><h2>' + t("home.now") + '</h2></div><div class="grid g3">';
-    h += homeCard(t("home.changed"), ch.length ? '<div class="stack">' + ch.map(function (s) { return '<div><button class="btn sm ghost" data-act="open" data-arg="' + s.t + '"><b class="ltr">' + s.t + "</b></button> " + esc(Lx(s.ch)) + "</div>"; }).join("") + "</div>" : '<p class="muted">' + t("home.nochange") + "</p>", goBtn("radar", t("nav.radar")));
-    h += homeCard(t("home.near"), near.length ? '<div class="stack">' + near.slice(0, 4).map(function (s) { return '<div class="rowf" style="justify-content:space-between"><button class="btn sm ghost" data-act="open" data-arg="' + s.t + '"><b class="ltr">' + s.t + '</b></button><span class="sm muted">' + distTxt(s) + "</span></div>"; }).join("") + "</div><p class=\"xs muted\" style=\"margin-top:8px\">" + t("zone.note") + "</p>" : '<p class="muted">' + t("home.nochange") + "</p>", goBtn("wait", t("nav.wait")));
-    h += homeCard(t("home.bari"), "<p>" + t("home.bari.t", { n: D.stocks.filter(function (s) { return s.sc; }).length }) + '</p><p class="xs muted" style="margin-top:6px">' + t("home.bari.n") + "</p>", goBtn("history", t("nav.history")));
-    h += homeCard(t("home.weekly"), "<p>" + esc(Lx(wkc.concl)) + "</p>" + '<p class="xs muted" style="margin-top:6px">' + BL.sampleBadge() + "</p>", goBtn("weekly", t("nav.weekly")));
-    h += homeCard(t("home.events"), evs.length ? '<div class="stack">' + evs.map(function (e) { return "<div><span class=\"chip " + (e.imp === "high" ? "hi" : e.imp === "med" ? "med" : "low") + '">' + t("imp." + e.imp) + "</span> " + esc(Lx(e.n)) + '<div class="xs muted">' + BL.fmtEv(e) + "</div></div>"; }).join("") + "</div>" : '<p class="muted">' + t("home.noev") + "</p>", goBtn("events", t("nav.events")));
-    h += homeCard(t("home.watch"), wl.length ? '<div class="rowf">' + wl.map(function (k) { return '<button class="btn sm" data-act="open" data-arg="' + k + '"><b class="ltr">' + k + "</b></button>"; }).join("") + "</div>" : '<div class="empty"><span>' + t("home.watch.empty") + '</span><button class="btn sm" data-act="nav" data-arg="radar">' + t("nav.radar") + "</button></div>");
-    h += homeCard(t("home.learn"), "<h3>" + esc(Lx(lesson.ti)) + '</h3><div class="progress" style="margin:8px 0"><i style="width:' + Math.round(done / D.lessons.length * 100) + '%"></i></div><p class="xs muted">' + t("learn.prog", { a: done, b: D.lessons.length }) + "</p>", '<button class="btn sm ghost" data-act="lesson" data-arg="' + lesson.id + '">' + t("learn.cont") + "</button>");
-    h += homeCard(t("home.journal"), nextJ ? "<h3>" + esc(nextJ.title) + '</h3><p class="sm muted">' + BL.fmtD(BL.pd(nextJ.date)) + " " + esc(nextJ.time) + "</p>" : '<p class="muted">' + t("home.nojournal") + "</p>", goBtn("journal", t("nav.journal")));
+    h += '<div class="sectitle"><h2>' + t("home.now") + '</h2></div><div class="grid g3 hgrid">';
+    h += homeCard(t("home.changed"), ch.length ? '<div class="stack">' + ch.map(function (s) { return '<div><button class="btn sm ghost" data-act="open" data-arg="' + s.t + '"><b class="ltr">' + s.t + "</b></button> " + esc(Lx(s.ch)) + "</div>"; }).join("") + "</div>" : '<p class="muted">' + t("home.nochange") + "</p>", goBtn("radar", t("nav.radar")), "radar");
+    h += homeCard(t("home.events"), evs.length ? '<div class="stack">' + evs.map(function (e) { return "<div><span class=\"chip " + (e.imp === "high" ? "hi" : e.imp === "med" ? "med" : "low") + '">' + t("imp." + e.imp) + "</span> " + esc(Lx(e.n)) + '<div class="xs muted">' + BL.fmtEv(e) + "</div></div>"; }).join("") + "</div>" : '<p class="muted">' + t("home.noev") + "</p>", goBtn("events", t("nav.events")), "events");
+    h += homeCard(t("home.weekly"), "<p>" + esc(Lx(wkc.concl)) + "</p>" + '<p class="xs muted" style="margin-top:6px">' + BL.sampleBadge() + "</p>", goBtn("weekly", t("nav.weekly")), "weekly");
+    h += homeCard(t("home.watch"), wl.length ? '<div class="rowf">' + wl.map(function (k) { return '<button class="btn sm" data-act="open" data-arg="' + k + '"><b class="ltr">' + k + "</b></button>"; }).join("") + "</div>" : '<div class="empty"><span>' + t("home.watch.empty") + '</span><button class="btn sm" data-act="nav" data-arg="radar">' + t("nav.radar") + "</button></div>", "", "star");
+    h += homeCard(t("home.learn"), "<h3>" + esc(Lx(lesson.ti)) + '</h3><div class="progress" style="margin:8px 0"><i style="width:' + Math.round(done / D.lessons.length * 100) + '%"></i></div><p class="xs muted">' + t("learn.prog", { a: done, b: D.lessons.length }) + "</p>", '<button class="btn sm ghost" data-act="lesson" data-arg="' + lesson.id + '">' + t("learn.cont") + "</button>", "learn");
+    h += homeCard(t("home.journal"), nextJ ? "<h3>" + esc(nextJ.title) + '</h3><p class="sm muted">' + BL.fmtD(BL.pd(nextJ.date)) + " " + esc(nextJ.time) + "</p>" : '<p class="muted">' + t("home.nojournal") + "</p>", goBtn("journal", t("nav.journal")), "journal");
+    h += homeCard(t("home.bari"), "<p>" + t("home.bari.t", { n: D.stocks.filter(function (s) { return s.sc; }).length }) + '</p><p class="xs muted" style="margin-top:6px">' + t("home.bari.n") + "</p>", goBtn("history", t("nav.history")), "history");
     h += "</div>";
     return h;
   }
@@ -69,16 +98,7 @@ ACT.exercise = function () { BL.go("learn", "exercise"); };
 
 /* ------------------------------------------------------------ radar */
 function rf() { return S.f.radar || (S.f.radar = { q: "", sec: "", st: "", sp: "", flag: "all", sort: "score" }); }
-function stockRow(s) {
-  var sc = D.score(s), w = !!S.watch[s.t];
-  return '<div class="srow" role="button" tabindex="0" data-act="open" data-arg="' + s.t + '" aria-label="' + esc(s.t + " " + Lx(s.n)) + '">' +
-    '<div class="wide rowf" style="justify-content:space-between;align-items:flex-start;flex-wrap:nowrap"><div><div class="tkr ltr">' + s.t + '</div><div class="sm">' + esc(Lx(s.n)) + '</div><div class="xs muted">' + t("sec." + s.sec) + (s.isNew ? ' <span class="chip">' + t("flag.new") + "</span>" : "") + '</div></div><button class="iconbtn" data-act="wtog" data-arg="' + s.t + '" aria-pressed="' + w + '" aria-label="' + esc(t(w ? "watch.remove" : "watch.add") + " " + s.t) + '" style="' + (w ? "color:var(--coral-deep)" : "") + '"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="' + (w ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="' + "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" + '"/></svg></button></div>' +
-    '<div class="kv"><span class="k">' + t("f.score") + '</span><span class="scorebox"><b>' + sc + '</b><span class="meter" style="flex:1"><i style="width:' + sc + '%"></i></span></span></div>' +
-    '<div class="kv"><span class="k">' + t("f.status") + "</span><span>" + BL.chipSt(s.st) + '</span><span class="xs muted">' + t("sp." + s.sp) + "</span></div>" +
-    kv(t("f.price"), ltr(money(s.price)) + " " + BL.sampleBadge(), updTxt(s)) +
-    kv(t("f.zone"), ltr(zoneTxt(s)), distTxt(s)) +
-    '<div class="why"><b>' + t("f.why") + ":</b> " + esc(Lx(s.why)) + '<br><span class="muted"><b>' + t("f.changed") + ":</b> " + esc(Lx(s.ch)) + "</span></div></div>";
-}
+var stockRow = tile;
 function radarList() {
   var f = rf(), q = f.q.trim().toLowerCase();
   var a = D.stocks.filter(function (s) {
@@ -100,13 +120,14 @@ V.radar = {
   html: function () {
     var f = rf();
     var h = '<div class="ph"><div><h1>' + t("radar.h") + "</h1><p>" + t("radar.sub") + " " + BL.hint("score") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
-    h += '<div class="toolbar"><div class="grow"><label class="vh" for="rq">' + t("radar.search") + '</label><input type="search" id="rq" data-in="rq" placeholder="' + esc(t("radar.search")) + '" value="' + esc(f.q) + '"></div>' +
+    h += '<div class="toolbar"><div class="grow"><label class="vh" for="rq">' + t("radar.search") + '</label><input type="search" id="rq" class="bigsearch" data-in="rq" placeholder="' + esc(t("radar.search")) + '" value="' + esc(f.q) + '"></div></div>';
+    h += '<div class="pillset scroll" style="margin-bottom:12px" role="group" aria-label="' + esc(t("f.flags")) + '">' + ["all", "new", "upd", "near", "watch"].map(function (k) { return '<button class="btn' + (f.flag === k ? " on" : "") + '" data-act="rflag" data-arg="' + k + '" aria-pressed="' + (f.flag === k) + '">' + t("flag." + k) + "</button>"; }).join("") + "</div>";
+    h += '<details class="filt"><summary>' + t("radar.more") + '</summary><div class="fgrid">' +
       '<select id="rsec" data-ch="rf" data-arg="sec" aria-label="' + esc(t("f.sector")) + '">' + opt("", t("all.sec"), f.sec) + D.sectors.map(function (s) { return opt(s, t("sec." + s), f.sec); }).join("") + "</select>" +
       '<select id="rst" data-ch="rf" data-arg="st" aria-label="' + esc(t("f.status")) + '">' + opt("", t("all.st"), f.st) + D.statuses.map(function (s) { return opt(s, t("st." + s), f.st); }).join("") + "</select>" +
       '<select id="rsp" data-ch="rf" data-arg="sp" aria-label="' + esc(t("f.spec")) + '">' + opt("", t("all.sp"), f.sp) + ["low", "mid", "high"].map(function (s) { return opt(s, t("sp." + s), f.sp); }).join("") + "</select>" +
-      '<select id="rso" data-ch="rf" data-arg="sort" aria-label="' + esc(t("f.sort")) + '">' + opt("score", t("sort.score"), f.sort) + opt("dist", t("sort.dist"), f.sort) + opt("ticker", t("sort.ticker"), f.sort) + "</select></div>";
-    h += '<div class="pillset" style="margin-bottom:14px" role="group" aria-label="' + esc(t("f.flags")) + '">' + ["all", "new", "upd", "near", "watch"].map(function (k) { return '<button class="btn' + (f.flag === k ? " on" : "") + '" data-act="rflag" data-arg="' + k + '" aria-pressed="' + (f.flag === k) + '">' + t("flag." + k) + "</button>"; }).join("") + "</div>";
-    h += '<div class="grid" id="rlist">' + radarList() + "</div>";
+      '<select id="rso" data-ch="rf" data-arg="sort" aria-label="' + esc(t("f.sort")) + '">' + opt("score", t("sort.score"), f.sort) + opt("dist", t("sort.dist"), f.sort) + opt("ticker", t("sort.ticker"), f.sort) + "</select></div></details>";
+    h += '<div class="tiles" id="rlist">' + radarList() + "</div>";
     h += '<p class="xs muted" style="margin-top:16px">' + t("radar.foot") + "</p>";
     return h;
   }
@@ -118,7 +139,7 @@ ACT.rreset = function () { S.f.radar = { q: "", sec: "", st: "", sp: "", flag: "
 ACT.wtog = function (tk, el, ev) {
   if (ev) ev.stopPropagation();
   if (S.watch[tk]) { delete S.watch[tk]; BL.toast(t("watch.removed", { t: tk })); } else { S.watch[tk] = 1; BL.toast(t("watch.added", { t: tk })); }
-  BL.save(); BL.render(false);
+  BL.popTk = tk; BL.save(); BL.render(false);
 };
 
 /* ------------------------------------------------------------ stock page */
@@ -166,11 +187,13 @@ V.stock = {
   html: function (tk) {
     var s = D.stock(tk);
     if (!s) return '<div class="empty"><strong>' + t("stock.nf") + '</strong><button class="btn" data-act="nav" data-arg="radar">' + t("nav.radar") + "</button></div>";
-    var sc = D.score(s), w = !!S.watch[s.t], h = '<div class="shead"><div class="rowf"><button class="btn sm" data-act="back">' + (S.lang === "he" ? "→ " : "← ") + t("back") + "</button></div>";
-    h += '<div><h1><span class="ltr">' + s.t + '</span> <span class="muted" style="font-weight:600">' + esc(Lx(s.n)) + '</span></h1><div class="rowf" style="margin-top:10px"><span class="chip">' + t("sec." + s.sec) + "</span>" + BL.chipSt(s.st) + "</div></div>";
-    h += '<p class="plain">' + t("stock.plain", { st: t("st." + s.st), d: distTxt(s) }) + " " + BL.hint("status") + "</p>";
-    h += '<div class="rowf" style="gap:18px 28px">' + kv(t("f.price"), ltr(money(s.price)) + " " + BL.sampleBadge(), updTxt(s) + ", " + t("src.sample")) + kv(t("f.score"), sc + " / 100", t("model.v")) + kv(t("f.zone"), ltr(zoneTxt(s)) + " " + BL.hint("zone"), distTxt(s)) + "</div>";
-    h += '<div class="rowf"><button class="btn pri' + (w ? " on" : "") + '" data-act="wtog" data-arg="' + s.t + '" aria-pressed="' + w + '">' + t(w ? "watch.on" : "watch.add") + '</button><button class="btn" data-act="addj" data-arg="' + s.t + '">' + t("act.journal") + '</button><button class="btn" data-act="addalert" data-arg="' + s.t + '">' + t("act.alert") + '</button><button class="btn" data-act="gochart" data-arg="' + s.t + '">' + t("act.chart") + "</button></div></div>";
+    var sc = D.score(s), w = !!S.watch[s.t], tf = S.f.stk || "M3";
+    var h = '<div class="shead2"><div class="rowf" style="justify-content:space-between"><button class="btn sm" data-act="back">' + (S.lang === "he" ? "→ " : "← ") + t("back") + '</button><span class="sample">' + t("sample.all") + "</span></div>";
+    h += '<div class="sid"><span class="av big">' + s.t.slice(0, 2) + '</span><div><h1 class="ltr">' + s.t + '</h1><div class="sm muted">' + esc(Lx(s.n)) + "</div></div></div>";
+    h += '<div class="bigp"><b class="num ltr" data-count="' + s.price + '" data-dec="2">' + money(s.price) + "</b>" + chgChip(s) + '</div><p class="xs muted">' + updTxt(s) + ", " + t("src.sample") + '</p><div class="rowf"><span class="chip">' + t("sec." + s.sec) + "</span>" + BL.chipSt(s.st) + '<span class="chip">' + t("sp." + s.sp) + "</span></div></div>";
+    h += '<section class="chart chartcard rv"><div class="pillset tfs" role="group" aria-label="' + esc(t("ch.tf")) + '">' + ["D1", "W1", "M3", "Y1"].map(function (k) { return '<button class="btn sm' + (tf === k ? " on" : "") + '" data-act="stf" data-arg="' + k + '" aria-pressed="' + (tf === k) + '">' + t("tf." + k) + "</button>"; }).join("") + '</div><div id="sch"></div><div class="tip" id="tip"></div></section>';
+    h += '<div class="qas four"><button class="qa c1' + (w ? " on" : "") + '" data-act="wtog" data-arg="' + s.t + '" aria-pressed="' + w + '"><span class="qi">' + starSvg(w, 22) + "</span>" + t(w ? "watch.on" : "watch.add") + '</button><button class="qa c3" data-act="addj" data-arg="' + s.t + '"><span class="qi">' + ic("journal", 22) + "</span>" + t("act.journal") + '</button><button class="qa c2" data-act="addalert" data-arg="' + s.t + '"><span class="qi">' + ic("bell", 22) + "</span>" + t("act.alert") + '</button><button class="qa c4" data-act="gochart" data-arg="' + s.t + '"><span class="qi">' + ic("chart", 22) + "</span>" + t("act.chart") + "</button></div>";
+    h += '<div class="callout ' + s.st + '"><div class="sring big" style="--v:' + sc + '" role="img" aria-label="' + esc(t("f.score") + " " + sc) + '"><b data-count="' + sc + '">' + sc + '</b></div><div><p class="plain">' + (D.dist(s).inside ? t("stock.plain.in", { st: t("st." + s.st) }) : t("stock.plain", { st: t("st." + s.st), d: distTxt(s) })) + " " + BL.hint("status") + '</p><p class="xs muted" style="margin-top:4px">' + t("f.zone") + ": " + ltr(zoneTxt(s)) + " " + BL.hint("zone") + '</p><p class="xs muted">' + t("f.score") + " " + ltr(sc + " / 100") + " · " + t("model.v") + " " + BL.hint("score") + "</p></div></div>";
     h += '<div style="margin-top:18px">' + layer3(s) + "</div>";
     h += '<h2 class="foldh">' + t("stock.folds") + "</h2>";
     h += '<div class="folds">';
@@ -180,8 +203,15 @@ V.stock = {
     h += fold(t("tl.title"), '<ul class="tl"><li><span class="dot c"></span><div><b>' + t("tl.enter") + '</b><div class="xs muted">' + BL.fmtD(addDays(today(), -s.upd - 20)) + '</div></div></li><li><span class="dot"></span><div><b>' + t("tl.upd") + '</b><div class="xs muted">' + BL.fmtD(addDays(today(), -s.upd)) + "</div><div class=\"sm\">" + esc(Lx(s.ch)) + '</div></div></li></ul><p class="xs" style="margin-top:10px">' + BL.sampleBadge() + " " + t("tl.note") + "</p>");
     h += "</div>";
     return h;
+  },
+  mount: function (el, tk) {
+    var s = D.stock(tk), host = document.getElementById("sch");
+    if (!s || !host) return;
+    var k = S.f.stk || "M3", x = D.tfs.filter(function (y) { return y.k === k; })[0] || D.tfs[2];
+    drawChart(host, D.series(tk + "|" + k, 60, x.vol, s.price), s.zone, { label: t("ch.lbl") + " " + s.t, h: host.clientWidth < 520 ? 260 : 340 });
   }
 };
+ACT.stf = function (k) { S.f.stk = k; BL.save(); BL.render(false); };
 ACT.back = function () { BL.back(); };
 ACT.addalert = function (tk) { BL.openRule({ ticker: tk }); };
 ACT.addj = function (tk) { BL.openEntry({ ticker: tk, type: "research" }); };

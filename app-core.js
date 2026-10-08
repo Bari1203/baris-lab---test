@@ -200,9 +200,34 @@ function render(top) {
     console.error(e);
     el.innerHTML = '<div class="notice">' + esc(t("err.view")) + "</div>";
   }
-  if (top) { window.scrollTo(0, 0); }
+  el.classList.remove("pg");
+  if (top) { void el.offsetWidth; el.classList.add("pg"); window.scrollTo(0, 0); }
+  BL.fx(el, top);
 }
 BL.render = render;
+
+/* small motion helpers: count-up numbers, star pop. Skipped for reduced motion. */
+BL.fx = function (el, top) {
+  var red = S.reduce || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  if (!red && top) {
+    $$("[data-count]", el).forEach(function (n) {
+      var to = +n.getAttribute("data-count"), dec = +n.getAttribute("data-dec") || 0, t0 = null;
+      if (isNaN(to)) return;
+      function step(ts) {
+        if (t0 === null) t0 = ts;
+        var p = Math.min(1, (ts - t0) / 700), e = 1 - Math.pow(1 - p, 3);
+        n.textContent = (to * e).toFixed(dec);
+        if (p < 1) requestAnimationFrame(step); else n.textContent = to.toFixed(dec);
+      }
+      requestAnimationFrame(step);
+    });
+  }
+  if (BL.popTk) {
+    var b = el.querySelector('[data-act="wtog"][data-arg="' + BL.popTk + '"]');
+    if (b && !red) b.classList.add("pop");
+    BL.popTk = null;
+  }
+};
 
 /* dialogs */
 var lastFocus = null;
