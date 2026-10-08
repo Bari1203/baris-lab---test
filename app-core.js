@@ -6,7 +6,7 @@ var KEY = "bl_state_v2";
 
 function def() {
   return {
-    lang: "he", region: "IL", theme: "light", reduce: false, role: "user",
+    lang: "he", market: "both", styles: { invest: 1, swing: 1, day: 1 }, waiting: {}, theme: "light", reduce: false, role: "user",
     name: "", joined: false, tourDone: false, sectors: [],
     watch: {}, fav: { NVLX: 1 }, journal: null, notifs: null, rules: [], drafts: null,
     prefs: { freq: "instant", qs: "22:00", qe: "07:00", sound: false },
@@ -80,7 +80,7 @@ var BL = window.BL = { S: S, t: t, L: Lx, esc: esc, $: $, $$: $$, ic: ic, save: 
   ACT: ACT, IN: IN, CH: CH, FORM: FORM, V: V, R: R };
 
 /* settings and regions */
-function il() { return S.lang === "he" && S.region === "IL"; }
+function il() { return S.lang === "he" && S.market !== "us"; }
 BL.il = il;
 function applySettings() {
   var h = document.documentElement;
@@ -88,7 +88,7 @@ function applySettings() {
   if (S.theme === "auto") h.removeAttribute("data-theme"); else h.setAttribute("data-theme", S.theme);
   h.classList.toggle("reduce", !!S.reduce);
 }
-function setLang(l) { S.lang = l; S.region = l === "he" ? "IL" : "US"; save(); render(false); }
+function setLang(l) { S.lang = l; save(); render(false); }
 
 /* seeds */
 function seeds() {
@@ -142,13 +142,43 @@ BL.mkt = function () {
 
 /* navigation */
 var NAV = [
-  { id: "home", ic: "home", g: "a" }, { id: "radar", ic: "radar", g: "a" }, { id: "wait", ic: "wait", g: "a" }, { id: "weekly", ic: "weekly", g: "a" },
-  { id: "charts", ic: "chart", g: "b" }, { id: "events", ic: "events", g: "b" },
+  { id: "home", ic: "home", g: "a" }, { id: "radar", ic: "radar", g: "a" }, { id: "wait", ic: "wait", g: "a" }, { id: "weekly", ic: "weekly", g: "a", st: ["invest", "swing"] },
+  { id: "charts", ic: "chart", g: "b" }, { id: "events", ic: "events", g: "b", st: ["day", "swing"] },
   { id: "journal", ic: "journal", g: "c" }, { id: "alerts", ic: "bell", g: "c" },
   { id: "learn", ic: "learn", g: "d" }, { id: "help", ic: "help", g: "d" },
   { id: "history", ic: "history", g: "e" }, { id: "israel", ic: "shield", g: "e", il: 1 }, { id: "settings", ic: "settings", g: "e" }, { id: "admin", ic: "admin", g: "e", admin: 1 }
 ];
-function visibleItems() { return NAV.filter(function (n) { return !(n.il && !il()) && !(n.admin && S.role !== "admin"); }); }
+function styleOk(n) { return !n.st || n.st.some(function (k) { return S.styles[k]; }); }
+function visibleItems() { return NAV.filter(function (n) { return !(n.il && !il()) && !(n.admin && S.role !== "admin") && styleOk(n); }); }
+/* modes: market (us / il / both) and style (invest / swing / day, any mix) */
+BL.inMarket = function (x) { return S.market === "both" || (x.mkt || "us") === S.market; };
+BL.vis = function (list) { return list.filter(BL.inMarket); };
+BL.style = function (k) { return !!S.styles[k]; };
+BL.tfsFor = function () {
+  var keys = {};
+  Object.keys(S.styles).forEach(function (k) { if (S.styles[k]) D.styleTfs[k].forEach(function (x) { keys[x] = 1; }); });
+  var a = D.tfs.filter(function (x) { return keys[x.k]; });
+  return a.length ? a : D.tfs;
+};
+BL.streak = function () {
+  var have = {};
+  (S.journal || []).forEach(function (e) { if (!(e.tags || []).some(function (g) { return g === "דוגמה" || g === "Sample"; })) have[e.date] = 1; });
+  var d = today(), n = 0;
+  if (!have[ymd(d)]) d = addDays(d, -1);
+  while (have[ymd(d)]) { n++; d = addDays(d, -1); }
+  return n;
+};
+function modesBody() {
+  var mk = ["us", "both", "il"], sty = ["invest", "swing", "day"], all = sty.every(function (k) { return S.styles[k]; });
+  return '<p class="muted">' + t("mode.intro") + '</p><h3>' + t("mode.market") + '</h3><div class="seg" role="group" aria-label="' + esc(t("mode.market")) + '">' + mk.map(function (k) { return '<button class="' + (S.market === k ? "on" : "") + '" data-act="setmkt" data-arg="' + k + '" aria-pressed="' + (S.market === k) + '"><b>' + t("mkt." + k) + '</b><span class="xs">' + t("mkt." + k + ".d") + "</span></button>"; }).join("") + "</div>" +
+    '<h3>' + t("mode.style") + '</h3><div class="seg" role="group" aria-label="' + esc(t("mode.style")) + '">' + sty.map(function (k) { return '<button class="' + (S.styles[k] ? "on" : "") + '" data-act="setsty" data-arg="' + k + '" aria-pressed="' + (!!S.styles[k]) + '"><b>' + t("sty." + k) + '</b><span class="xs">' + t("sty." + k + ".d") + "</span></button>"; }).join("") + '</div><div class="rowf"><button class="btn sm' + (all ? " on" : "") + '" data-act="styall" aria-pressed="' + all + '">' + t("sty.all") + '</button><span class="xs muted">' + t("mode.multi") + '</span></div><p class="xs muted">' + t("mode.il.note") + '</p><div class="actions"><button class="btn pri" data-act="modesdone">' + t("mode.done") + "</button></div>";
+}
+function modesRefresh() { save(); render(false); var b = $("#mbody"); if (b && $("#layer").classList.contains("on")) b.innerHTML = modesBody(); }
+BL.openModes = function () { openModal({ title: t("mode.title"), body: modesBody() }); };
+BL.modeSummary = function () {
+  var sty = ["invest", "swing", "day"].filter(function (k) { return S.styles[k]; });
+  return { m: t("mkt." + S.market), s: sty.length === 3 ? t("sty.all") : sty.map(function (k) { return t("sty." + k); }).join(" + ") };
+};
 function visibleView(id) { var n = NAV.filter(function (x) { return x.id === id; })[0]; if (!n) return id === "stock"; return visibleItems().indexOf(n) > -1; }
 function navBtn(n, cls) {
   var cur = R.view === n.id || (R.view === "stock" && n.id === "radar");
@@ -269,7 +299,7 @@ FORM.signup = function (f) {
   var first = !S.joined;
   S.name = nm; S.joined = true; S.sectors = D.sectors.filter(function (s) { return $("#su-" + s, f).checked; });
   save(); closeModal(); render(false); toast(t("su.ok", { n: nm }));
-  if (first && !S.tourDone) setTimeout(function () { tour(1); }, 400);
+  if (first) setTimeout(function () { BL.openModes(); }, 450);
 };
 
 /* tour */
@@ -330,11 +360,16 @@ CH.mute = function (v, el) { AU.setMute(el.checked); S.audio = AU.cfg; save(); }
 IN.gs = function (v) {
   var box = $("#gsr"), q = v.trim().toLowerCase();
   if (!q) { box.hidden = true; box.innerHTML = ""; return; }
-  var m = D.stocks.filter(function (s) { return (s.t + " " + Lx(s.n)).toLowerCase().indexOf(q) > -1; }).slice(0, 6);
+  var m = BL.vis(D.items).filter(function (s) { return (s.t + " " + Lx(s.n)).toLowerCase().indexOf(q) > -1; }).slice(0, 6);
   box.hidden = false;
   box.innerHTML = m.length ? m.map(function (s) { return '<button data-act="gopen" data-arg="' + s.t + '"><b class="ltr">' + s.t + "</b><span class=\"muted sm\">" + esc(Lx(s.n)) + "</span></button>"; }).join("") : '<div class="muted sm" style="padding:10px">' + t("search.none") + "</div>";
 };
 ACT.gopen = function (tk) { go("stock", tk); };
+ACT.modes = function () { BL.openModes(); };
+ACT.setmkt = function (k) { S.market = k; modesRefresh(); };
+ACT.setsty = function (k) { S.styles[k] = S.styles[k] ? 0 : 1; if (!S.styles.invest && !S.styles.swing && !S.styles.day) S.styles = { invest: 1, swing: 1, day: 1 }; modesRefresh(); };
+ACT.modesdone = function () { closeModal(); if (S.joined && !S.tourDone) setTimeout(function () { tour(1); }, 300); };
+ACT.styall = function () { S.styles = { invest: 1, swing: 1, day: 1 }; modesRefresh(); };
 
 /* two-step confirm helper for destructive buttons */
 BL.confirmClick = function (el, fn) {

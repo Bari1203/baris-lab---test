@@ -7,6 +7,7 @@ var D = window.D = {};
 D.weights = [15, 15, 20, 15, 25, 10];
 D.comps = ["price", "narr", "quality", "fin", "pa", "cat"];
 D.sectors = ["tech", "bio", "apparel", "defense", "space"];
+D.styleTfs = { invest: ["Y1", "M6", "M3", "W1"], swing: ["M3", "M1", "W1", "D1", "H4"], day: ["D1", "H4", "H1", "m15"] };
 D.statuses = ["new", "watch", "wait", "near", "zone", "update", "cancel", "archive"];
 D.tfs = [
   { k: "Y1", vol: 3.4 }, { k: "M6", vol: 2.9 }, { k: "M3", vol: 2.4 },
@@ -67,8 +68,40 @@ D.stocks = [
     biz: B("רחפנים ומערכות ניווט לשימוש צבאי ואזרחי.", "Drones and navigation systems for military and civil use.") }
 ];
 
+
+/* Indices, crypto and FX. Real instrument names, SAMPLE levels only: nothing here is a market price. */
+function A(t, ab, n, kind, mkt, price, dec, zone, st, sp, upd, hz, ev, why, ch, miss, biz) {
+  return { t: t, ab: ab, n: n, kind: kind, sec: kind, mkt: mkt, price: price, dec: dec, zone: zone, st: st, sp: sp, p: [0, 0, 0, 0, 0, 0], isNew: false, upd: upd, hz: hz, sc: null, ev: ev, why: why, ch: ch, miss: miss, biz: biz };
+}
+D.assets = [
+  A("SPX", "500", B("S&P 500", "S&P 500"), "index", "us", 5420.5, 2, [5280, 5350], "watch", "low", 1, "M3", 8,
+    B("מדד מרכזי שמשקף את מצב השוק האמריקאי", "A key gauge of the US market"), B("המחיר רחוק מעל האזור", "Price sits above the zone"), B("חזרה לבדיקת האזור והתגובה אליו", "A return to test the zone and the reaction"), B("מדד של 500 חברות גדולות הנסחרות בארה״ב.", "An index of 500 large companies listed in the US.")),
+  A("NDX", "NDX", B("נאסד״ק 100", "Nasdaq 100"), "index", "us", 18940.2, 2, [18900, 19200], "zone", "mid", 0, "M1", 8,
+    B("מדד טכנולוגיה כבד, רגיש לתנודות", "A tech-heavy index, sensitive to swings"), B("נכנס לאזור העניין", "Entered the zone of interest"), B("תגובת מחיר ברורה אחרי הכניסה", "A clear price reaction after entering"), B("מדד של 100 חברות גדולות לא פיננסיות בנאסד״ק.", "An index of 100 large non-financial Nasdaq companies.")),
+  A("DJI", "DOW", B("דאו ג׳ונס", "Dow Jones"), "index", "us", 39880, 2, [38600, 39200], "near", "low", 2, "M3", 8,
+    B("מדד ותיק של 30 חברות ענק", "An old index of 30 blue-chip companies"), B("התקרב לקצה העליון של האזור", "Moved toward the top edge of the zone"), B("סגירה שמראה כיוון ברור", "A close that shows a clear direction"), B("מדד של 30 חברות גדולות בארה״ב.", "An index of 30 large US companies.")),
+  A("TA35", "35", B("ת״א 35", "TA-35"), "index", "il", 2310.4, 2, [2240, 2290], "watch", "low", 1, "M3", 8,
+    B("המדד המרכזי של הבורסה בתל אביב", "The main index of the Tel Aviv exchange"), B("אין שינוי מהותי", "No material change"), B("בדיקה של האזור", "A test of the zone"), B("מדד של 35 החברות הגדולות בבורסה בתל אביב.", "An index of the 35 largest companies on the Tel Aviv exchange.")),
+  A("TA125", "125", B("ת״א 125", "TA-125"), "index", "il", 2105.3, 2, [2050, 2100], "near", "low", 2, "M3", 8,
+    B("מדד רחב יותר של הבורסה בתל אביב", "A broader Tel Aviv index"), B("התקרב לקצה האזור", "Moved close to the zone edge"), B("תגובה בקצה העליון של האזור", "A reaction at the top of the zone"), B("מדד של 125 חברות בבורסה בתל אביב.", "An index of 125 companies on the Tel Aviv exchange.")),
+  A("BTC", "BTC", B("ביטקוין", "Bitcoin"), "crypto", "us", 64200, 2, [61500, 63000], "watch", "high", 1, "M1", 0,
+    B("מטבע דיגיטלי שנסחר 24 שעות ביממה, תנודתי מאוד", "A digital currency trading around the clock, very volatile"), B("המחיר מעל האזור", "Price is above the zone"), B("חזרה לאזור ותגובה בו", "A return to the zone and a reaction there"), B("אחד המטבעות הדיגיטליים הגדולים.", "One of the largest digital currencies.")),
+  A("ETH", "ETH", B("איתריום", "Ethereum"), "crypto", "us", 3120.5, 2, [3150, 3280], "wait", "high", 3, "M1", 0,
+    B("פלטפורמה לחוזים חכמים עם מטבע ETH", "A smart-contract platform with the ETH coin"), B("המחיר מתחת לאזור", "Price is below the zone"), B("חזרה לאזור וסגירה בתוכו", "A return into the zone and a close inside"), B("רשת לחוזים חכמים. המטבע שלה נקרא ETH.", "A smart-contract network. Its coin is called ETH.")),
+  A("XRP", "XRP", B("אקס־אר־פי", "XRP"), "crypto", "us", 0.58, 4, [0.52, 0.56], "watch", "high", 2, "M1", 0,
+    B("מטבע דיגיטלי תנודתי, מחירו נמוך ליחידה", "A volatile digital currency with a low unit price"), B("המחיר מעל האזור", "Price is above the zone"), B("בדיקה של האזור", "A test of the zone"), B("מטבע דיגיטלי הקשור לרשת Ripple.", "A digital currency tied to the Ripple network.")),
+  A("DXY", "$", B("מדד הדולר", "US Dollar Index"), "fx", "us", 104.2, 2, [102.8, 103.6], "watch", "low", 1, "M3", 8,
+    B("בוחן את הדולר מול סל מטבעות מרכזיים", "Measures the dollar against a basket of major currencies"), B("המחיר מעל האזור", "Price is above the zone"), B("חזרה אל האזור", "A return to the zone"), B("מדד שמודד את הדולר האמריקאי מול סל מטבעות.", "An index measuring the US dollar against a basket of currencies.")),
+  A("EURUSD", "€/$", B("אירו / דולר", "EUR/USD"), "fx", "us", 1.0865, 4, [1.075, 1.082], "near", "low", 1, "M1", 8,
+    B("זוג המטבעות הנסחר ביותר בעולם", "A very widely traded currency pair"), B("התקרב לקצה העליון של האזור", "Moved toward the top of the zone"), B("תגובה בקצה האזור", "A reaction at the zone edge"), B("שער האירו מול הדולר האמריקאי.", "The euro against the US dollar.")),
+  A("GBPUSD", "£/$", B("לירה שטרלינג / דולר", "GBP/USD"), "fx", "us", 1.274, 4, [1.28, 1.29], "wait", "low", 2, "M1", 8,
+    B("זוג מטבעות מרכזי עם תנודתיות בינונית", "A major currency pair with moderate volatility"), B("המחיר מתחת לאזור", "Price is below the zone"), B("עלייה לאזור ותגובה בו", "A rise into the zone and a reaction there"), B("שער הלירה שטרלינג מול הדולר האמריקאי.", "Sterling against the US dollar."))
+];
+D.stocks.forEach(function (s) { s.kind = "stock"; s.mkt = "us"; });
+D.items = D.stocks.concat(D.assets);
+
 D.stock = function (t) {
-  for (var i = 0; i < D.stocks.length; i++) if (D.stocks[i].t === t) return D.stocks[i];
+  for (var i = 0; i < D.items.length; i++) if (D.items[i].t === t) return D.items[i];
   return null;
 };
 D.score = function (s) { return s.p.reduce(function (a, b) { return a + b; }, 0); };
