@@ -143,13 +143,15 @@ BL.mkt = function () {
 /* navigation */
 var NAV = [
   { id: "home", ic: "home", g: "a" }, { id: "radar", ic: "radar", g: "a" }, { id: "wait", ic: "wait", g: "a" }, { id: "weekly", ic: "weekly", g: "a" },
-  { id: "charts", ic: "chart", g: "b" }, { id: "events", ic: "events", g: "b" },
+  { id: "charts", ic: "chart", g: "b" }, { id: "events", ic: "events", g: "b", news: 1 },
   { id: "journal", ic: "journal", g: "c" }, { id: "alerts", ic: "bell", g: "c" },
   { id: "learn", ic: "learn", g: "d" }, { id: "help", ic: "help", g: "d" },
   { id: "history", ic: "history", g: "e" }, { id: "israel", ic: "shield", g: "e", il: 1 }, { id: "settings", ic: "settings", g: "e" }, { id: "admin", ic: "admin", g: "e", admin: 1 }
 ];
 function styleOk(n) { return !n.st || n.st.some(function (k) { return S.styles[k]; }); }
-function visibleItems() { return NAV.filter(function (n) { return !(n.il && !il()) && !(n.admin && S.role !== "admin") && styleOk(n); }); }
+function newsOn() { return !!S.styles.day && S.market !== "il"; }
+BL.news = newsOn;
+function visibleItems() { return NAV.filter(function (n) { return !(n.il && !il()) && !(n.news && !newsOn()) && !(n.admin && S.role !== "admin") && styleOk(n); }); }
 /* modes: market (us / il / both) and style (invest / swing / day, any mix) */
 BL.inMarket = function (x) { return S.market === "both" || (x.mkt || "us") === S.market; };
 BL.inStyle = function (x) { return !x.sty || x.sty.some(function (k) { return S.styles[k]; }); };

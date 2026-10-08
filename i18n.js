@@ -36,7 +36,7 @@ var P = [
 ["stock.nf", "המניה לא נמצאה בדמו", "Stock not found in the demo"],
 ["nav.label", "ניווט ראשי", "Main navigation"],
 ["nav.home", "בית", "Home"], ["nav.radar", "רדאר", "Radar"], ["nav.wait", "חדר המתנה", "Waiting room"], ["nav.weekly", "סיכום שבועי", "Weekly review"],
-["nav.charts", "מרכז גרפים", "Chart center"], ["nav.events", "יום מסחר ויומן", "Trading day"], ["nav.journal", "יומן", "Journal"], ["nav.alerts", "התראות", "Alerts"],
+["nav.charts", "מרכז גרפים", "Chart center"], ["nav.events", "יומן חדשות", "News calendar"], ["nav.journal", "יומן", "Journal"], ["nav.alerts", "התראות", "Alerts"],
 ["nav.learn", "למידה", "Learning"], ["nav.help", "עזרה", "Help"], ["nav.history", "היסטוריית תרחישים", "Scenario history"], ["nav.israel", "תכנון פיננסי", "Financial planning"],
 ["nav.settings", "הגדרות", "Settings"], ["nav.admin", "אזור פרטי", "Private area"],
 ["ng.a", "מחקר", "Research"], ["ng.b", "שוק", "Market"], ["ng.c", "אישי", "Personal"], ["ng.d", "ידע", "Knowledge"], ["ng.e", "מערכת", "System"],
@@ -209,7 +209,7 @@ var P = [
 ["ch.xaxis", "זמן", "Time"], ["ch.legend.up", "נר עולה", "Up candle"], ["ch.legend.dn", "נר יורד", "Down candle"], ["ch.full", "מסך מלא", "Full screen"], ["ch.scn", "התרחיש במסך הזה", "Scenario on this screen"],
 
 /* events */
-["ev.h", "יום מסחר ויומן כלכלי", "Trading day and economic calendar"], ["ev.sub", "אירועים לדוגמה לפי הזמן המקומי או שעון ניו יורק.", "Sample events in local or New York time."],
+["ev.h", "יומן חדשות", "News calendar"], ["ev.sub", "אירועים לדוגמה לפי הזמן המקומי או שעון ניו יורק.", "Sample events in local or New York time."],
 ["ev.daily", "יום המסחר שלי", "My trading day"], ["ev.daily.t", "גרפים מהירים, ומה בלוח היום.", "Quick charts and what is on today's board."],
 ["ev.sessions", "שעות מסחר (בקרוב)", "Sessions (soon)"], ["ev.adv", "שיעור: קריאת יום מסחר", "Lesson: reading a trading day"],
 ["ev.impact", "רמת השפעה", "Impact level"], ["ev.period", "תקופה", "Period"], ["ev.day", "היום", "Today"], ["ev.week", "השבוע", "This week"],

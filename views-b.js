@@ -213,7 +213,7 @@ ACT.aldel = function (id) { S.notifs = S.notifs.filter(function (x) { return x.i
 ACT.alopen = function (id) {
   var n = S.notifs.filter(function (x) { return x.id === id; })[0]; if (!n) return;
   n.read = true; BL.save();
-  if (n.ticker) BL.go("stock", n.ticker); else if (n.type === "event") BL.go("events"); else if (n.type === "weekly") BL.go("weekly"); else if (n.type === "journal") BL.go("journal"); else BL.go("alerts");
+  if (n.ticker) BL.go("stock", n.ticker); else if (n.type === "event") BL.go(BL.news() ? "events" : "radar"); else if (n.type === "weekly") BL.go("weekly"); else if (n.type === "journal") BL.go("journal"); else BL.go("alerts");
 };
 CH.pf = function (v, el, k) { S.prefs[k] = v; BL.save(); };
 CH.pfsound = function (v, el) { S.prefs.sound = el.checked; BL.save(); if (el.checked) AU.beep(); };
