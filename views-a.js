@@ -144,11 +144,13 @@ function radarList() {
 function opt(v, label, cur) { return '<option value="' + v + '"' + (cur === v ? " selected" : "") + ">" + esc(label) + "</option>"; }
 V.radar = {
   html: function () {
-    var f = rf(), assets = BL.vis(D.assets), kinds = { eq: 1 };
-    assets.forEach(function (a) { if (a.kind !== "index") kinds[a.kind] = 1; });
-    if (!kinds[f.asset]) f.asset = "eq";
+    var f = rf(), assets = BL.vis(D.assets), kinds = {};
+    assets.forEach(function (a) { kinds[a.kind === "index" ? "eq" : a.kind] = 1; });
+    if (BL.vis(D.stocks).length) kinds.eq = 1;
+    var order = ["eq", "futures", "crypto", "fx"].filter(function (k) { return kinds[k]; });
+    if (!kinds[f.asset]) f.asset = order[0] || "eq";
     var h = '<div class="ph"><div><h1>' + t("radar.h") + "</h1><p>" + t("radar.sub") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
-    if (Object.keys(kinds).length > 1) h += '<div class="seg tabs" role="tablist" aria-label="' + esc(t("radar.assets")) + '">' + ["eq", "crypto", "fx"].filter(function (k) { return kinds[k]; }).map(function (k) { return '<button role="tab" class="' + (f.asset === k ? "on" : "") + '" aria-selected="' + (f.asset === k) + '" data-act="rasset" data-arg="' + k + '">' + t("as." + k) + "</button>"; }).join("") + "</div>";
+    if (order.length > 1) h += '<div class="seg tabs" role="tablist" aria-label="' + esc(t("radar.assets")) + '">' + order.map(function (k) { return '<button role="tab" class="' + (f.asset === k ? "on" : "") + '" aria-selected="' + (f.asset === k) + '" data-act="rasset" data-arg="' + k + '">' + (k === "eq" && !assets.some(function (x) { return x.kind === "index"; }) ? t("as.stocks") : t("as." + k)) + "</button>"; }).join("") + "</div>";
     if (f.asset === "eq") {
       var idx = assets.filter(function (a) { return a.kind === "index"; });
       if (idx.length) h += '<div class="sectitle tight"><h2>' + t("radar.indices") + '</h2></div>' + spots(idx);

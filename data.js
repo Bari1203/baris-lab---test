@@ -96,8 +96,27 @@ D.assets = [
     B("זוג המטבעות הנסחר ביותר בעולם", "A very widely traded currency pair"), B("התקרב לקצה העליון של האזור", "Moved toward the top of the zone"), B("תגובה בקצה האזור", "A reaction at the zone edge"), B("שער האירו מול הדולר האמריקאי.", "The euro against the US dollar.")),
   A("GBPUSD", "£/$", B("לירה שטרלינג / דולר", "GBP/USD"), "fx", "us", 1.274, 4, [1.28, 1.29], "wait", "low", 2, "M1", 8,
     B("זוג מטבעות מרכזי עם תנודתיות בינונית", "A major currency pair with moderate volatility"), B("המחיר מתחת לאזור", "Price is below the zone"), B("עלייה לאזור ותגובה בו", "A rise into the zone and a reaction there"), B("שער הלירה שטרלינג מול הדולר האמריקאי.", "Sterling against the US dollar."))
+,
+  A("ES", "ES", B("חוזה עתידי S&P 500 (ES)", "S&P 500 futures (ES)"), "futures", "us", 5428.25, 2, [5390, 5410], "near", "mid", 0, "H1", 8,
+    B("חוזה עתידי על S&P 500, נסחר כמעט 24 שעות ביום", "A futures contract on the S&P 500, trading nearly around the clock"), B("התקרב לקצה האזור", "Moved toward the zone edge"), B("תגובה בקצה האזור באותו יום", "A same-day reaction at the zone edge"), B("חוזה עתידי (E-mini) על מדד S&P 500.", "An E-mini futures contract on the S&P 500 index.")),
+  A("NQ", "NQ", B("חוזה עתידי נאסד״ק (NQ)", "Nasdaq futures (NQ)"), "futures", "us", 19012.5, 2, [18950, 19050], "zone", "high", 0, "H1", 8,
+    B("חוזה עתידי על נאסד״ק 100, תנודתי במיוחד", "A futures contract on the Nasdaq 100, especially volatile"), B("בתוך האזור", "Inside the zone"), B("תגובה ברורה אחרי הכניסה", "A clear reaction after entering"), B("חוזה עתידי (E-mini) על מדד נאסד״ק 100.", "An E-mini futures contract on the Nasdaq 100.")),
+  A("YM", "YM", B("חוזה עתידי דאו ג׳ונס (YM)", "Dow futures (YM)"), "futures", "us", 39910, 0, [39600, 39750], "watch", "mid", 1, "H1", 8,
+    B("חוזה עתידי על דאו ג׳ונס", "A futures contract on the Dow Jones"), B("המחיר מעל האזור", "Price is above the zone"), B("חזרה לאזור ותגובה בו", "A return to the zone and a reaction there"), B("חוזה עתידי (E-mini) על מדד דאו ג׳ונס.", "An E-mini futures contract on the Dow Jones.")),
+  A("USDILS", "$/₪", B("דולר / שקל", "USD/ILS"), "fx", "il", 3.7, 4, [3.66, 3.69], "near", "low", 1, "M1", 8,
+    B("כמה שקלים שווה דולר אחד", "How many shekels one dollar is worth"), B("התקרב לקצה האזור", "Moved toward the zone edge"), B("תגובה בקצה האזור", "A reaction at the zone edge"), B("שער הדולר מול השקל.", "The dollar against the shekel.")),
+  A("EURILS", "€/₪", B("אירו / שקל", "EUR/ILS"), "fx", "il", 4.02, 4, [3.96, 4.0], "watch", "low", 1, "M1", 8,
+    B("כמה שקלים שווה אירו אחד", "How many shekels one euro is worth"), B("המחיר מעל האזור", "Price is above the zone"), B("חזרה לאזור", "A return to the zone"), B("שער האירו מול השקל.", "The euro against the shekel.")),
+  A("GBPILS", "£/₪", B("לירה שטרלינג / שקל", "GBP/ILS"), "fx", "il", 4.72, 4, [4.8, 4.88], "wait", "low", 2, "M1", 8,
+    B("כמה שקלים שווה לירה שטרלינג אחת", "How many shekels one pound is worth"), B("המחיר מתחת לאזור", "Price is below the zone"), B("עלייה לאזור ותגובה בו", "A rise into the zone and a reaction there"), B("שער הלירה שטרלינג מול השקל.", "Sterling against the shekel.")),
+  A("JPYILS", "¥/₪", B("ין יפני / שקל", "JPY/ILS"), "fx", "il", 0.0245, 5, [0.0238, 0.0242], "watch", "mid", 2, "M1", 8,
+    B("כמה שקלים שווה ין אחד (מחיר נמוך ליחידה)", "How many shekels one yen is worth (a low unit price)"), B("המחיר מעל האזור", "Price is above the zone"), B("בדיקה של האזור", "A test of the zone"), B("שער הין היפני מול השקל.", "The Japanese yen against the shekel."))
 ];
 D.stocks.forEach(function (s) { s.kind = "stock"; s.mkt = "us"; });
+D.stocks.forEach(function (s) { s.sty = ["invest", "swing"]; });
+D.assets.forEach(function (a) {
+  a.sty = a.kind === "index" ? ["invest"] : a.kind === "crypto" ? ["invest", "swing"] : a.kind === "futures" ? ["day"] : ["invest", "swing", "day"];
+});
 D.items = D.stocks.concat(D.assets);
 
 D.stock = function (t) {
