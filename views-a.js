@@ -130,15 +130,18 @@ function newsItems(s) {
     { k: "cat", ev: addDays(d, s.ev + 40), pub: addDays(d, -s.upd - 5), title: t("news.cat"), mean: t("news.cat.m") }
   ];
 }
+function fold(title, inner, open) {
+  return '<details class="fold"' + (open ? " open" : "") + "><summary>" + title + '</summary><div class="foldb">' + inner + "</div></details>";
+}
 function layer1(s) {
-  var h = '<section class="layer l1"><div><h2>' + t("l1.title") + "</h2><p class=\"xs muted\">" + t("l1.sub") + "</p></div><p>" + esc(Lx(s.biz)) + "</p>";
-  h += '<div class="stack">' + ["rev", "margin", "cash", "dil", "val", "risk"].map(function (k) { return '<div class="kv"><span class="k">' + t("l1." + k) + '</span><span class="v">' + t("l1.ph") + "</span></div>"; }).join("") + "</div>";
-  h += '<p class="xs">' + BL.sampleBadge() + " " + t("l1.note") + "</p></section>";
+  var h = '<section class="layer l1"><p class="xs muted">' + t("l1.sub") + "</p><p>" + esc(Lx(s.biz)) + "</p>";
+  h += '<div class="stack">' + kv(t("f.spec"), t("sp." + s.sp)) + ["rev", "margin", "cash", "dil", "val", "risk"].map(function (k) { return '<div class="kv"><span class="k">' + t("l1." + k) + '</span><span class="v">' + t("l1.ph") + "</span></div>"; }).join("") + "</div>";
+  h += '<p class="xs">' + BL.sampleBadge() + " " + t("l1.note") + '</p><div><button class="btn sm" disabled aria-disabled="true">' + t("act.tv") + '</button><p class="xs muted" style="margin-top:6px">' + t("act.tv.n") + "</p></div></section>";
   return h;
 }
 function layer2(s) {
   var hh = BL.hash || D.hash(s.t), b = 3 + hh % 5, ho = 2 + (hh >> 3) % 4, se = hh % 3;
-  var h = '<section class="layer l2"><div><h2>' + t("l2.title") + "</h2><p class=\"xs\">" + t("l2.sub") + "</p></div>";
+  var h = '<section class="layer l2"><p class="xs">' + t("l2.sub") + "</p>";
   h += "<div><h3>" + t("l2.analysts") + '</h3><div class="rowf"><span class="chip up">' + t("an.buy") + " " + b + '</span><span class="chip">' + t("an.hold") + " " + ho + '</span><span class="chip dn">' + t("an.sell") + " " + se + '</span></div><p class="xs" style="margin-top:6px">' + BL.sampleBadge() + " " + t("an.note", { d: BL.fmtD(addDays(today(), -s.upd)) }) + "</p></div>";
   h += "<div><h3>" + t("l2.sent") + '</h3><p class="sm">' + t("l2.sent.t") + '</p><p class="xs">' + BL.sampleBadge() + " " + t("l2.sent.n") + "</p></div>";
   h += '<div class="kv"><span class="k">' + t("l2.rel") + '</span><span class="v">' + t("l1.ph") + "</span></div></section>";
@@ -148,14 +151,15 @@ function layer3(s) {
   var pb = pubFor(s.t), h = '<section class="layer l3"><div><h2>' + t("l3.title") + " " + BL.hint("scn") + '</h2><p class="xs muted">' + t("l3.sub") + "</p></div>";
   if (!s.sc && !pb) return h + '<p>' + t("l3.empty") + '</p><p class="xs muted">' + t("l3.empty.n") + "</p></section>";
   var tp = s.sc ? D.scTpl[s.sc] : null, src = pb ? { seen: pb.seen, wait: pb.wait, plus: pb.plus, minus: pb.minus } : { seen: Lx(tp.seen), wait: Lx(tp.wait), plus: Lx(tp.plus), minus: Lx(tp.minus) };
-  h += '<div class="rowf">' + (pb ? '<span class="chip">' + t("l3.pubdemo", { v: pb.ver }) + "</span>" : '<span class="sample">' + t("l3.sample") + "</span>") + '<span class="chip">' + t("hz." + s.hz) + '</span>' + BL.chipSt(s.st) + "</div>";
-  h += '<div class="fld3"><b>' + t("l3.written") + "</b><span>" + BL.fmtD(pb ? new Date(pb.ts) : addDays(today(), -s.upd - 3)) + "</span></div>";
-  h += '<div class="fld3"><b>' + t("l3.zone") + "</b><span>" + ltr(zoneTxt(s)) + " " + (pb ? "" : BL.sampleBadge()) + "</span></div>";
+  h += '<div class="rowf">' + (pb ? '<span class="chip">' + t("l3.pubdemo", { v: pb.ver }) + "</span>" : '<span class="sample">' + t("l3.sample") + "</span>") + '<span class="chip">' + t("hz." + s.hz) + "</span></div>";
   h += '<div class="fld3"><b>' + t("l3.seen") + "</b><span>" + esc(src.seen) + "</span></div>";
   h += '<div class="fld3"><b>' + t("l3.wait") + "</b><span>" + esc(src.wait) + "</span></div>";
+  h += '<details class="fold3"><summary>' + t("stock.more3") + '</summary><div class="stack">';
+  h += '<div class="fld3"><b>' + t("l3.written") + "</b><span>" + BL.fmtD(pb ? new Date(pb.ts) : addDays(today(), -s.upd - 3)) + "</span></div>";
+  h += '<div class="fld3"><b>' + t("l3.zone") + "</b><span>" + ltr(zoneTxt(s)) + " " + (pb ? "" : BL.sampleBadge()) + "</span></div>";
   h += '<div class="fld3"><b>' + t("l3.plus") + "</b><span>" + esc(src.plus) + "</span></div>";
   h += '<div class="fld3"><b>' + t("l3.minus") + "</b><span>" + esc(src.minus) + "</span></div>";
-  h += '<div class="fld3"><b>' + t("l3.hist") + '</b><span class="xs">' + t("l3.hist.t") + "</span></div></section>";
+  h += '<div class="fld3"><b>' + t("l3.hist") + '</b><span class="xs">' + t("l3.hist.t") + "</span></div></div></details></section>";
   return h;
 }
 V.stock = {
@@ -163,14 +167,18 @@ V.stock = {
     var s = D.stock(tk);
     if (!s) return '<div class="empty"><strong>' + t("stock.nf") + '</strong><button class="btn" data-act="nav" data-arg="radar">' + t("nav.radar") + "</button></div>";
     var sc = D.score(s), w = !!S.watch[s.t], h = '<div class="shead"><div class="rowf"><button class="btn sm" data-act="back">' + (S.lang === "he" ? "→ " : "← ") + t("back") + "</button></div>";
-    h += '<div><h1><span class="ltr">' + s.t + '</span> <span class="muted" style="font-weight:600">' + esc(Lx(s.n)) + '</span></h1><div class="rowf" style="margin-top:10px"><span class="chip">' + t("sec." + s.sec) + "</span>" + BL.chipSt(s.st) + '<span class="chip">' + t("sp." + s.sp) + "</span>" + BL.hint("status") + "</div></div>";
+    h += '<div><h1><span class="ltr">' + s.t + '</span> <span class="muted" style="font-weight:600">' + esc(Lx(s.n)) + '</span></h1><div class="rowf" style="margin-top:10px"><span class="chip">' + t("sec." + s.sec) + "</span>" + BL.chipSt(s.st) + "</div></div>";
+    h += '<p class="plain">' + t("stock.plain", { st: t("st." + s.st), d: distTxt(s) }) + " " + BL.hint("status") + "</p>";
     h += '<div class="rowf" style="gap:18px 28px">' + kv(t("f.price"), ltr(money(s.price)) + " " + BL.sampleBadge(), updTxt(s) + ", " + t("src.sample")) + kv(t("f.score"), sc + " / 100", t("model.v")) + kv(t("f.zone"), ltr(zoneTxt(s)) + " " + BL.hint("zone"), distTxt(s)) + "</div>";
-    h += '<div class="rowf"><button class="btn' + (w ? " on" : "") + '" data-act="wtog" data-arg="' + s.t + '" aria-pressed="' + w + '">' + t(w ? "watch.on" : "watch.add") + '</button><button class="btn" data-act="addalert" data-arg="' + s.t + '">' + t("act.alert") + '</button><button class="btn" data-act="addj" data-arg="' + s.t + '">' + t("act.journal") + '</button><button class="btn" data-act="gochart" data-arg="' + s.t + '">' + t("act.chart") + '</button><button class="btn" disabled aria-disabled="true">' + t("act.tv") + "</button></div>";
-    h += '<p class="xs muted">' + t("act.tv.n") + "</p></div>";
-    h += '<section class="card" style="margin-top:18px"><h2>' + t("bd.title") + '</h2><p class="xs muted" style="margin-bottom:12px">' + t("bd.sub") + '</p><div class="bars">' + D.comps.map(function (c, i) { var pc = s.p[i] / D.weights[i] * 100; return '<div class="bar"><span>' + t("comp." + c) + '</span><span class="meter" role="img" aria-label="' + s.p[i] + "/" + D.weights[i] + '"><i style="width:' + pc + '%"></i></span><span class="num ltr">' + s.p[i] + " / " + D.weights[i] + "</span></div>"; }).join("") + "</div></section>";
-    h += '<div class="layers" style="margin-top:14px">' + layer1(s) + layer2(s) + layer3(s) + "</div>";
-    h += '<div class="grid g2" style="margin-top:14px"><section class="card"><h2>' + t("news.title") + "</h2>" + newsItems(s).map(function (n) { return '<div class="newsli"><div><span class="chip">' + t("news.k." + n.k) + "</span> <b>" + esc(n.title) + '</b></div><div class="xs muted">' + t("news.ev") + ": " + BL.fmtD(n.ev) + ", " + t("news.pub") + ": " + BL.fmtD(n.pub) + '</div><div class="sm">' + esc(n.mean) + '</div><div class="xs">' + BL.sampleBadge() + " " + t("news.src") + "</div></div>"; }).join("") + "</section>";
-    h += '<section class="card"><h2>' + t("tl.title") + '</h2><ul class="tl"><li><span class="dot c"></span><div><b>' + t("tl.enter") + '</b><div class="xs muted">' + BL.fmtD(addDays(today(), -s.upd - 20)) + '</div></div></li><li><span class="dot"></span><div><b>' + t("tl.upd") + '</b><div class="xs muted">' + BL.fmtD(addDays(today(), -s.upd)) + "</div><div class=\"sm\">" + esc(Lx(s.ch)) + '</div></div></li></ul><p class="xs" style="margin-top:10px">' + BL.sampleBadge() + " " + t("tl.note") + "</p></section></div>";
+    h += '<div class="rowf"><button class="btn pri' + (w ? " on" : "") + '" data-act="wtog" data-arg="' + s.t + '" aria-pressed="' + w + '">' + t(w ? "watch.on" : "watch.add") + '</button><button class="btn" data-act="addj" data-arg="' + s.t + '">' + t("act.journal") + '</button><button class="btn" data-act="addalert" data-arg="' + s.t + '">' + t("act.alert") + '</button><button class="btn" data-act="gochart" data-arg="' + s.t + '">' + t("act.chart") + "</button></div></div>";
+    h += '<div style="margin-top:18px">' + layer3(s) + "</div>";
+    h += '<h2 class="foldh">' + t("stock.folds") + "</h2>";
+    h += '<div class="folds">';
+    h += fold(t("l1.title"), layer1(s)) + fold(t("l2.title"), layer2(s));
+    h += fold(t("bd.title"), '<p class="xs muted" style="margin-bottom:12px">' + t("bd.sub") + '</p><div class="bars">' + D.comps.map(function (c, i) { var pc = s.p[i] / D.weights[i] * 100; return '<div class="bar"><span>' + t("comp." + c) + '</span><span class="meter" role="img" aria-label="' + s.p[i] + "/" + D.weights[i] + '"><i style="width:' + pc + '%"></i></span><span class="num ltr">' + s.p[i] + " / " + D.weights[i] + "</span></div>"; }).join("") + "</div>");
+    h += fold(t("news.title"), newsItems(s).map(function (n) { return '<div class="newsli"><div><span class="chip">' + t("news.k." + n.k) + "</span> <b>" + esc(n.title) + '</b></div><div class="xs muted">' + t("news.ev") + ": " + BL.fmtD(n.ev) + ", " + t("news.pub") + ": " + BL.fmtD(n.pub) + '</div><div class="sm">' + esc(n.mean) + '</div><div class="xs">' + BL.sampleBadge() + " " + t("news.src") + "</div></div>"; }).join(""));
+    h += fold(t("tl.title"), '<ul class="tl"><li><span class="dot c"></span><div><b>' + t("tl.enter") + '</b><div class="xs muted">' + BL.fmtD(addDays(today(), -s.upd - 20)) + '</div></div></li><li><span class="dot"></span><div><b>' + t("tl.upd") + '</b><div class="xs muted">' + BL.fmtD(addDays(today(), -s.upd)) + "</div><div class=\"sm\">" + esc(Lx(s.ch)) + '</div></div></li></ul><p class="xs" style="margin-top:10px">' + BL.sampleBadge() + " " + t("tl.note") + "</p>");
+    h += "</div>";
     return h;
   }
 };
