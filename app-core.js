@@ -148,18 +148,19 @@ var NAV = [
   { id: "learn", ic: "learn", g: "d" }, { id: "help", ic: "help", g: "d" },
   { id: "history", ic: "history", g: "e" }, { id: "israel", ic: "shield", g: "e", il: 1 }, { id: "settings", ic: "settings", g: "e" }, { id: "admin", ic: "admin", g: "e", admin: 1 }
 ];
-function styleOk(n) { return !n.st || n.st.some(function (k) { return S.styles[k]; }); }
-function newsOn() { return !!S.styles.day && S.market !== "il"; }
+function styleOk(n) { return !n.st || n.st.some(function (k) { return BL.style(k); }); }
+function newsOn() { return BL.style("day") && S.market !== "il"; }
 BL.news = newsOn;
 function visibleItems() { return NAV.filter(function (n) { return !(n.il && !il()) && !(n.news && !newsOn()) && !(n.admin && S.role !== "admin") && styleOk(n); }); }
 /* modes: market (us / il / both) and style (invest / swing / day, any mix) */
 BL.inMarket = function (x) { return S.market === "both" || (x.mkt || "us") === S.market; };
-BL.inStyle = function (x) { return !x.sty || x.sty.some(function (k) { return S.styles[k]; }); };
+BL.inStyle = function (x) { return !x.sty || x.sty.some(function (k) { return BL.style(k); }); };
 BL.vis = function (list) { return list.filter(function (x) { return BL.inMarket(x) && BL.inStyle(x); }); };
-BL.style = function (k) { return !!S.styles[k]; };
+/* Israel mode is investing only for now: the stored style choice is kept but not applied */
+BL.style = function (k) { return S.market === "il" ? k === "invest" : !!S.styles[k]; };
 BL.tfsFor = function () {
   var keys = {};
-  Object.keys(S.styles).forEach(function (k) { if (S.styles[k]) D.styleTfs[k].forEach(function (x) { keys[x] = 1; }); });
+  Object.keys(S.styles).forEach(function (k) { if (BL.style(k)) D.styleTfs[k].forEach(function (x) { keys[x] = 1; }); });
   var a = D.tfs.filter(function (x) { return keys[x.k]; });
   return a.length ? a : D.tfs;
 };
@@ -172,14 +173,14 @@ BL.streak = function () {
   return n;
 };
 function modesBody() {
-  var mk = ["us", "both", "il"], sty = ["invest", "swing", "day"], all = sty.every(function (k) { return S.styles[k]; });
+  var mk = ["us", "both", "il"], sty = ["invest", "swing", "day"], il1 = S.market === "il", all = !il1 && sty.every(function (k) { return S.styles[k]; });
   return '<p class="muted">' + t("mode.intro") + '</p><h3>' + t("mode.market") + '</h3><div class="seg" role="group" aria-label="' + esc(t("mode.market")) + '">' + mk.map(function (k) { return '<button class="' + (S.market === k ? "on" : "") + '" data-act="setmkt" data-arg="' + k + '" aria-pressed="' + (S.market === k) + '"><b>' + t("mkt." + k) + '</b><span class="xs">' + t("mkt." + k + ".d") + "</span></button>"; }).join("") + "</div>" +
-    '<h3>' + t("mode.style") + '</h3><div class="seg" role="group" aria-label="' + esc(t("mode.style")) + '">' + sty.map(function (k) { return '<button class="' + (S.styles[k] ? "on" : "") + '" data-act="setsty" data-arg="' + k + '" aria-pressed="' + (!!S.styles[k]) + '"><b>' + t("sty." + k) + '</b><span class="xs">' + t("sty." + k + ".d") + "</span></button>"; }).join("") + '</div><div class="rowf"><button class="btn sm' + (all ? " on" : "") + '" data-act="styall" aria-pressed="' + all + '">' + t("sty.all") + '</button><span class="xs muted">' + t("mode.multi") + '</span></div><p class="xs muted">' + t("mode.il.note") + '</p><div class="actions"><button class="btn pri" data-act="modesdone">' + t("mode.done") + "</button></div>";
+    '<h3>' + t("mode.style") + '</h3><div class="seg" role="group" aria-label="' + esc(t("mode.style")) + '">' + sty.map(function (k) { var on = BL.style(k); return '<button class="' + (on ? "on" : "") + '"' + (il1 && k !== "invest" ? " disabled" : "") + ' data-act="setsty" data-arg="' + k + '" aria-pressed="' + on + '"><b>' + t("sty." + k) + '</b><span class="xs">' + t("sty." + k + ".d") + "</span></button>"; }).join("") + '</div>' + (il1 ? '<p class="xs muted">' + t("mode.il.inv") + "</p>" : '<div class="rowf"><button class="btn sm' + (all ? " on" : "") + '" data-act="styall" aria-pressed="' + all + '">' + t("sty.all") + '</button><span class="xs muted">' + t("mode.multi") + "</span></div>") + '<p class="xs muted">' + t("mode.il.note") + '</p><div class="actions"><button class="btn pri" data-act="modesdone">' + t("mode.done") + "</button></div>";
 }
 function modesRefresh() { save(); render(false); var b = $("#mbody"); if (b && $("#layer").classList.contains("on")) b.innerHTML = modesBody(); }
 BL.openModes = function () { openModal({ title: t("mode.title"), body: modesBody() }); };
 BL.modeSummary = function () {
-  var sty = ["invest", "swing", "day"].filter(function (k) { return S.styles[k]; });
+  var sty = ["invest", "swing", "day"].filter(function (k) { return BL.style(k); });
   return { m: t("mkt." + S.market), s: sty.length === 3 ? t("sty.all") : sty.map(function (k) { return t("sty." + k); }).join(" + ") };
 };
 function visibleView(id) { var n = NAV.filter(function (x) { return x.id === id; })[0]; if (!n) return id === "stock"; return visibleItems().indexOf(n) > -1; }
@@ -221,6 +222,80 @@ function renderMini() {
   $("#mini").innerHTML = '<button class="iconbtn" data-act="mplay" aria-label="' + esc(AU.playing ? t("mus.pause") : t("mus.play")) + '">' + ic(AU.playing ? "pause" : "play") + '</button><span class="mt">' + t("trk." + D.tracks[a.track]) + '</span><button class="iconbtn" data-act="mnext" aria-label="' + esc(t("mus.next")) + '">' + ic("next") + '</button><button class="iconbtn" data-act="music" aria-label="' + esc(t("mus.open")) + '">' + ic("expand", 18) + "</button>";
 }
 
+/* in-page section menu: each big screen gets a short list of its parts, so nothing is a screen inside a screen */
+function kd(el) { return Array.prototype.slice.call(el.children); }
+function hc(n, c) { return !!(n && n.classList && n.classList.contains(c)); }
+function first(k, c) { return k.filter(function (n) { return hc(n, c); })[0]; }
+var SUBG = {
+  radar: function (k) {
+    var i1 = -1, i2 = -1; k.forEach(function (n, i) { if (hc(n, "sectitle")) { if (hc(n, "tight")) { if (i1 < 0) i1 = i; } else if (i2 < 0) i2 = i; } });
+    if (i1 < 0 || i2 < 0) return null; var end = k.length; if (k[end - 1].tagName === "P") end--;
+    return [["idx", k.slice(i1, i2)], ["stocks", k.slice(i2, end)]];
+  },
+  wait: function (k) { var i = -1; k.forEach(function (n, j) { if (i < 0 && hc(n, "sectitle")) i = j; }); if (i < 3) return null; return [["mine", k.slice(2, i)], ["sug", k.slice(i)]]; },
+  weekly: function (k) {
+    var l = first(k, "layer"), g = first(k, "grid"), f = first(k, "folds"); if (!l || !g || !f) return null; var c = kd(f);
+    return [["concl", [l]], ["market", [g.children[0]]], ["events", [g.children[1]]], ["radar", [c[0]]], ["wait", [c[1]]], ["new", [c[2]]], ["risks", [c[3], c[4]]]];
+  },
+  events: function (k) { return k.length > 3 ? [["daily", [k[1]]], ["evlist", k.slice(2)]] : null; },
+  journal: function (k) { var g = k[k.length - 1]; return hc(g, "grid") && k.length > 4 ? [["diary", k.slice(2, k.length - 1)], ["summary", [g]]] : null; },
+  history: function (k) { return k.length > 4 ? [["counts", [k[2]]], ["recs", [k[1], k[3]]], ["rules", [k[k.length - 1]]]] : null; },
+  learn: function (k) { return hc(k[1], "tint") && k.length > 3 ? [["ex", [k[1]]], ["lessons", k.slice(2)]] : null; },
+  help: function (k) { return k.length > 5 ? [["faq", [k[1]]], ["works", k.slice(2, 5)], ["gloss", [k[5]]]] : null; }
+};
+function applySub(el) {
+  $$(".subs").forEach(function (n) { n.parentNode.removeChild(n); });
+  var fn = SUBG[R.view], gs = null;
+  try { gs = fn ? fn(kd(el)) : null; } catch (e) { gs = null; }
+  if (!gs) return;
+  gs = gs.map(function (g) { return [g[0], g[1].filter(Boolean)]; }).filter(function (g) { return g[1].length; });
+  if (gs.length < 2) return;
+  S.sub = S.sub || {};
+  var cur = S.sub[R.view] || "all";
+  if (cur !== "all" && !gs.some(function (g) { return g[0] === cur; })) cur = "all";
+  if (cur !== "all") {
+    gs.forEach(function (g) { if (g[0] !== cur) g[1].forEach(function (n) { n.hidden = true; }); });
+    $$(".grid,.folds", el).forEach(function (c) { if (c.children.length && kd(c).every(function (x) { return x.hidden; })) c.hidden = true; });
+  }
+  function chips(cls) {
+    return [["all", t("sub.all")]].concat(gs.map(function (g) { return [g[0], t("sub." + g[0])]; })).map(function (x, i) {
+      return '<button class="' + cls + (x[0] === cur ? " on" : "") + '" style="--i:' + i + '" data-act="sub" data-arg="' + x[0] + '" aria-pressed="' + (x[0] === cur) + '">' + esc(x[1]) + "</button>";
+    }).join("");
+  }
+  var bar = document.createElement("div");
+  bar.className = "subbar pillset scroll"; bar.setAttribute("role", "group"); bar.setAttribute("aria-label", t("sub.label"));
+  bar.innerHTML = chips("btn");
+  el.insertBefore(bar, el.children[1] || null);
+  var cu = $('#side .nl[aria-current="page"]');
+  if (cu) { var d = document.createElement("div"); d.className = "subs"; d.innerHTML = chips("sl"); cu.parentNode.insertBefore(d, cu.nextSibling); }
+}
+ACT.sub = function (id) { S.sub = S.sub || {}; S.sub[R.view] = id; save(); render(false); };
+
+/* celebration: confetti and a check mark, like a delivery app after an order */
+BL.cele = function (o) {
+  o = o || {};
+  var red = S.reduce || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  if (red) return;
+  var big = !!o.big, root = document.createElement("div"); root.className = "cele"; root.setAttribute("aria-hidden", "true");
+  var x = window.innerWidth / 2, y = window.innerHeight * 0.42;
+  if (!big && o.el && o.el.getBoundingClientRect) { var r = o.el.getBoundingClientRect(); x = r.left + r.width / 2; y = r.top + r.height / 2; }
+  var n = big ? 44 : 16, i;
+  for (i = 0; i < n; i++) {
+    var p = document.createElement("i"); p.className = "cf c" + (i % 5) + (i % 3 === 0 ? " dot" : "");
+    p.style.left = x + "px"; p.style.top = y + "px"; root.appendChild(p);
+    var a = Math.random() * Math.PI * 2, v = (big ? 140 : 60) + Math.random() * (big ? 200 : 70), dx = Math.cos(a) * v, dy = Math.sin(a) * v - (big ? 60 : 30), rot = (Math.random() * 720 - 360);
+    if (p.animate) p.animate([{ transform: "translate(-50%,-50%) scale(.4)", opacity: 1 }, { transform: "translate(" + dx + "px," + dy + "px) rotate(" + rot / 2 + "deg) scale(1)", opacity: 1, offset: 0.55 }, { transform: "translate(" + dx * 1.1 + "px," + (dy + 150) + "px) rotate(" + rot + "deg) scale(.8)", opacity: 0 }], { duration: 950 + Math.random() * 700, easing: "cubic-bezier(.2,.7,.3,1)", fill: "forwards" });
+  }
+  if (big) {
+    var b = document.createElement("div"); b.className = "cbadge";
+    b.innerHTML = '<svg viewBox="0 0 52 52" width="76" height="76"><circle class="cc" cx="26" cy="26" r="23"/><path class="ck" d="M15 27.5l7.5 7.5L38 18.5"/></svg>' + (o.cap ? '<span class="ccap">' + esc(o.cap) + "</span>" : "");
+    root.appendChild(b);
+    var tp = $("#top"); if (tp) { tp.classList.add("cheer"); setTimeout(function () { tp.classList.remove("cheer"); }, 900); }
+  }
+  document.body.appendChild(root);
+  setTimeout(function () { if (root.parentNode) root.parentNode.removeChild(root); }, big ? 2300 : 1700);
+};
+
 function render(top) {
   applySettings();
   if (!visibleView(R.view)) { R.view = "home"; R.arg = null; }
@@ -233,6 +308,7 @@ function render(top) {
     console.error(e);
     el.innerHTML = '<div class="notice">' + esc(t("err.view")) + "</div>";
   }
+  try { applySub(el); } catch (e) { console.error(e); }
   el.classList.remove("pg");
   if (top) { void el.offsetWidth; el.classList.add("pg"); window.scrollTo(0, 0); }
   BL.fx(el, top);

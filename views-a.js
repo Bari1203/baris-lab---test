@@ -185,7 +185,7 @@ ACT.rview = function (k) { rf().view = k; BL.save(); BL.render(false); };
 ACT.rreset = function () { S.f.radar = { q: "", sec: "", st: "", sp: "", flag: "all", sort: "score", asset: rf().asset, view: rf().view }; BL.save(); BL.render(false); };
 ACT.wtog = function (tk, el, ev) {
   if (ev) ev.stopPropagation();
-  if (S.watch[tk]) { delete S.watch[tk]; BL.toast(t("watch.removed", { t: tk })); } else { S.watch[tk] = 1; BL.toast(t("watch.added", { t: tk })); }
+  if (S.watch[tk]) { delete S.watch[tk]; BL.toast(t("watch.removed", { t: tk })); } else { S.watch[tk] = 1; BL.toast(t("watch.added", { t: tk })); BL.cele({ el: el }); }
   BL.popTk = tk; BL.save(); BL.render(false);
 };
 
@@ -295,12 +295,12 @@ BL.openWait = function (tk) {
 FORM.wait = function (f) {
   var tk = f.querySelector("#wa-tk").value, note = f.querySelector("#wa-note").value.trim();
   S.waiting[tk] = { note: note, ts: (S.waiting[tk] && S.waiting[tk].ts) || Date.now() };
-  BL.save(); BL.closeModal(); BL.render(false); BL.toast(t("wait.saved", { t: tk }));
+  BL.save(); BL.closeModal(); BL.render(false); BL.toast(t("wait.saved", { t: tk })); BL.cele({ big: 1, cap: t("cele.wait", { t: tk }) });
 };
 ACT.wnew = function () { BL.openWait(); };
 ACT.wadd = function (tk) { BL.openWait(tk); };
 ACT.wedit = function (tk) { BL.openWait(tk); };
-ACT.wsug = function (tk) { S.waiting[tk] = { note: Lx(D.stock(tk).miss), ts: Date.now() }; BL.save(); BL.render(false); BL.toast(t("wait.saved", { t: tk })); };
+ACT.wsug = function (tk) { S.waiting[tk] = { note: Lx(D.stock(tk).miss), ts: Date.now() }; BL.save(); BL.render(false); BL.toast(t("wait.saved", { t: tk })); BL.cele({ big: 1, cap: t("cele.wait", { t: tk }) }); };
 ACT.wrem = function (tk) {
   var old = S.waiting[tk]; delete S.waiting[tk]; BL.save(); BL.render(false);
   BL.toast(t("wait.removed", { t: tk }), { label: t("undo"), fn: function () { S.waiting[tk] = old; BL.save(); BL.render(false); } });
@@ -336,7 +336,7 @@ V.weekly = {
   }
 };
 ACT.wkpick = function (i) { S.f.wk = +i; BL.save(); BL.render(false); };
-ACT.wksave = function (i) { S.savedWeeks[i] = !S.savedWeeks[i]; BL.save(); BL.toast(t(S.savedWeeks[i] ? "wk.saved.t" : "wk.unsaved.t")); BL.render(false); };
+ACT.wksave = function (i) { S.savedWeeks[i] = !S.savedWeeks[i]; BL.save(); BL.toast(t(S.savedWeeks[i] ? "wk.saved.t" : "wk.unsaved.t")); BL.render(false); if (S.savedWeeks[i]) BL.cele({ big: 1, cap: t("cele.week") }); };
 ACT.wkcopy = function (i) { BL.copy(weekText(+i)); };
 ACT.wkj = function (i) { var r = weekRange(D.weeks[+i]); BL.openEntry({ type: "review", title: t("weekly.h") + " " + BL.fmtD(r.a, { day: "numeric", month: "short" }) }); };
 
