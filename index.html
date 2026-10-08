@@ -1,0 +1,66 @@
+<title>BARI'S LAB</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sticky shell with side navigation on desktop and a bottom bar on phones. Deep teal hero and Bari's layer carry the weight; everything else stays calm. */
+:root{
+  --bg:#F5F1E8;--surface:#FFFDF8;--card-hover:#FBF8EF;
+  --ink:#123C3A;--ink-2:#0C2B29;--muted:#4A6A66;
+  --line:#E2DFD1;--line2:#C9CDBF;
+  --mint:#C8E2D8;--coral:#F17462;--coral-deep:#B2402C;--coral-soft:#F9CFC6;--coral-hero:#F5907F;--on-coral:#2A0F0A;
+  --warn:#7A4E00;--warn-bg:#F6E8C3;
+  --up:#17724F;--up-bg:#D8EEE3;--down:#A93A28;--down-bg:#F8DAD3;
+  --hero-bg:#123C3A;--hero-fg:#F5F1E8;--hero-sub:#BFD5CE;
+  --focus:#B2402C;
+  --shadow:0 14px 34px rgba(18,60,58,.18);--shadow-sm:0 1px 2px rgba(18,60,58,.06);
+  --font:Heebo,Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E2321;--surface:#153431;--card-hover:#193A37;
+    --ink:#EAF2EE;--ink-2:#FFFFFF;--muted:#9FBBB4;
+    --line:#244541;--line2:#35605A;
+    --mint:#1F4B45;--coral:#F5877A;--coral-deep:#F5A396;--coral-soft:#5A3A36;--coral-hero:#F5907F;--on-coral:#2A0F0A;
+    --warn:#F0C36A;--warn-bg:#3D3417;
+    --up:#64D1A3;--up-bg:#173F33;--down:#F59A88;--down-bg:#4A2721;
+    --hero-bg:#0A1D1B;--hero-fg:#F5F1E8;--hero-sub:#A9C6BE;
+    --focus:#F5A396;
+    --shadow:0 14px 34px rgba(0,0,0,.45);--shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E2321;--surface:#153431;--card-hover:#193A37;
+  --ink:#EAF2EE;--ink-2:#FFFFFF;--muted:#9FBBB4;
+  --line:#244541;--line2:#35605A;
+  --mint:#1F4B45;--coral:#F5877A;--coral-deep:#F5A396;--coral-soft:#5A3A36;--coral-hero:#F5907F;--on-coral:#2A0F0A;
+  --warn:#F0C36A;--warn-bg:#3D3417;
+  --up:#64D1A3;--up-bg:#173F33;--down:#F59A88;--down-bg:#4A2721;
+  --hero-bg:#0A1D1B;--hero-fg:#F5F1E8;--hero-sub:#A9C6BE;
+  --focus:#F5A396;
+  --shadow:0 14px 34px rgba(0,0,0,.45);--shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+:root[lang="en"]{--font:Inter,Heebo,system-ui,-apple-system,"Segoe UI",sans-serif}
+</style>
+<link rel="stylesheet" href="styles.css">
+
+<a class="skip" id="skip" href="#view"></a>
+<div class="app" id="app">
+  <aside class="side" id="side"></aside>
+  <div class="col">
+    <header class="top" id="top"></header>
+    <div class="banner" id="banner"></div>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+<nav class="bottom" id="bottom"></nav>
+<div class="mini" id="mini"></div>
+<div class="layer-root" id="layer"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="i18n.js"></script>
+<script src="data.js"></script>
+<script src="audio.js"></script>
+<script src="app-core.js"></script>
+<script src="views-a.js"></script>
+<script src="views-b.js"></script>
