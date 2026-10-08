@@ -518,24 +518,45 @@ main.pg .tiles>*:nth-child(n+5),main.pg .hgrid>*:nth-child(n+5),main.pg .rail>*:
 .wcard{display:grid;gap:10px;align-content:start}
 
 /* section menu and celebration */
-.subbar{margin-bottom:14px}
-.subbar .btn{animation:chipin .4s var(--ease) both;animation-delay:calc(var(--i)*45ms);white-space:nowrap}
-.subbar .btn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-@keyframes chipin{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
-.subs{display:none;flex-direction:column;gap:2px;margin:2px 0 8px;padding-inline-start:30px;border-inline-start:2px solid var(--line);margin-inline-start:20px;padding-inline-start:10px}
-.sl{background:none;border:0;border-radius:10px;padding:7px 10px;text-align:start;cursor:pointer;color:var(--muted);font:inherit;font-size:14px;min-height:34px;animation:chipin .35s var(--ease) both;animation-delay:calc(var(--i)*40ms)}
-.sl:hover{background:var(--mint);color:var(--ink)}
+.subbar{margin-bottom:16px}
+.subbar .btn{animation:chipin .7s var(--ease) both;animation-delay:calc(var(--i)*80ms + 120ms);white-space:nowrap;transition:background .4s var(--ease),color .4s,transform .3s var(--ease),box-shadow .4s}
+.subbar .btn:hover{transform:translateY(-2px)}
+.subbar .btn.on{background:var(--ink);color:var(--bg);border-color:var(--ink);box-shadow:0 8px 18px rgba(18,60,58,.25);animation:chipin .7s var(--ease) both,selpop .6s var(--ease)}
+.subbar.still .btn{animation:none}
+.subbar.still .btn.on{animation:selpop .6s var(--ease)}
+@keyframes chipin{from{opacity:0;transform:translateY(14px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes selpop{0%{transform:scale(.88)}55%{transform:scale(1.07)}100%{transform:scale(1)}}
+.subin{animation:subin .8s var(--ease) both;animation-delay:var(--d,0ms)}
+@keyframes subin{from{opacity:0;transform:translateY(26px) scale(.975)}to{opacity:1;transform:none}}
+.subs{display:none;flex-direction:column;gap:2px;margin:2px 20px 8px 0;padding-inline-start:10px;border-inline-start:2px solid var(--line);margin-inline-start:20px;animation:subsin .7s var(--ease) both}
+.subs.still{animation:none}
+@keyframes subsin{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.sl{background:none;border:0;border-radius:10px;padding:7px 10px;text-align:start;cursor:pointer;color:var(--muted);font:inherit;font-size:14px;min-height:34px;transition:background .3s,color .3s,transform .3s var(--ease);animation:chipin .6s var(--ease) both;animation-delay:calc(var(--i)*70ms + 150ms)}
+.subs.still .sl{animation:none}
+.sl:hover{background:var(--mint);color:var(--ink);transform:translateX(-3px)}
 .sl.on{color:var(--ink);font-weight:700;background:var(--mint)}
 @media(min-width:960px){.subs{display:flex}}
 .cele{position:fixed;inset:0;pointer-events:none;z-index:90;overflow:hidden}
-.cf{position:absolute;width:7px;height:12px;border-radius:2px;will-change:transform,opacity}
-.cf.dot{width:9px;height:9px;border-radius:50%}
-.cf.c0{background:var(--coral)}.cf.c1{background:var(--mint)}.cf.c2{background:var(--ink)}.cf.c3{background:var(--coral-soft)}.cf.c4{background:var(--up)}
-.cbadge{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:12px;animation:badgein 2.1s var(--ease) both}
-.cbadge svg{filter:drop-shadow(0 10px 24px rgba(18,60,58,.3))}
-.cbadge .cc{fill:var(--ink);stroke:none}
-.cbadge .ck{fill:none;stroke:var(--bg);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:44;stroke-dashoffset:44;animation:draw .45s .25s var(--ease) forwards}
-.ccap{background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:700;font-size:15px;text-align:center;max-width:min(86vw,360px);box-shadow:var(--shadow)}
-@keyframes badgein{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}14%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}22%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
-#top.cheer .brand svg,#top.cheer .brand .bt{animation:cheer .7s var(--ease)}
-@keyframes cheer{0%,100%{transform:none}30%{transform:scale(1.18) rotate(-8deg)}60%{transform:scale(1.08) rotate(5deg)}}
+.cele.big::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,rgba(18,60,58,.34),rgba(18,60,58,.08) 60%,transparent 80%);animation:scrim 4.2s ease both}
+@keyframes scrim{0%{opacity:0}12%{opacity:1}78%{opacity:1}100%{opacity:0}}
+.cf{position:absolute;width:8px;height:13px;border-radius:2px;will-change:transform,opacity}
+.cf.dot{width:10px;height:10px;border-radius:50%}
+.cf.bar{width:4px;height:22px;border-radius:3px}
+.cf.c0{background:var(--coral)}.cf.c1{background:var(--mint)}.cf.c2{background:var(--bg)}.cf.c3{background:var(--coral-soft)}.cf.c4{background:var(--up)}
+.ring{position:absolute;width:var(--s);height:var(--s);margin:calc(var(--s)/-2) 0 0 calc(var(--s)/-2);border-radius:50%;border:3px solid var(--coral);opacity:0;animation:ring 1.5s var(--ease) both}
+.ring+.ring{border-color:var(--mint)}
+@keyframes ring{0%{opacity:.9;transform:scale(.15)}100%{opacity:0;transform:scale(1)}}
+.spark{position:absolute;width:var(--z);height:var(--z);margin:calc(var(--z)/-2) 0 0 calc(var(--z)/-2);opacity:0;animation:spark 1.3s var(--ease) both}
+.spark svg{width:100%;height:100%;fill:var(--coral)}
+.spark:nth-of-type(even) svg{fill:var(--mint)}
+@keyframes spark{0%{opacity:0;transform:scale(0) rotate(-40deg)}40%{opacity:1;transform:scale(1.25) rotate(10deg)}100%{opacity:0;transform:scale(.4) rotate(60deg)}}
+.cbadge{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:16px;animation:badgein 4.2s cubic-bezier(.2,.9,.25,1) both}
+.cbadge svg{filter:drop-shadow(0 14px 30px rgba(0,0,0,.35))}
+.cbadge .cc{fill:var(--ink);stroke:var(--coral);stroke-width:2.5;animation:ccpulse 1.2s .2s var(--ease)}
+.cbadge .ck{fill:none;stroke:var(--bg);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:44;stroke-dashoffset:44;animation:draw .7s .55s var(--ease) forwards}
+@keyframes ccpulse{0%{transform:scale(1);transform-origin:center}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+.ccap{background:var(--bg);color:var(--ink);padding:11px 20px;border-radius:999px;font-weight:800;font-size:16px;text-align:center;max-width:min(88vw,380px);box-shadow:var(--shadow);animation:capin .9s 1s var(--ease) both}
+@keyframes capin{from{opacity:0;transform:translateY(22px) scale(.92)}to{opacity:1;transform:none}}
+@keyframes badgein{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-12deg)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.14) rotate(3deg)}20%{transform:translate(-50%,-50%) scale(.97)}27%{transform:translate(-50%,-50%) scale(1)}78%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-64%) scale(.96)}}
+#top.cheer .brand svg,#top.cheer .brand .bt{animation:cheer 1.2s var(--ease)}
+@keyframes cheer{0%,100%{transform:none}25%{transform:scale(1.25) rotate(-10deg)}50%{transform:scale(1.1) rotate(7deg)}75%{transform:scale(1.15) rotate(-3deg)}}

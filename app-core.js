@@ -262,38 +262,57 @@ function applySub(el) {
       return '<button class="' + cls + (x[0] === cur ? " on" : "") + '" style="--i:' + i + '" data-act="sub" data-arg="' + x[0] + '" aria-pressed="' + (x[0] === cur) + '">' + esc(x[1]) + "</button>";
     }).join("");
   }
+  var anim = !!BL.subAnim;
+  if (anim) { var k2 = 0; gs.forEach(function (g) { if (cur === "all" || g[0] === cur) g[1].forEach(function (n) { if (n.hidden) return; n.classList.add("subin"); n.style.setProperty("--d", (k2++ * 90) + "ms"); }); }); }
   var bar = document.createElement("div");
-  bar.className = "subbar pillset scroll"; bar.setAttribute("role", "group"); bar.setAttribute("aria-label", t("sub.label"));
+  bar.className = "subbar pillset scroll" + (anim ? " still" : ""); bar.setAttribute("role", "group"); bar.setAttribute("aria-label", t("sub.label"));
   bar.innerHTML = chips("btn");
   el.insertBefore(bar, el.children[1] || null);
   var cu = $('#side .nl[aria-current="page"]');
-  if (cu) { var d = document.createElement("div"); d.className = "subs"; d.innerHTML = chips("sl"); cu.parentNode.insertBefore(d, cu.nextSibling); }
+  if (cu) { var d = document.createElement("div"); d.className = "subs" + (anim ? " still" : ""); d.innerHTML = chips("sl"); cu.parentNode.insertBefore(d, cu.nextSibling); }
 }
-ACT.sub = function (id) { S.sub = S.sub || {}; S.sub[R.view] = id; save(); render(false); };
+ACT.sub = function (id) { S.sub = S.sub || {}; S.sub[R.view] = id; save(); BL.subAnim = true; render(false); BL.subAnim = false; };
 
 /* celebration: confetti and a check mark, like a delivery app after an order */
 BL.cele = function (o) {
   o = o || {};
   var red = S.reduce || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   if (red) return;
-  var big = !!o.big, root = document.createElement("div"); root.className = "cele"; root.setAttribute("aria-hidden", "true");
+  var big = !!o.big, root = document.createElement("div"); root.className = "cele" + (big ? " big" : ""); root.setAttribute("aria-hidden", "true");
   var x = window.innerWidth / 2, y = window.innerHeight * 0.42;
   if (!big && o.el && o.el.getBoundingClientRect) { var r = o.el.getBoundingClientRect(); x = r.left + r.width / 2; y = r.top + r.height / 2; }
-  var n = big ? 44 : 16, i;
-  for (i = 0; i < n; i++) {
-    var p = document.createElement("i"); p.className = "cf c" + (i % 5) + (i % 3 === 0 ? " dot" : "");
-    p.style.left = x + "px"; p.style.top = y + "px"; root.appendChild(p);
-    var a = Math.random() * Math.PI * 2, v = (big ? 140 : 60) + Math.random() * (big ? 200 : 70), dx = Math.cos(a) * v, dy = Math.sin(a) * v - (big ? 60 : 30), rot = (Math.random() * 720 - 360);
-    if (p.animate) p.animate([{ transform: "translate(-50%,-50%) scale(.4)", opacity: 1 }, { transform: "translate(" + dx + "px," + dy + "px) rotate(" + rot / 2 + "deg) scale(1)", opacity: 1, offset: 0.55 }, { transform: "translate(" + dx * 1.1 + "px," + (dy + 150) + "px) rotate(" + rot + "deg) scale(.8)", opacity: 0 }], { duration: 950 + Math.random() * 700, easing: "cubic-bezier(.2,.7,.3,1)", fill: "forwards" });
+  function ring(d, size, dur) { var g = document.createElement("i"); g.className = "ring"; g.style.cssText = "left:" + x + "px;top:" + y + "px;--s:" + size + "px;animation-delay:" + d + "ms;animation-duration:" + dur + "ms"; root.appendChild(g); }
+  function star(dx, dy, d, sz) {
+    var g = document.createElement("i"); g.className = "spark"; g.style.cssText = "left:" + (x + dx) + "px;top:" + (y + dy) + "px;--z:" + sz + "px;animation-delay:" + d + "ms";
+    g.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12z"/></svg>'; root.appendChild(g);
+  }
+  function burst(n, delay, power, life) {
+    for (var i = 0; i < n; i++) {
+      var p = document.createElement("i"); p.className = "cf c" + (i % 5) + (i % 3 === 0 ? " dot" : i % 7 === 0 ? " bar" : "");
+      p.style.left = x + "px"; p.style.top = y + "px"; p.style.opacity = 0; root.appendChild(p);
+      var a = Math.random() * Math.PI * 2, v = power * (0.45 + Math.random() * 0.75), dx = Math.cos(a) * v, dy = Math.sin(a) * v - power * 0.25, rot = Math.random() * 900 - 450, sway = (Math.random() - 0.5) * 70;
+      if (p.animate) p.animate([
+        { transform: "translate(-50%,-50%) scale(.3) rotate(0deg)", opacity: 0 },
+        { transform: "translate(" + dx * 0.8 + "px," + dy * 0.8 + "px) rotate(" + rot * 0.4 + "deg) scale(1.1)", opacity: 1, offset: 0.35 },
+        { transform: "translate(" + (dx + sway) + "px," + (dy + power * 0.55) + "px) rotate(" + rot * 0.8 + "deg) scale(1)", opacity: 1, offset: 0.75 },
+        { transform: "translate(" + (dx + sway * 1.6) + "px," + (dy + power * 0.9) + "px) rotate(" + rot + "deg) scale(.85)", opacity: 0 }
+      ], { duration: life * (0.8 + Math.random() * 0.5), delay: delay + Math.random() * 120, easing: "cubic-bezier(.15,.7,.3,1)", fill: "both" });
+    }
   }
   if (big) {
+    ring(0, 230, 1500); ring(260, 330, 1700); ring(520, 430, 1900);
+    burst(34, 150, 230, 2300); burst(30, 650, 300, 2500); burst(22, 1200, 190, 2200);
+    star(-86, -70, 500, 20); star(92, -58, 700, 26); star(-70, 74, 900, 16); star(80, 80, 1050, 22); star(2, -108, 1200, 18);
     var b = document.createElement("div"); b.className = "cbadge";
-    b.innerHTML = '<svg viewBox="0 0 52 52" width="76" height="76"><circle class="cc" cx="26" cy="26" r="23"/><path class="ck" d="M15 27.5l7.5 7.5L38 18.5"/></svg>' + (o.cap ? '<span class="ccap">' + esc(o.cap) + "</span>" : "");
+    b.innerHTML = '<svg viewBox="0 0 52 52" width="92" height="92"><circle class="cc" cx="26" cy="26" r="23"/><path class="ck" d="M15 27.5l7.5 7.5L38 18.5"/></svg>' + (o.cap ? '<span class="ccap">' + esc(o.cap) + "</span>" : "");
     root.appendChild(b);
-    var tp = $("#top"); if (tp) { tp.classList.add("cheer"); setTimeout(function () { tp.classList.remove("cheer"); }, 900); }
+    var tp = $("#top"); if (tp) { tp.classList.add("cheer"); setTimeout(function () { tp.classList.remove("cheer"); }, 1400); }
+  } else {
+    ring(0, 90, 800); ring(180, 140, 900);
+    burst(22, 40, 90, 1500); star(-26, -22, 120, 14); star(30, -18, 220, 11);
   }
   document.body.appendChild(root);
-  setTimeout(function () { if (root.parentNode) root.parentNode.removeChild(root); }, big ? 2300 : 1700);
+  setTimeout(function () { if (root.parentNode) root.parentNode.removeChild(root); }, big ? 4600 : 2200);
 };
 
 function render(top) {
