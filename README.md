@@ -16,4 +16,4 @@
 ## מבנה
 `index.html` · `styles.css` · `i18n.js` (מילון עברית/אנגלית) · `data.js` (נתוני דוגמה) · `audio.js` · `app-core.js` · `views-a.js` · `views-b.js`
 
-הקובץ `index.html` נכתב כקטע עמוד לפרסום כ-Artifact (בלי doctype), ולכן לפרסום עצמאי יש לעטוף אותו ב-`<!doctype html><html lang="he" dir="rtl"><head>...</head><body>...</body></html>`.
+`index.html` הוא עמוד מלא ומוכן לפרסום כאתר סטטי (GitHub Pages, Vercel ודומיהם), בלי שלב בנייה.
