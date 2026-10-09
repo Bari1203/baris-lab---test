@@ -458,6 +458,7 @@ V.settings = {
     h += '<section class="card stack"><h2>' + t("set.look") + '</h2><div class="fld"><label for="st-theme">' + t("set.theme") + '</label><select id="st-theme" data-ch="sttheme">' + opt("light", t("th.light"), S.theme) + opt("dark", t("th.dark"), S.theme) + opt("auto", t("th.auto"), S.theme) + '</select></div><label class="chk"><input type="checkbox" data-ch="stmotion"' + (S.reduce ? " checked" : "") + ">" + t("set.reduce") + "</label></section>";
     h += '<section class="card stack"><h2>' + t("set.music") + "</h2><p class=\"muted\">" + t("set.music.t") + '</p><button class="btn" data-act="music">' + ic("music", 18) + " " + t("music") + "</button></section>";
     h += '<section class="card stack"><h2>' + t("set.role") + '</h2><p class="muted">' + t("set.role.t") + '</p><div class="fld"><label for="st-role">' + t("role.now") + '</label><select id="st-role" data-ch="strole">' + ["guest", "user", "admin"].map(function (r) { return opt(r, t("role." + r), S.role); }).join("") + "</select></div></section>";
+    h += '<section class="card stack"><h2>' + t("tm.set") + "</h2>" + (S.terms ? '<p class="muted">' + t("tm.signed", { n: esc(S.terms.name), d: BL.fmtD(new Date(S.terms.ts), { day: "numeric", month: "long", year: "numeric" }), v: esc(S.terms.v) }) + '</p><img class="sigimg" alt="" src="' + S.terms.sig + '">' : "") + '<div class="rowf"><button class="btn" data-act="tmshow">' + t("tm.view") + '</button><button class="btn ghost" data-act="tmrevoke">' + t("tm.revoke") + "</button></div></section>";
     h += '<section class="card stack"><h2>' + t("set.data") + '</h2><p class="muted">' + t("set.data.t") + '</p><div class="rowf"><button class="btn" data-act="bkcopy">' + t("set.backup") + '</button><button class="btn" data-act="bkopen">' + t("set.restore") + '</button></div><button class="btn" data-act="reset">' + t("set.reset") + "</button></section>";
     return h + "</div>";
   }
@@ -518,6 +519,61 @@ ACT.adpub = function (tk) {
   S.notifs.unshift({ id: BL.uid(), type: "scn", ticker: tk, ts: Date.now(), read: false, text: t("ad.pubnotif", { t: tk, v: ver }) });
   BL.save(); BL.closeModal(); BL.render(false); BL.toast(t("ad.published", { t: tk, v: ver }));
 };
+
+/* ------------------------------------------------------------ terms gate */
+/* DRAFT text. Not reviewed by a lawyer. Placeholders in [brackets] must be filled and the whole text replaced or approved before any public release. */
+var TERMS = [
+  ["1. מהות האתר", ["BARI'S LAB (להלן: \"האתר\") הוא אתר לימוד ומחקר בתחום קריאת מחיר, שמשתף ידע, שיטת עבודה ותיעוד אישי של [שם המפעיל המלא] (להלן: \"המפעיל\"). האתר נועד ללמד ולשתף ידע בלבד.", "האתר אינו שירות פיננסי, אינו מתווך, אינו מחובר לחשבון מסחר ואינו מבצע פעולות בשמך."]],
+  ["2. אין ייעוץ, שיווק או ניהול השקעות", ["המפעיל אינו בעל רישיון ייעוץ השקעות, שיווק השקעות או ניהול תיקי השקעות לפי חוק הסדרת העיסוק בייעוץ השקעות, בשיווק השקעות ובניהול תיקי השקעות, התשנ\"ה-1995, ואינו מתיימר לפעול כאחד מהם.", "שום דבר באתר אינו ייעוץ, שיווק או ניהול השקעות, ואינו מותאם לצרכים, למצב הפיננסי או לנסיבות שלך."]],
+  ["3. אין המלצה לפעולה", ["הרדאר, הציונים, האזורים, חדר ההמתנה, התרחישים, הסקירות והדוגמאות הם כלי לימוד ומחקר. הם מתארים מה קרה למחיר ותרחישים אפשריים, ואינם הוראה, המלצה או הצעה לקנות, למכור, להחזיק או להמתין לנכס כלשהו.", "אזכור של נכס, מחיר, אזור, כניסה, סטופ או יעד באתר הוא להמחשה ולימוד בלבד."]],
+  ["4. סיכון", ["מסחר בשוק ההון, בחוזים עתידיים, במט\"ח ובמטבעות דיגיטליים כרוך בסיכון גבוה, וכולל אפשרות להפסיד את מלוא ההשקעה ואף יותר (במכשירים ממונפים).", "ביצועי עבר, תיעוד של עסקאות קודמות ותוצאות של אחרים אינם מעידים על העתיד ואינם מבטיחים רווח."]],
+  ["5. נתונים ותיעוד", ["הנתונים באתר, כולל מחירים, ציונים, גרפים וסטטיסטיקות, הם דוגמה להמחשה ואינם מחירי שוק. ייתכנו טעויות ואי דיוקים.", "תיעוד של עסקאות או תרחישים של המפעיל הוא תיאור של מה שהוא עשה או חשב, ואינו הצעה או הנחיה לחקות אותו. סטטיסטיקה על מדגם קטן אינה מלמדת על דבר."]],
+  ["6. גילוי נאות וניגוד עניינים", ["המפעיל סוחר בעצמו, בין היתר בחוזים עתידיים, במניות ובמטבעות דיגיטליים, בחשבון אישי ובחשבון נוסטרו, ועשוי להחזיק או לבצע עסקאות בנכסים המוזכרים באתר, לפני הפרסום או אחריו.", "[יש להשלים: האם יש או יהיה תשלום, עמלה, שיתוף פעולה או תמורה כלשהי הקשורים לנכס, לברוקר או לשירות המוזכרים באתר.]"]],
+  ["7. האחריות שלך", ["כל החלטה פיננסית וכל פעולה שתבצע היא על אחריותך הבלעדית. אתה מבין שהאתר לא ייתן לך הוראות פעולה, ושאתה מקבל החלטות בעצמך.", "מומלץ להתייעץ עם יועץ השקעות מורשה לפני כל החלטה. אתה מאשר שלא תסתמך על האתר כבסיס יחיד להחלטת השקעה.", "אתה מאשר שאתה בן 18 ומעלה."]],
+  ["8. הגבלת אחריות", ["במידה המרבית המותרת לפי דין, המפעיל לא יישא באחריות לכל נזק או הפסד, ישיר או עקיף, שייגרמו מהשימוש באתר או מהסתמכות עליו. הגבלה זו אינה גורעת מזכויות שאינן ניתנות להגבלה לפי דין."]],
+  ["9. קניין רוחני", ["התוכן, השיטה, הניסוחים, העיצוב והמיתוג באתר שייכים למפעיל. אין להעתיק, להפיץ, למכור או לפרסם אותם ללא אישור בכתב."]],
+  ["10. פרטיות ושמירת נתונים", ["בגרסה הנוכחית הנתונים שאתה מזין (יומן, התראות, העדפות) נשמרים בדפדפן שלך בלבד ואינם נשלחים לשרת. בגרסה עתידית עם הרשמה וחשבונות, יפורטו אילו נתונים נאספים, למה, והיכן הם נשמרים, בהתאם לחוק הגנת הפרטיות. [יש להשלים בעת הקמת חשבונות.]"]],
+  ["11. שינוי התנאים", ["התנאים עשויים להשתנות. כשיפורסם נוסח חדש, תתבקש לאשר אותו מחדש כדי להמשיך להשתמש באתר."]],
+  ["12. דין וסמכות שיפוט", ["על התנאים יחול הדין הישראלי. סמכות השיפוט הבלעדית נתונה לבתי המשפט המוסמכים ב-[עיר]."]]
+];
+BL.termsText = function () { return TERMS; };
+function termsAccordion() { return TERMS.map(function (x) { return '<details class="faq"><summary>' + esc(x[0]) + "</summary><div>" + x[1].map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("") + "</div></details>"; }).join(""); }
+V.terms = {
+  html: function () {
+    var h = '<div class="termswrap"><div class="rowf" style="justify-content:space-between"><div class="brand static">' + BL.logo() + '<span class="bt">BARI\'S LAB</span></div><button class="langbtn" data-act="lang">' + (S.lang === "he" ? "EN" : "עב") + "</button></div>";
+    h += "<h1>" + t("tm.h") + '</h1><p class="notice xs">' + t("tm.draft") + "</p>";
+    if (S.lang !== "he") h += '<p class="notice mint xs">' + t("tm.heonly") + "</p>";
+    h += '<section class="card tint"><h2>' + t("tm.short") + '</h2><ul class="mlist">' + [1, 2, 3, 4, 5].map(function (i) { return "<li>" + t("tm.s" + i) + "</li>"; }).join("") + "</ul></section>";
+    h += '<h2 style="margin-top:18px">' + t("tm.full") + '</h2><div class="stack">' + termsAccordion() + "</div>";
+    h += '<section class="card stack sigcard"><h2>' + t("tm.agree") + "</h2>" + [1, 2, 3, 4].map(function (i) { return '<label class="chk"><input type="checkbox" id="tm-c' + i + '"> ' + t("tm.c" + i) + "</label>"; }).join("") +
+      '<div class="fld"><label for="tm-name">' + t("tm.name") + '</label><input type="text" id="tm-name" autocomplete="name"></div>' +
+      '<div class="fld"><label for="sigc">' + t("tm.sig") + '</label><div class="sigbox"><canvas id="sigc" width="640" height="200" aria-label="' + esc(t("tm.sig")) + '"></canvas></div><div class="rowf"><button type="button" class="btn sm" data-act="tmclear">' + t("tm.clear") + '</button><span class="xs muted">' + t("tm.sig.h") + '</span></div></div>' +
+      '<span class="err" id="tm-err" role="alert"></span><button class="btn acc big" data-act="tmsign">' + t("tm.sign") + '</button><p class="xs muted">' + t("tm.local") + "</p></section></div>";
+    return h;
+  },
+  mount: function (el) {
+    var c = el.querySelector("#sigc"); if (!c) return;
+    var x = c.getContext("2d"), dr = false, last = null;
+    x.lineWidth = 3.2; x.lineCap = "round"; x.lineJoin = "round"; x.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#123C3A";
+    BL.sigDirty = false;
+    function pt(e) { var r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height }; }
+    c.addEventListener("pointerdown", function (e) { dr = true; last = pt(e); try { c.setPointerCapture(e.pointerId); } catch (er) {} x.beginPath(); x.moveTo(last.x, last.y); x.lineTo(last.x + 0.1, last.y + 0.1); x.stroke(); BL.sigDirty = true; e.preventDefault(); });
+    c.addEventListener("pointermove", function (e) { if (!dr) return; var p = pt(e); x.beginPath(); x.moveTo(last.x, last.y); x.lineTo(p.x, p.y); x.stroke(); last = p; e.preventDefault(); });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (n) { c.addEventListener(n, function () { dr = false; }); });
+  }
+};
+ACT.tmclear = function () { var c = document.getElementById("sigc"); if (c) { c.getContext("2d").clearRect(0, 0, c.width, c.height); BL.sigDirty = false; } };
+ACT.tmsign = function () {
+  var err = document.getElementById("tm-err"), c = document.getElementById("sigc"), name = (document.getElementById("tm-name").value || "").trim();
+  var all = [1, 2, 3, 4].every(function (i) { return document.getElementById("tm-c" + i).checked; });
+  if (!all) { err.textContent = t("tm.e.checks"); return; }
+  if (name.length < 2) { err.textContent = t("tm.e.name"); document.getElementById("tm-name").focus(); return; }
+  if (!BL.sigDirty) { err.textContent = t("tm.e.sig"); return; }
+  S.terms = { v: BL.TERMS_V, name: name, ts: Date.now(), sig: c.toDataURL("image/png"), lang: S.lang };
+  BL.save(); BL.go("home"); BL.toast(t("tm.done")); BL.cele({ big: 1, cap: t("tm.cele") });
+};
+ACT.tmshow = function () { BL.openModal({ title: t("tm.h"), body: '<div class="stack">' + termsAccordion() + "</div>" }); };
+ACT.tmrevoke = function (a, el) { BL.confirmClick(el, function () { S.terms = null; BL.save(); BL.render(true); }); };
 
 BL.start();
 })();

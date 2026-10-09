@@ -320,9 +320,15 @@ BL.cele = function (o) {
   setTimeout(function () { if (root.parentNode) root.parentNode.removeChild(root); }, big ? 4600 : 2200);
 };
 
+BL.logo = function () { return logo(); };
+BL.TERMS_V = "0.1-draft";
+BL.needTerms = function () { return !(S.terms && S.terms.v === BL.TERMS_V); };
 function render(top) {
   applySettings();
   if (!visibleView(R.view)) { R.view = "home"; R.arg = null; }
+  /* terms gate: nothing else is reachable until the current version is signed */
+  var gated = BL.needTerms(); if (gated) { R.view = "terms"; R.arg = null; }
+  document.body.classList.toggle("gated", gated);
   try { renderShell(); } catch (e) { console.error(e); }
   var v = V[R.view] || V.home, el = $("#view");
   try {

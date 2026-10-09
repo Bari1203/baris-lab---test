@@ -570,3 +570,15 @@ main.pg .tiles>*:nth-child(n+5),main.pg .hgrid>*:nth-child(n+5),main.pg .rail>*:
 .trbox legend{font-weight:700;padding-inline:6px}
 .slogan{font-family:Inter,sans-serif;font-weight:700;font-size:12px;letter-spacing:.14em;color:var(--hero-sub);margin:2px 0 8px;opacity:.9}
 .crit{background:var(--mint);border-radius:16px;padding:12px 14px;margin:10px 0 4px}
+
+/* terms gate */
+body.gated .side,body.gated .bottom,body.gated .mini,body.gated .top,body.gated .banner{display:none!important}
+body.gated .app{display:block}
+.termswrap{max-width:720px;margin:0 auto;padding-block:24px;display:grid;gap:14px}
+.termswrap h1{margin:6px 0}
+.brand.static{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em}
+.sigcard{margin-top:6px}
+.sigbox{border:2px dashed var(--line2);border-radius:16px;background:var(--surface);touch-action:none}
+.sigbox canvas{display:block;width:100%;height:140px;touch-action:none;cursor:crosshair}
+.sigimg{max-width:260px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:6px}
+.btn.big{min-height:52px;font-size:17px}
