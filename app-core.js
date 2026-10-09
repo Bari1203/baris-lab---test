@@ -235,12 +235,17 @@ var SUBG = {
   wait: function (k) { var i = -1; k.forEach(function (n, j) { if (i < 0 && hc(n, "sectitle")) i = j; }); if (i < 3) return null; return [["mine", k.slice(2, i)], ["sug", k.slice(i)]]; },
   weekly: function (k) {
     var l = first(k, "layer"), g = first(k, "grid"), f = first(k, "folds"); if (!l || !g || !f) return null; var c = kd(f);
-    return [["concl", [l]], ["market", [g.children[0]]], ["events", [g.children[1]]], ["radar", [c[0]]], ["wait", [c[1]]], ["new", [c[2]]], ["risks", [c[3], c[4]]]];
+    return [["concl", [l]], ["nqes", [c[0]]], ["market", [g.children[0]]], ["events", [g.children[1]]], ["radar", [c[1]]], ["wait", [c[2]]], ["new", [c[3]]], ["risks", [c[4], c[5]]]];
   },
   events: function (k) { return k.length > 3 ? [["daily", [k[1]]], ["evlist", k.slice(2)]] : null; },
-  journal: function (k) { var g = k[k.length - 1]; return hc(g, "grid") && k.length > 4 ? [["diary", k.slice(2, k.length - 1)], ["summary", [g]]] : null; },
+  journal: function (k) { var g = k[k.length - 1], st = first(k, "jstats"); return hc(g, "grid") && st && k.length > 5 ? [["diary", k.slice(2, k.indexOf(st))], ["stats", [st]], ["summary", [g]]] : null; },
   history: function (k) { return k.length > 4 ? [["counts", [k[2]]], ["recs", [k[1], k[3]]], ["rules", [k[k.length - 1]]]] : null; },
-  learn: function (k) { return hc(k[1], "tint") && k.length > 3 ? [["ex", [k[1]]], ["lessons", k.slice(2)]] : null; },
+  learn: function (k) {
+    if (!hc(k[1], "tint") || k.length < 4) return null;
+    var st = k.filter(function (n) { return hc(n, "sectitle"); }); if (st.length < 2) return [["ex", [k[1]]], ["lessons", k.slice(2)]];
+    var i1 = k.indexOf(st[0]), i2 = k.indexOf(st[1]);
+    return [["ex", [k[1]]], ["method", k.slice(i1, i2)], ["base", k.slice(i2)]];
+  },
   help: function (k) { return k.length > 5 ? [["faq", [k[1]]], ["works", k.slice(2, 5)], ["gloss", [k[5]]]] : null; }
 };
 function applySub(el) {

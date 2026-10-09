@@ -29,11 +29,20 @@ function evList() {
       '<div class="rowf"><span class="sample">' + t("sample") + '</span><span class="xs muted">' + t("ev.src") + '</span></div><div class="rowf"><button class="btn sm ghost" data-act="hint" aria-expanded="false">' + t("ev.why") + '</button><span class="hinttext" hidden>' + esc(Lx(e.why)) + '</span><button class="btn sm" data-act="evj" data-arg="' + e.id + '">' + t("ev.tojournal") + '</button><button class="btn sm" data-act="evrem" data-arg="' + e.id + '">' + t("ev.remind") + "</button></div></div></article>";
   }).join("");
 }
+function nyNow() {
+  var p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+  return { h: +p.hour % 24, m: +p.minute };
+}
+function critHtml() {
+  var n = nyNow(), mins = n.h * 60 + n.m;
+  function until(h) { var d = h * 60 - mins; if (d <= 0) d += 1440; return Math.floor(d / 60) + ":" + BL.pad(d % 60); }
+  return '<div class="crit"><div class="rowf" style="justify-content:space-between"><b>' + t("crit.h") + '</b><span class="chip">' + t("crit.now") + ' <span class="num ltr">' + BL.pad(n.h) + ":" + BL.pad(n.m) + '</span></span></div><div class="grid g2" style="margin-top:8px"><div class="kv"><span class="k"><span class="num ltr">17:00</span></span><span class="v">' + t("crit.17") + ' <span class="xs muted">· ' + t("crit.in") + " " + until(17) + '</span></span></div><div class="kv"><span class="k"><span class="num ltr">04:00</span></span><span class="v">' + t("crit.04") + ' <span class="xs muted">· ' + t("crit.in") + " " + until(4) + '</span></span></div></div><p class="xs muted" style="margin-top:6px">' + t("crit.n") + "</p></div>";
+}
 V.events = {
   html: function () {
     var f = ef();
     var h = '<div class="ph"><div><h1>' + t("ev.h") + "</h1><p>" + t("ev.sub") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
-    h += '<section class="card" style="margin-bottom:14px"><h2>' + t("ev.daily") + '</h2><p class="muted">' + t("ev.daily.t") + '</p><div class="rowf" style="margin-top:10px">' + Object.keys(S.fav).slice(0, 4).map(function (k) { return '<button class="btn sm" data-act="gochart" data-arg="' + k + '">' + ic("chart", 18) + " <b class=\"ltr\">" + k + "</b></button>"; }).join("") + '<button class="btn sm" disabled aria-disabled="true">' + t("ev.sessions") + '</button><button class="btn sm" data-act="nav" data-arg="learn">' + t("ev.adv") + "</button></div></section>";
+    h += '<section class="card" style="margin-bottom:14px"><h2>' + t("ev.daily") + '</h2><p class="muted">' + t("ev.daily.t") + '</p>' + critHtml() + '<div class="rowf" style="margin-top:10px">' + Object.keys(S.fav).slice(0, 4).map(function (k) { return '<button class="btn sm" data-act="gochart" data-arg="' + k + '">' + ic("chart", 18) + " <b class=\"ltr\">" + k + "</b></button>"; }).join("") + '<button class="btn sm" disabled aria-disabled="true">' + t("ev.sessions") + '</button><button class="btn sm" data-act="nav" data-arg="learn">' + t("ev.adv") + "</button></div></section>";
     h += '<div class="toolbar"><div class="pillset" role="group" aria-label="' + esc(t("ev.impact")) + '">' + ["high", "med", "low"].map(function (k) { return '<button class="btn' + (f.imp[k] ? " on" : "") + '" data-act="evimp" data-arg="' + k + '" aria-pressed="' + (!!f.imp[k]) + '">' + t("imp." + k) + "</button>"; }).join("") + "</div>" +
       '<select data-ch="evf" data-arg="per" aria-label="' + esc(t("ev.period")) + '">' + opt("day", t("ev.day"), f.per) + opt("week", t("ev.week"), f.per) + "</select>" +
       '<select data-ch="evf" data-arg="cur" aria-label="' + esc(t("ev.cur")) + '">' + opt("", t("ev.allcur"), f.cur) + ["USD", "EUR", "GBP", "JPY"].map(function (c) { return opt(c, c, f.cur); }).join("") + "</select>" +
@@ -70,7 +79,7 @@ function entryCard(e) {
   var note = e.note ? esc(e.note.length > 170 ? e.note.slice(0, 170) + "…" : e.note) : "";
   return '<article class="entry' + (e.status !== "open" ? " done" : "") + '"><div class="rowf" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><h3>' + esc(e.title) + '</h3><span class="chip">' + t("jt." + e.type) + '</span></div><div class="rowf xs muted"><span>' + BL.fmtD(pd(e.date), { weekday: "short", day: "numeric", month: "short" }) + " " + esc(e.time) + "</span>" + (e.ticker ? '<span class="chip">' + ltr(e.ticker) + "</span>" : "") + '<span class="chip">' + t("js." + e.status) + "</span>" + (e.rem ? "<span>" + t("je.rem.short") + "</span>" : "") + "<span>" + t("je.rel") + ": " + t("rel." + e.rel) + "</span></div>" + (note ? '<p class="sm">' + note + "</p>" : "") +
     (e.scn ? '<p class="sm"><b>' + t("je.scn") + ":</b> " + esc(e.scn) + "</p>" : "") + (e.chg ? '<p class="sm"><b>' + t("je.chg") + ":</b> " + esc(e.chg) + "</p>" : "") +
-    ((e.tags || []).length ? '<div class="rowf">' + e.tags.map(function (g) { return '<span class="chip">' + esc(g) + "</span>"; }).join("") + "</div>" : "") +
+    (e.tr ? '<div class="rowf">' + [e.tr.acct && t("tr.acct." + e.tr.acct), e.tr.side && t("tr.side." + e.tr.side), e.tr.grade, e.tr.ctype && (t("tr.ctype") + " " + e.tr.ctype), e.tr.res && t("tr.res." + e.tr.res), e.tr.pnl && ("P&L " + e.tr.pnl)].filter(Boolean).map(function (x) { return '<span class="chip">' + esc(x) + "</span>"; }).join("") + (trRR(e.tr) ? '<span class="chip">R:R 1:' + trRR(e.tr).toFixed(1) + "</span>" : "") + "</div>" : "") + ((e.tags || []).length ? '<div class="rowf">' + e.tags.map(function (g) { return '<span class="chip">' + esc(g) + "</span>"; }).join("") + "</div>" : "") +
     '<div class="rowf"><button class="btn sm" data-act="jedit" data-arg="' + e.id + '">' + t("edit") + '</button><button class="btn sm" data-act="jstat" data-arg="' + e.id + '">' + t(e.status === "open" ? "je.close" : "je.reopen") + '</button><button class="btn sm ghost" data-act="jdel" data-arg="' + e.id + '">' + t("delete") + "</button></div></article>";
 }
 function jSummary() {
@@ -123,7 +132,7 @@ V.journal = {
     h += '<div class="toolbar"><div class="pillset" role="group" aria-label="' + esc(t("js.views")) + '">' + ["month", "week", "day", "list"].map(function (k) { return '<button class="btn' + (v.view === k ? " on" : "") + '" data-act="jview" data-arg="' + k + '" aria-pressed="' + (v.view === k) + '">' + t("jv." + k) + "</button>"; }).join("") + "</div>" +
       (v.view !== "list" ? '<div class="rowf"><button class="btn" data-act="jnav" data-arg="-1" aria-label="' + esc(t("prev")) + '">' + (S.lang === "he" ? "›" : "‹") + '</button><button class="btn" data-act="jtoday">' + t("js.today") + '</button><button class="btn" data-act="jnav" data-arg="1" aria-label="' + esc(t("next")) + '">' + (S.lang === "he" ? "‹" : "›") + "</button></div>" : "") + '<b id="jlabel" style="font-size:18px">' + esc(jLabel()) + "</b></div>";
     h += '<div class="toolbar"><div class="grow"><label class="vh" for="jq">' + t("js.search") + '</label><input type="search" id="jq" data-in="jq" placeholder="' + esc(t("js.search")) + '" value="' + esc(v.q || "") + '"></div><select data-ch="jf" data-arg="type" aria-label="' + esc(t("je.type")) + '">' + opt("", t("js.alltype"), v.type) + JT.map(function (k) { return opt(k, t("jt." + k), v.type); }).join("") + '</select><select data-ch="jf" data-arg="status" aria-label="' + esc(t("je.status")) + '">' + opt("", t("js.allstatus"), v.status) + ["open", "closed", "cancelled"].map(function (k) { return opt(k, t("js." + k), v.status); }).join("") + "</select></div>";
-    h += '<div id="jbody">' + (S.journal.length ? jBody() : emptyJ()) + '</div><div class="grid g2" style="margin-top:18px">' + jSummary() + '<section class="card"><h2>' + t("js.fut") + "</h2><p class=\"muted\">" + t("js.fut.t") + "</p></section></div>";
+    h += '<div id="jbody">' + (S.journal.length ? jBody() : emptyJ()) + '</div>' + jStats() + '<div class="grid g2" style="margin-top:18px">' + jSummary() + '<section class="card"><h2>' + t("js.fut") + "</h2><p class=\"muted\">" + t("js.fut.t") + "</p></section></div>";
     return h;
   }
 };
@@ -148,6 +157,47 @@ ACT.jdel = function (id) {
   var rm = S.journal.splice(i, 1)[0]; jrefresh();
   BL.toast(t("je.deleted"), { label: t("undo"), fn: function () { S.journal.splice(Math.min(i, S.journal.length), 0, rm); jrefresh(); } });
 };
+/* structured trade fields, taken from the columns of Bari's journal */
+var TR = {
+  acct: ["", "nostro", "personal"], side: ["", "long", "short"], grade: ["", "PERFECT", "GOOD", "BAD"], ctype: ["", "a", "b", "c", "d"],
+  smt: ["", "yes", "both", "no"], tp: ["", "none", "TP1", "TP2", "final"], res: ["", "open", "win", "loss", "be"]
+};
+function trSel(id, k, cur, lab) { return '<div class="fld"><label for="tr-' + id + '">' + t("tr." + id) + '</label><select id="tr-' + id + '">' + TR[k].map(function (v) { return opt(v, v ? (lab ? t("tr." + id + "." + v) : v) : "—", cur || ""); }).join("") + "</select></div>"; }
+function trTxt(id, cur, ph) { return '<div class="fld"><label for="tr-' + id + '">' + t("tr." + id) + '</label><input type="text" id="tr-' + id + '" value="' + esc(cur || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + "></div>"; }
+function trForm(r) {
+  return '<fieldset class="trbox"><legend>' + t("tr.title") + '</legend><p class="xs muted">' + t("tr.note") + '</p><div class="fgrid">' +
+    trSel("acct", "acct", r.acct, 1) + trSel("side", "side", r.side, 1) + trSel("grade", "grade", r.grade) + trSel("ctype", "ctype", r.ctype) + trSel("smt", "smt", r.smt, 1) + trSel("tp", "tp", r.tp, 1) + trSel("res", "res", r.res, 1) +
+    trTxt("bisus", r.bisus, "8h, D, W...") + trTxt("etf", r.etf, "15m") + trTxt("poi", r.poi) + trTxt("candle", r.candle) + trTxt("exit", r.exit) +
+    trTxt("entry", r.entry) + trTxt("stop", r.stop) + trTxt("target", r.target) + trTxt("pnl", r.pnl, t("tr.pnl.ph")) + trTxt("link", r.link) + "</div></fieldset>";
+}
+function trRead(f) {
+  var r = {}; ["acct", "side", "grade", "ctype", "smt", "tp", "res", "bisus", "etf", "poi", "candle", "exit", "entry", "stop", "target", "pnl", "link"].forEach(function (k) { var el = f.querySelector("#tr-" + k); r[k] = el ? el.value.trim() : ""; });
+  return r;
+}
+function trRR(r) { var e = parseFloat(r.entry), s2 = parseFloat(r.stop), tg = parseFloat(r.target); if (isNaN(e) || isNaN(s2) || isNaN(tg) || e === s2) return null; return Math.abs(tg - e) / Math.abs(e - s2); }
+/* statistics: only real journal trades (not the sample ones), and a plain warning while the sample is small */
+function realTrades() {
+  return S.journal.filter(function (e) { return e.type === "trade" && e.tr && (e.tr.res === "win" || e.tr.res === "loss" || e.tr.res === "be") && !(e.tags || []).some(function (g) { return g === "דוגמה" || g === "Sample"; }); });
+}
+function statRow(label, a) {
+  var w = a.filter(function (e) { return e.tr.res === "win"; }).length, n = a.length;
+  return "<tr><th scope=\"row\">" + esc(label) + '</th><td class="num ltr">' + n + '</td><td class="num ltr">' + (n ? Math.round(w / n * 100) + "%" : "—") + "</td></tr>";
+}
+function jStats() {
+  var a = realTrades(), n = a.length;
+  var h = '<section class="card jstats"><h2>' + t("st.h") + '</h2><p class="xs muted">' + t("st.n") + "</p>";
+  if (!n) return h + '<div class="empty" style="margin-top:10px"><strong>' + t("st.none") + "</strong><span>" + t("st.none.t") + "</span></div></section>";
+  var w = a.filter(function (e) { return e.tr.res === "win"; }).length, l = a.filter(function (e) { return e.tr.res === "loss"; }).length;
+  var rrs = a.map(function (e) { return trRR(e.tr); }).filter(function (x) { return x != null; }), avgRR = rrs.length ? (rrs.reduce(function (x, y) { return x + y; }, 0) / rrs.length) : null;
+  h += '<div class="qas five" style="margin:10px 0"><div class="kv"><span class="k">' + t("st.trades") + '</span><span class="v num">' + n + '</span></div><div class="kv"><span class="k">' + t("st.winpct") + '</span><span class="v num ltr">' + Math.round(w / n * 100) + '%</span></div><div class="kv"><span class="k">' + t("st.wl") + '</span><span class="v num ltr">' + w + " / " + l + '</span></div><div class="kv"><span class="k">' + t("st.rr") + '</span><span class="v num ltr">' + (avgRR == null ? "—" : "1:" + avgRR.toFixed(1)) + "</span></div></div>";
+  if (n < 30) h += '<p class="notice warn xs">' + t("st.small", { n: n }) + "</p>";
+  function grp(title, key, vals, lab) {
+    var rows = vals.map(function (v) { var sub = a.filter(function (e) { return e.tr[key] === v; }); return sub.length ? statRow(lab ? t("tr." + key + "." + v) : v, sub) : ""; }).join("");
+    return rows ? '<h3 style="margin-top:12px">' + title + '</h3><div class="tblw"><table><thead><tr><th></th><th>' + t("st.trades") + "</th><th>" + t("st.winpct") + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>" : "";
+  }
+  h += grp(t("tr.acct"), "acct", ["nostro", "personal"], 1) + grp(t("tr.grade"), "grade", ["PERFECT", "GOOD", "BAD"]) + grp(t("tr.ctype"), "ctype", ["a", "b", "c", "d"]) + grp(t("tr.smt"), "smt", ["yes", "both", "no"], 1) + grp(t("tr.tp"), "tp", ["none", "TP1", "TP2", "final"], 1);
+  return h + "</section>";
+}
 BL.openEntry = function (pre) {
   pre = pre || {};
   var ex = pre.id ? S.journal.filter(function (x) { return x.id === pre.id; })[0] : null;
@@ -157,18 +207,20 @@ BL.openEntry = function (pre) {
     f("je-title", t("je.title"), '<input type="text" id="je-title" value="' + esc(d.title) + '" autofocus><span class="err" id="je-err" role="alert"></span>') +
     '<div class="fgrid">' + f("je-date", t("je.date"), '<input type="date" id="je-date" value="' + esc(d.date) + '">') + f("je-time", t("je.time"), '<input type="time" id="je-time" value="' + esc(d.time) + '">') + f("je-type", t("je.type"), '<select id="je-type" data-ch="jtype">' + JT.map(function (k) { return opt(k, t("jt." + k), d.type); }).join("") + "</select>") + f("je-ticker", t("je.ticker"), '<input type="text" id="je-ticker" class="ltr" list="je-tk" value="' + esc(d.ticker) + '" autocapitalize="characters"><datalist id="je-tk">' + D.items.map(function (s) { return '<option value="' + s.t + '">'; }).join("") + "</datalist>") + "</div>" +
     f("je-note", t("je.note"), '<textarea id="je-note">' + esc(d.note) + "</textarea>") +
+    '<div id="je-trw"' + (d.type === "trade" ? "" : " hidden") + ">" + trForm(d.tr || {}) + "</div>" +
     '<div id="je-exw"' + (d.type === "trade" ? "" : " hidden") + ">" + f("je-exec", t("je.exec"), '<textarea id="je-exec" rows="3">' + esc(d.exec) + '</textarea><span class="xs muted">' + t("je.exec.n") + "</span>") + "</div>" +
     f("je-scn", t("je.scn"), '<textarea id="je-scn" rows="3">' + esc(d.scn) + "</textarea>") + f("je-check", t("je.check"), '<input type="text" id="je-check" value="' + esc(d.check) + '">') + f("je-chg", t("je.chg"), '<input type="text" id="je-chg" value="' + esc(d.chg) + '">') +
     '<div class="fgrid">' + f("je-rel", t("je.rel"), '<select id="je-rel">' + [1, 2, 3].map(function (k) { return opt(k, t("rel." + k), d.rel); }).join("") + "</select>") + f("je-status", t("je.status"), '<select id="je-status">' + ["open", "closed", "cancelled"].map(function (k) { return opt(k, t("js." + k), d.status); }).join("") + "</select>") + f("je-tags", t("je.tags"), '<input type="text" id="je-tags" value="' + esc((d.tags || []).join(", ")) + '">') + "</div>" +
     '<label class="chk"><input type="checkbox" id="je-rem"' + (d.rem ? " checked" : "") + ">" + t("je.rem") + '</label><div class="actions"><button type="button" class="btn" data-act="close">' + t("cancel") + '</button><button class="btn acc" type="submit">' + t("save") + "</button></div></form>";
   BL.openModal({ title: t(ex ? "je.edit" : "je.new"), body: body });
 };
-CH.jtype = function (v) { var w = document.getElementById("je-exw"); if (w) w.hidden = v !== "trade"; };
+CH.jtype = function (v) { ["je-exw", "je-trw"].forEach(function (id) { var w = document.getElementById(id); if (w) w.hidden = v !== "trade"; }); };
 FORM.jentry = function (f) {
   var g = function (id) { return f.querySelector("#" + id); }, title = g("je-title").value.trim(), date = g("je-date").value;
   if (!title) { g("je-err").textContent = t("je.need.title"); g("je-title").focus(); return; }
   if (!date) { g("je-err").textContent = t("je.need.date"); g("je-date").focus(); return; }
   var rec = { title: title, date: date, time: g("je-time").value || "09:00", type: g("je-type").value, ticker: g("je-ticker").value.trim().toUpperCase(), note: g("je-note").value.trim(), scn: g("je-scn").value.trim(), check: g("je-check").value.trim(), chg: g("je-chg").value.trim(), rel: +g("je-rel").value, rem: g("je-rem").checked, status: g("je-status").value, exec: g("je-exec").value.trim(), tags: g("je-tags").value.split(",").map(function (x) { return x.trim(); }).filter(Boolean) };
+  if (rec.type === "trade") rec.tr = trRead(f);
   var id = g("je-id").value, ex = id ? S.journal.filter(function (x) { return x.id === id; })[0] : null;
   if (ex) Object.assign(ex, rec); else { rec.id = BL.uid(); S.journal.push(rec); }
   jv().sel = date; jv().cur = date; BL.save(); BL.closeModal(); BL.render(false); BL.toast(t("saved")); BL.cele({ big: 1, cap: t(ex ? "cele.edit" : "cele.journal") });
@@ -297,14 +349,30 @@ function lessonList() {
   var h = '<div class="ph"><div><h1>' + t("learn.h") + "</h1><p>" + t("learn.sub") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
   h += '<section class="card tint" style="margin-bottom:14px"><div class="rowf" style="justify-content:space-between"><div><h2>' + t("ex.title") + '</h2><p>' + t("ex.intro") + '</p></div><button class="btn acc" data-act="exstart">' + t("ex.start") + '</button></div></section>';
   h += '<div class="rowf" style="justify-content:space-between;margin-bottom:12px"><div class="pillset">' + [["", t("lv.all")], ["basic", t("lv.basic")], ["mid", t("lv.mid")], ["adv", t("lv.adv")]].map(function (x) { return '<button class="btn' + (lv === x[0] ? " on" : "") + '" data-act="lvl" data-arg="' + x[0] + '" aria-pressed="' + (lv === x[0]) + '">' + x[1] + "</button>"; }).join("") + '</div><span class="sm muted">' + t("learn.prog", { a: done, b: D.lessons.length }) + '</span></div><div class="progress" style="margin-bottom:14px"><i style="width:' + Math.round(done / D.lessons.length * 100) + '%"></i></div>';
-  h += '<div class="grid g2">' + D.lessons.filter(function (l) { return !lv || l.lv === lv; }).map(function (l) {
+  function lcards(a) { return '<div class="grid g2">' + a.map(function (l) {
     return '<article class="card"><div class="rowf" style="justify-content:space-between"><h3 style="margin:0">' + esc(Lx(l.ti)) + "</h3>" + lvChip(l) + '</div><div class="rowf" style="margin-top:12px"><button class="btn sm" data-act="lesson" data-arg="' + l.id + '">' + t(l.id === S.last ? "learn.cont" : "learn.open") + "</button>" + (S.done[l.id] ? '<span class="chip up">' + t("learn.done") + "</span>" : "") + "</div></article>";
-  }).join("") + "</div>";
+  }).join("") + "</div>"; }
+  var fl = D.lessons.filter(function (l) { return !lv || l.lv === lv; }), me = fl.filter(function (l) { return l.track === "method"; }), ba = fl.filter(function (l) { return l.track !== "method"; });
+  if (me.length) h += '<div class="sectitle"><h2>' + t("learn.method") + "</h2></div>" + lcards(me);
+  if (ba.length) h += '<div class="sectitle"><h2>' + t("learn.base") + "</h2></div>" + lcards(ba);
+  return h;
+}
+function lessonBody(l) {
+  if (!l.blk) return '<p style="font-size:18px;line-height:1.75">' + esc(Lx(l.body)) + "</p>";
+  if (S.lang !== "he") return '<p style="font-size:18px;line-height:1.75">' + esc(l.sum) + '</p><p class="notice mint xs">' + t("learn.heonly") + "</p>";
+  var h = '<p class="notice mint xs">' + t("method.intu") + "</p>";
+  l.blk.forEach(function (b) {
+    if (b.h) h += '<h2 style="margin:18px 0 6px">' + esc(b.h) + "</h2>";
+    if (b.p) h += '<p style="font-size:17px;line-height:1.75">' + esc(b.p) + "</p>";
+    if (b.ul) h += '<ul class="mlist">' + b.ul.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
+  });
+  if (l.tbl) h += '<div class="tblw" style="margin-top:12px"><table><thead><tr>' + l.tbl.head.map(function (x) { return "<th>" + esc(x) + "</th>"; }).join("") + "</tr></thead><tbody>" + l.tbl.rows.map(function (r) { return "<tr>" + r.map(function (c, i) { return i ? "<td>" + esc(c) + "</td>" : "<th scope=\"row\">" + esc(c) + "</th>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
+  if (l.id === "m9") h += '<p class="xs muted" style="margin-top:10px">' + t("m9.n") + "</p>";
   return h;
 }
 function lessonView(id) {
   var i = D.lessons.map(function (l) { return l.id; }).indexOf(id), l = D.lessons[i], nx = D.lessons[i + 1];
-  return '<div class="rowf"><button class="btn sm" data-act="nav" data-arg="learn">' + (S.lang === "he" ? "→ " : "← ") + t("back") + '</button></div><article class="card" style="margin-top:14px;max-width:760px"><div class="rowf">' + lvChip(l) + "</div><h1 style=\"margin:10px 0\">" + esc(Lx(l.ti)) + '</h1><p style="font-size:18px;line-height:1.75">' + esc(Lx(l.body)) + '</p><p class="xs muted" style="margin-top:12px">' + t("learn.n") + '</p><div class="rowf" style="margin-top:16px"><button class="btn' + (S.done[l.id] ? " on" : "") + '" data-act="ldone" data-arg="' + l.id + '" aria-pressed="' + (!!S.done[l.id]) + '">' + t(S.done[l.id] ? "learn.done" : "learn.markdone") + '</button>' + (nx ? '<button class="btn pri" data-act="lesson" data-arg="' + nx.id + '">' + t("learn.next") + "</button>" : "") + '<button class="btn" data-act="exstart">' + t("ex.start") + "</button></div></article>";
+  return '<div class="rowf"><button class="btn sm" data-act="nav" data-arg="learn">' + (S.lang === "he" ? "→ " : "← ") + t("back") + '</button></div><article class="card" style="margin-top:14px;max-width:760px"><div class="rowf">' + lvChip(l) + "</div><h1 style=\"margin:10px 0\">" + esc(Lx(l.ti)) + '</h1>' + lessonBody(l) + '<p class="xs muted" style="margin-top:12px">' + t("learn.n") + '</p><div class="rowf" style="margin-top:16px"><button class="btn' + (S.done[l.id] ? " on" : "") + '" data-act="ldone" data-arg="' + l.id + '" aria-pressed="' + (!!S.done[l.id]) + '">' + t(S.done[l.id] ? "learn.done" : "learn.markdone") + '</button>' + (nx ? '<button class="btn pri" data-act="lesson" data-arg="' + nx.id + '">' + t("learn.next") + "</button>" : "") + '<button class="btn" data-act="exstart">' + t("ex.start") + "</button></div></article>";
 }
 function exHtml() {
   var s = EX.step, h = '<div class="rowf"><button class="btn sm" data-act="nav" data-arg="learn">' + (S.lang === "he" ? "→ " : "← ") + t("back") + '</button><span class="sample">' + t("ex.sample") + "</span></div>";
@@ -344,7 +412,7 @@ var MAT = [
   ["m.nav", "works"], ["m.radar", "works"], ["m.watch", "works"], ["m.journal", "works"], ["m.alerts", "works"], ["m.music", "works"], ["m.admin", "works"],
   ["m.prices", "sample"], ["m.scn", "sample"], ["m.hist", "sample"], ["m.charts", "sample"], ["m.events", "sample"],
   ["m.tv", "ready"], ["m.sources", "ready"], ["m.ai", "ready"],
-  ["m.push", "server"], ["m.auto", "server"], ["m.auth", "server"], ["m.pay", "server"]
+  ["m.scan", "server"], ["m.wauto", "server"], ["m.notion", "server"], ["m.pine", "later"], ["m.push", "server"], ["m.auto", "server"], ["m.auth", "server"], ["m.pay", "server"]
 ];
 V.help = {
   html: function () {

@@ -560,3 +560,13 @@ main.pg .tiles>*:nth-child(n+5),main.pg .hgrid>*:nth-child(n+5),main.pg .rail>*:
 @keyframes badgein{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-12deg)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.14) rotate(3deg)}20%{transform:translate(-50%,-50%) scale(.97)}27%{transform:translate(-50%,-50%) scale(1)}78%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-64%) scale(.96)}}
 #top.cheer .brand svg,#top.cheer .brand .bt{animation:cheer 1.2s var(--ease)}
 @keyframes cheer{0%,100%{transform:none}25%{transform:scale(1.25) rotate(-10deg)}50%{transform:scale(1.1) rotate(7deg)}75%{transform:scale(1.15) rotate(-3deg)}}
+
+/* method track, trade form, hours */
+.mlist{margin:6px 0 10px;padding-inline-start:22px;display:grid;gap:8px;font-size:17px;line-height:1.7}
+.chip.tier.perfect{background:var(--up-bg);color:var(--up);font-weight:800}
+.chip.tier.good{background:var(--mint);color:var(--ink)}
+.chip.tier.watch{background:var(--warn-bg);color:var(--warn)}
+.trbox{border:1px dashed var(--line2);border-radius:16px;padding:12px;margin:0;display:grid;gap:8px}
+.trbox legend{font-weight:700;padding-inline:6px}
+.slogan{font-family:Inter,sans-serif;font-weight:700;font-size:12px;letter-spacing:.14em;color:var(--hero-sub);margin:2px 0 8px;opacity:.9}
+.crit{background:var(--mint);border-radius:16px;padding:12px 14px;margin:10px 0 4px}
