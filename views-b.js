@@ -458,7 +458,7 @@ V.settings = {
     h += '<section class="card stack"><h2>' + t("set.look") + '</h2><div class="fld"><label for="st-theme">' + t("set.theme") + '</label><select id="st-theme" data-ch="sttheme">' + opt("light", t("th.light"), S.theme) + opt("dark", t("th.dark"), S.theme) + opt("auto", t("th.auto"), S.theme) + '</select></div><label class="chk"><input type="checkbox" data-ch="stmotion"' + (S.reduce ? " checked" : "") + ">" + t("set.reduce") + "</label></section>";
     h += '<section class="card stack"><h2>' + t("set.music") + "</h2><p class=\"muted\">" + t("set.music.t") + '</p><button class="btn" data-act="music">' + ic("music", 18) + " " + t("music") + "</button></section>";
     h += '<section class="card stack"><h2>' + t("set.role") + '</h2><p class="muted">' + t("set.role.t") + '</p><div class="fld"><label for="st-role">' + t("role.now") + '</label><select id="st-role" data-ch="strole">' + ["guest", "user", "admin"].map(function (r) { return opt(r, t("role." + r), S.role); }).join("") + "</select></div></section>";
-    h += '<section class="card stack"><h2>' + t("tm.set") + "</h2>" + (S.terms ? '<p class="muted">' + t("tm.signed", { n: esc(S.terms.name), d: BL.fmtD(new Date(S.terms.ts), { day: "numeric", month: "long", year: "numeric" }), v: esc(S.terms.v) }) + '</p><img class="sigimg" alt="" src="' + S.terms.sig + '">' : "") + '<div class="rowf"><button class="btn" data-act="tmshow">' + t("tm.view") + '</button><button class="btn ghost" data-act="tmrevoke">' + t("tm.revoke") + "</button></div></section>";
+    h += '<section class="card stack"><h2>' + t("tm.set") + "</h2>" + (S.terms ? '<p class="muted">' + t("tm.signed", { n: esc(S.terms.name) + " (" + esc(S.terms.email || "") + ")", d: BL.fmtD(new Date(S.terms.ts), { day: "numeric", month: "long", year: "numeric" }), v: esc(S.terms.v) }) + '</p><img class="sigimg" alt="" src="' + S.terms.sig + '">' : "") + '<div class="rowf"><button class="btn" data-act="tmshow">' + t("tm.view") + '</button><button class="btn ghost" data-act="tmrevoke">' + t("tm.revoke") + "</button></div></section>";
     h += '<section class="card stack"><h2>' + t("set.data") + '</h2><p class="muted">' + t("set.data.t") + '</p><div class="rowf"><button class="btn" data-act="bkcopy">' + t("set.backup") + '</button><button class="btn" data-act="bkopen">' + t("set.restore") + '</button></div><button class="btn" data-act="reset">' + t("set.reset") + "</button></section>";
     return h + "</div>";
   }
@@ -537,16 +537,25 @@ var TERMS = [
   ["12. דין וסמכות שיפוט", ["על התנאים יחול הדין הישראלי. סמכות השיפוט הבלעדית נתונה לבתי המשפט המוסמכים ב-[עיר]."]]
 ];
 BL.termsText = function () { return TERMS; };
-function termsAccordion() { return TERMS.map(function (x) { return '<details class="faq"><summary>' + esc(x[0]) + "</summary><div>" + x[1].map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("") + "</div></details>"; }).join(""); }
+function termsFull() {
+  return '<article class="legal">' + TERMS.map(function (x) {
+    var m = x[0].match(/^(\d+)\.\s*(.*)$/);
+    return '<section class="clause"><span class="cn" aria-hidden="true">' + (m ? m[1] : "") + '</span><div><h3>' + esc(m ? m[2] : x[0]) + "</h3>" + x[1].map(function (p, i) { return "<p><b class=\"ci\">" + (m ? m[1] : "") + "." + (i + 1) + "</b> " + esc(p) + "</p>"; }).join("") + "</div></section>";
+  }).join("") + "</article>";
+}
 V.terms = {
   html: function () {
-    var h = '<div class="termswrap"><div class="rowf" style="justify-content:space-between"><div class="brand static">' + BL.logo() + '<span class="bt">BARI\'S LAB</span></div><button class="langbtn" data-act="lang">' + (S.lang === "he" ? "EN" : "עב") + "</button></div>";
-    h += "<h1>" + t("tm.h") + '</h1><p class="notice xs">' + t("tm.draft") + "</p>";
+    var d = BL.fmtD(new Date(), { day: "numeric", month: "long", year: "numeric" });
+    var h = '<div class="tmprog" id="tmprog"><i></i></div><div class="termswrap"><div class="rowf" style="justify-content:space-between"><div class="brand static">' + BL.logo() + '<span class="bt">BARI\'S LAB</span></div><button class="langbtn" data-act="lang">' + (S.lang === "he" ? "EN" : "עב") + "</button></div>";
+    h += '<header class="dochead"><span class="eyebrow">' + t("tm.form") + "</span><h1>" + t("tm.h") + '</h1><dl class="docmeta"><div><dt>' + t("tm.doc") + "</dt><dd>" + t("tm.docname") + "</dd></div><div><dt>" + t("tm.ver") + '</dt><dd class="ltr">' + BL.TERMS_V + "</dd></div><div><dt>" + t("tm.date") + "</dt><dd>" + d + "</dd></div></dl></header>";
+    h += '<p class="notice xs">' + t("tm.draft") + "</p>";
     if (S.lang !== "he") h += '<p class="notice mint xs">' + t("tm.heonly") + "</p>";
     h += '<section class="card tint"><h2>' + t("tm.short") + '</h2><ul class="mlist">' + [1, 2, 3, 4, 5].map(function (i) { return "<li>" + t("tm.s" + i) + "</li>"; }).join("") + "</ul></section>";
-    h += '<h2 style="margin-top:18px">' + t("tm.full") + '</h2><div class="stack">' + termsAccordion() + "</div>";
-    h += '<section class="card stack sigcard"><h2>' + t("tm.agree") + "</h2>" + [1, 2, 3, 4].map(function (i) { return '<label class="chk"><input type="checkbox" id="tm-c' + i + '"> ' + t("tm.c" + i) + "</label>"; }).join("") +
+    h += '<h2 class="parth"><span>' + t("tm.partA") + "</span> " + t("tm.full") + "</h2>" + termsFull();
+    h += '<h2 class="parth"><span>' + t("tm.partB") + "</span> " + t("tm.agree") + '</h2><section class="card stack sigcard">' +
       '<div class="fld"><label for="tm-name">' + t("tm.name") + '</label><input type="text" id="tm-name" autocomplete="name"></div>' +
+      '<div class="fld"><label for="tm-mail">' + t("tm.mail") + '</label><input type="email" id="tm-mail" class="ltr" autocomplete="email" inputmode="email" placeholder="name@example.com"><span class="xs muted">' + t("tm.mail.h") + "</span></div>" +
+      '<div class="checks">' + [1, 2, 3, 4].map(function (i) { return '<label class="chk"><input type="checkbox" id="tm-c' + i + '"> ' + t("tm.c" + i) + "</label>"; }).join("") + '<label class="chk soft"><input type="checkbox" id="tm-news"> ' + t("tm.news") + "</label></div>" +
       '<div class="fld"><label for="sigc">' + t("tm.sig") + '</label><div class="sigbox"><canvas id="sigc" width="640" height="200" aria-label="' + esc(t("tm.sig")) + '"></canvas></div><div class="rowf"><button type="button" class="btn sm" data-act="tmclear">' + t("tm.clear") + '</button><span class="xs muted">' + t("tm.sig.h") + '</span></div></div>' +
       '<span class="err" id="tm-err" role="alert"></span><button class="btn acc big" data-act="tmsign">' + t("tm.sign") + '</button><p class="xs muted">' + t("tm.local") + "</p></section></div>";
     return h;
@@ -560,19 +569,25 @@ V.terms = {
     c.addEventListener("pointerdown", function (e) { dr = true; last = pt(e); try { c.setPointerCapture(e.pointerId); } catch (er) {} x.beginPath(); x.moveTo(last.x, last.y); x.lineTo(last.x + 0.1, last.y + 0.1); x.stroke(); BL.sigDirty = true; e.preventDefault(); });
     c.addEventListener("pointermove", function (e) { if (!dr) return; var p = pt(e); x.beginPath(); x.moveTo(last.x, last.y); x.lineTo(p.x, p.y); x.stroke(); last = p; e.preventDefault(); });
     ["pointerup", "pointercancel", "pointerleave"].forEach(function (n) { c.addEventListener(n, function () { dr = false; }); });
+    var bar = el.querySelector("#tmprog i");
+    if (BL.tmScroll) window.removeEventListener("scroll", BL.tmScroll);
+    BL.tmScroll = function () { var d = document.documentElement, m = d.scrollHeight - window.innerHeight; if (bar) bar.style.width = (m > 0 ? Math.min(100, Math.round(window.scrollY / m * 100)) : 0) + "%"; };
+    window.addEventListener("scroll", BL.tmScroll, { passive: true }); BL.tmScroll();
   }
 };
 ACT.tmclear = function () { var c = document.getElementById("sigc"); if (c) { c.getContext("2d").clearRect(0, 0, c.width, c.height); BL.sigDirty = false; } };
 ACT.tmsign = function () {
   var err = document.getElementById("tm-err"), c = document.getElementById("sigc"), name = (document.getElementById("tm-name").value || "").trim();
   var all = [1, 2, 3, 4].every(function (i) { return document.getElementById("tm-c" + i).checked; });
-  if (!all) { err.textContent = t("tm.e.checks"); return; }
+  var mail = (document.getElementById("tm-mail").value || "").trim();
   if (name.length < 2) { err.textContent = t("tm.e.name"); document.getElementById("tm-name").focus(); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) { err.textContent = t("tm.e.mail"); document.getElementById("tm-mail").focus(); return; }
+  if (!all) { err.textContent = t("tm.e.checks"); return; }
   if (!BL.sigDirty) { err.textContent = t("tm.e.sig"); return; }
-  S.terms = { v: BL.TERMS_V, name: name, ts: Date.now(), sig: c.toDataURL("image/png"), lang: S.lang };
+  S.terms = { v: BL.TERMS_V, name: name, email: mail, news: document.getElementById("tm-news").checked, ts: Date.now(), sig: c.toDataURL("image/png"), lang: S.lang };
   BL.save(); BL.go("home"); BL.toast(t("tm.done")); BL.cele({ big: 1, cap: t("tm.cele") });
 };
-ACT.tmshow = function () { BL.openModal({ title: t("tm.h"), body: '<div class="stack">' + termsAccordion() + "</div>" }); };
+ACT.tmshow = function () { BL.openModal({ title: t("tm.h"), body: termsFull() }); };
 ACT.tmrevoke = function (a, el) { BL.confirmClick(el, function () { S.terms = null; BL.save(); BL.render(true); }); };
 
 BL.start();
