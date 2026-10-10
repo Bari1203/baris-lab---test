@@ -81,6 +81,18 @@ function heroSvg() {
   return out;
 }
 function homeCard(title, body, act, icon) { return '<section class="card hc"><div class="rowf" style="justify-content:space-between;margin-bottom:10px;flex-wrap:nowrap"><div class="rowf" style="flex-wrap:nowrap;gap:10px">' + (icon ? '<span class="hci">' + ic(icon, 20) + "</span>" : "") + '<h2 style="margin:0;font-size:18px">' + title + "</h2></div>" + (act || "") + "</div>" + body + "</section>"; }
+/* "your plan": built from the personalization answers (goals, experience, time per day) */
+BL.planCard = function () {
+  var g = S.goals || {}, keys = Object.keys(g).filter(function (k) { return g[k]; });
+  if (!S.pz && !keys.length) return "";
+  var go = { scratch: ["learn", "pz.p.scratch"], method: ["learn", "pz.p.method"], practice: ["exercise", "pz.p.practice"], opps: ["radar", "pz.p.opps"], weekly: ["weekly", "pz.p.weekly"], journal: ["journal", "pz.p.journal"] };
+  var items = keys.filter(function (k) { return go[k] && (BL.hasSite() || k === "scratch" || k === "method" || k === "practice"); }).map(function (k) { var a = go[k]; return '<button class="btn sm" data-act="' + (a[0] === "exercise" ? "exercise" : "nav") + '"' + (a[0] === "exercise" ? "" : ' data-arg="' + a[0] + '"') + ">" + t(a[1]) + "</button>"; });
+  var wk = BL.pzWeekly(), done = BL.doneCount(), h = "";
+  h += '<p class="sm">' + t(S.exp ? "pz.plan.exp." + S.exp : "pz.plan.exp.none") + "</p>";
+  if (wk) h += '<p class="sm"><b>' + t("pz.plan.week", { n: wk }) + "</b> " + t("pz.plan.done", { a: done, b: D.lessons.length }) + "</p>";
+  h += items.length ? '<div class="rowf">' + items.join("") + "</div>" : '<p class="xs muted">' + t("pz.plan.none") + "</p>";
+  return homeCard(S.name ? t("pz.plan.h", { n: esc(S.name) }) : t("pz.plan.h0"), h, "", "star");
+};
 function goBtn(view, label) { return '<button class="btn sm ghost" data-act="nav" data-arg="' + view + '">' + label + "</button>"; }
 
 V.home = {
@@ -112,6 +124,7 @@ V.home = {
     var done = BL.doneCount();
     var wkc = D.weeks[0];
     h += '<div class="sectitle"><h2>' + t("home.now") + '</h2></div><div class="grid g3 hgrid">';
+    h += BL.planCard();
     h += homeCard(t("home.changed"), ch.length ? '<div class="stack">' + ch.map(function (s) { return '<div><button class="btn sm ghost" data-act="open" data-arg="' + s.t + '"><b class="ltr">' + s.t + "</b></button> " + esc(Lx(s.ch)) + "</div>"; }).join("") + "</div>" : '<p class="muted">' + t("home.nochange") + "</p>", goBtn("radar", t("nav.radar")), "radar");
     if (BL.news()) h += homeCard(t("home.events"), evs.length ? '<div class="stack">' + evs.map(function (e) { return "<div><span class=\"chip " + (e.imp === "high" ? "hi" : e.imp === "med" ? "med" : "low") + '">' + t("imp." + e.imp) + "</span> " + esc(Lx(e.n)) + '<div class="xs muted">' + BL.fmtEv(e) + "</div></div>"; }).join("") + "</div>" : '<p class="muted">' + t("home.noev") + "</p>", goBtn("events", t("nav.events")), "events");
     if (BL.style("invest") || BL.style("swing")) h += homeCard(t("home.weekly"), "<p>" + esc(Lx(wkc.concl)) + "</p>" + '<p class="xs muted" style="margin-top:6px">' + BL.sampleBadge() + "</p>", goBtn("weekly", t("nav.weekly")), "weekly");

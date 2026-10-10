@@ -416,7 +416,7 @@ BL.doneCount = function () { return D.lessons.filter(function (l) { return BL.ls
 BL.halfCount = function () { return D.lessons.filter(function (l) { return BL.lstate(l.id) === "half"; }).length; };
 function lessonList() {
   var lv = S.f.lv || "", done = BL.doneCount();
-  var h = '<div class="ph"><div><h1>' + t("learn.h") + "</h1><p>" + t("learn.sub") + '</p><p class="xs wopline">' + t("wop.line") + " " + BL.wopBtn("sm") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
+  var h = '<div class="ph"><div><h1>' + t("learn.h") + "</h1><p>" + t("learn.sub") + '</p><p class="xs wopline">' + (BL.pzWeekly() ? t("pz.plan.week", { n: BL.pzWeekly() }) + " · " : "") + t("wop.line") + " " + BL.wopBtn("sm") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
   h += '<section class="card tint" style="margin-bottom:14px"><div class="rowf" style="justify-content:space-between"><div><h2>' + t("ex.title") + '</h2><p>' + t("ex.intro") + '</p></div><button class="btn acc" data-act="exstart">' + t("ex.start") + '</button></div></section>';
   h += '<div class="rowf" style="justify-content:space-between;margin-bottom:12px"><div class="pillset">' + [["", t("lv.all")], ["basic", t("lv.basic")], ["mid", t("lv.mid")], ["adv", t("lv.adv")]].map(function (x) { return '<button class="btn' + (lv === x[0] ? " on" : "") + '" data-act="lvl" data-arg="' + x[0] + '" aria-pressed="' + (lv === x[0]) + '">' + x[1] + "</button>"; }).join("") + '</div><span class="sm muted">' + t("learn.prog", { a: done, b: D.lessons.length }) + '</span></div><div class="progress" style="margin-bottom:14px"><i style="width:' + Math.round(done / D.lessons.length * 100) + '%"></i></div>';
   function lcards(a) { return '<ol class="lseq">' + a.map(function (l) {
@@ -532,7 +532,7 @@ V.settings = {
     var sm = BL.modeSummary();
     h += '<section class="card stack"><h2>' + t("set.lang") + '</h2><div class="fld"><label for="st-lang">' + t("set.langsel") + '</label><select id="st-lang" data-ch="stlang"><option value="he"' + (S.lang === "he" ? " selected" : "") + '>עברית</option><option value="en"' + (S.lang === "en" ? " selected" : "") + ">English</option></select></div></section>";
     h += '<section class="card stack"><h2>' + t("mode.title") + "</h2><p>" + t("mode.mine") + ": <b>" + sm.m + "</b> · <b>" + sm.s + '</b></p><button class="btn" data-act="modes">' + t("mode.change") + '</button><p class="xs muted">' + t("mode.il.note") + "</p></section>";
-    h += '<section class="card stack"><h2>' + t("set.path") + '</h2><p class="muted">' + t("set.path.n") + '</p><div class="fld"><label for="st-path">' + t("set.path") + '</label><select id="st-path" data-ch="stpath">' + ["learn", "both", "site"].map(function (k) { return opt(k, t("ob.pick." + k), BL.path()); }).join("") + "</select></div></section>";
+    h += pzCard();
     h += '<section class="card stack"><h2>' + t("set.look") + '</h2><div class="fld"><label for="st-theme">' + t("set.theme") + '</label><select id="st-theme" data-ch="sttheme">' + opt("light", t("th.light"), S.theme) + opt("dark", t("th.dark"), S.theme) + opt("auto", t("th.auto"), S.theme) + '</select></div><label class="chk"><input type="checkbox" data-ch="stmotion"' + (S.reduce ? " checked" : "") + ">" + t("set.reduce") + "</label></section>";
     h += '<section class="card stack"><h2>' + t("set.music") + "</h2><p class=\"muted\">" + t("set.music.t") + '</p><button class="btn" data-act="music">' + ic("music", 18) + " " + t("music") + "</button></section>";
     h += '<section class="card stack"><h2>' + t("set.role") + '</h2><p class="muted">' + t("set.role.t") + '</p><div class="fld"><label for="st-role">' + t("role.now") + '</label><select id="st-role" data-ch="strole">' + ["guest", "user", "admin"].map(function (r) { return opt(r, t("role." + r), S.role); }).join("") + "</select></div></section>";
@@ -663,11 +663,13 @@ ACT.tmsign = function () {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) { err.textContent = t("tm.e.mail"); document.getElementById("tm-mail").focus(); return; }
   if (!all) { err.textContent = t("tm.e.checks"); return; }
   if (!BL.sigDirty) { err.textContent = t("tm.e.sig"); return; }
+  if (!S.name) S.name = name.split(/\s+/)[0].slice(0, 30);
   S.terms = { v: BL.TERMS_V, name: name, email: mail, news: document.getElementById("tm-news").checked, ts: Date.now(), sig: c.toDataURL("image/png"), lang: S.lang };
   BL.save(); BL.go("home"); BL.intro(name, function () { BL.toast(t("tm.done")); BL.cele({ big: 1, cap: t("tm.cele") }); });
 };
 /* opening sequence after signing: logo, the range-sweep-target drawing, a preparing checklist, welcome. Skippable; short and static for reduced motion. */
-BL.intro = function (name, done) {
+BL.intro = function (name, done, opts) {
+  opts = opts || {};
   var old = document.getElementById("intro"); if (old) old.remove();
   var red = S.reduce || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   var steps = ["in.s1", "in.s2", "in.s3", "in.s4"], el = document.createElement("div"), fin = false, timers = [];
@@ -684,22 +686,30 @@ BL.intro = function (name, done) {
   document.body.appendChild(el); document.body.classList.add("introing");
   function show() { el.classList.add("ready"); var b = el.querySelector(".intro-go"); if (b) b.focus(); }
   function leave(to) {
-    if (fin) return; fin = true; timers.forEach(clearTimeout); el.classList.add("out");
+    if (fin) return; fin = true; S.pz = 1; if (S.exp === "new" && !S.f.lv) S.f.lv = "basic"; BL.save(); timers.forEach(clearTimeout); el.classList.add("out");
     setTimeout(function () { el.remove(); document.body.classList.remove("introing"); BL.render(true); if (typeof to === "string") { if (to === "lesson1") { S.last = D.lessons[0].id; BL.go("learn", D.lessons[0].id); } else BL.go(to); } if (done) done(); }, red ? 0 : 700);
   }
   var ob = null;
+  function startFlow() {
+    ob = true;
+    BL.personalize(el, leave, function () {
+      ob = BL.onboard(el, leave, function () { var o = el.querySelector(".ob"); if (o) o.remove(); startFlow(); });
+      el.querySelector(".intro-skip").textContent = t("ob.skip"); el.querySelector(".intro-skip").style.display = "block";
+    });
+  }
   el.querySelector(".intro-skip").addEventListener("click", function () {
     if (ob) { leave(); return; }
     timers.forEach(clearTimeout); el.querySelectorAll("li").forEach(function (l) { l.classList.add("on"); }); el.classList.add("full"); show();
   });
-  el.querySelector(".intro-go").addEventListener("click", function () { ob = BL.onboard(el, leave); el.querySelector(".intro-skip").textContent = t("ob.skip"); el.querySelector(".intro-skip").style.display = "block"; });
+  el.querySelector(".intro-go").addEventListener("click", startFlow);
   el.addEventListener("keydown", function (e) { if (e.key === "Escape" && ob) leave(); });
+  if (opts.skipOpen) { el.classList.add("full", "ready"); el.querySelectorAll("li").forEach(function (l) { l.classList.add("on"); }); startFlow(); return; }
   if (red) { el.querySelectorAll("li").forEach(function (l) { l.classList.add("on"); }); el.classList.add("full"); show(); return; }
   steps.forEach(function (k, i) { timers.push(setTimeout(function () { var l = el.querySelector('li[data-i="' + i + '"]'); if (l) l.classList.add("on"); if (BL.fx && BL.fx.tick) BL.fx.tick(); }, 3600 + i * 650)); });
   timers.push(setTimeout(show, 3600 + steps.length * 650 + 500));
 };
 /* onboarding pages after the opening: purpose, what you get, how it works, your path, what to know, start */
-BL.onboard = function (el, leave) {
+BL.onboard = function (el, leave, backFn) {
   var ic = BL.ic, cur = 0, N = 0, path = "", box = document.createElement("div"), cn = 0;
   function card(i, t1, t2) { return '<div class="obc" style="--d:' + (0.25 + (cn++) * 0.09) + 's"><span class="obi">' + ic(i, 22) + "</span><div><b>" + t(t1) + "</b><p>" + t(t2) + "</p></div></div>"; }
   function step(n, k) { return '<div class="obs" style="--d:' + (0.3 + n * 0.14) + 's"><span class="obn">' + n + "</span><div><b>" + t("ob.h" + k) + "</b><p>" + t("ob.h" + k + "d") + "</p></div></div>"; }
@@ -719,7 +729,7 @@ BL.onboard = function (el, leave) {
     l2: function () { return "<h2>" + t("ob.l2.h") + '</h2><div class="obgrid one">' + card("shield", "ob.5.a", "ob.5.ad") + card("help", "ob.l2.a", "ob.l2.ad") + card("chart", "ob.l2.b", "ob.l2.bd") + card("settings", "ob.l2.c", "ob.l2.cd") + "</div>"; },
     l3: function () { return okbig + "<h2>" + t("ob.l3.h") + '</h2><p class="obl">' + t("ob.l3.p") + '</p><div class="obend"><button class="btn acc" type="button" data-to="lesson1">' + t("ob.l3.go") + '</button></div><div class="obwhop"><b>' + t("ob.l3.w") + "</b><p>" + t("ob.l3.wd") + "</p>" + BL.wopBtn("") + '</div><p class="xs obx">' + t("ob.l3.n") + "</p>"; }
   };
-  var PATHS = { learn: ["l1", "l2", "l3"], both: ["mission", "get", "how", "you", "whop", "know", "start"], site: ["mission", "get", "how", "you", "know", "start"] };
+  var PATHS = { learn: ["l1", "l2", "l3"], both: ["mission", "get", "how", "whop", "know", "start"], site: ["mission", "get", "how", "know", "start"] };
   var pick = '<section class="obpick"><h2>' + t("ob.pick.h") + '</h2><p class="obl">' + t("ob.pick.p") + '</p><div class="obgrid one">' + [["learn", "learn"], ["both", "radar"], ["site", "chart"]].map(function (x, i) { return '<button type="button" class="obopt" data-path="' + x[0] + '" style="--d:' + (0.25 + i * 0.1) + 's"><span class="obi">' + ic(x[1], 24) + "</span><span><b>" + t("ob.pick." + x[0]) + "</b><small>" + t("ob.pick." + x[0] + "d") + "</small></span></button>"; }).join("") + "</div></section>";
   box.className = "ob"; el.querySelector(".intro-in").style.display = "none"; el.classList.add("onb"); el.appendChild(box);
   function showPick() {
@@ -739,7 +749,7 @@ BL.onboard = function (el, leave) {
   }
   function go(i) {
     if (!N) return;
-    if (i < 0) { showPick(); return; }
+    if (i < 0) { if (backFn) backFn(); else showPick(); return; }
     cur = Math.min(N - 1, i);
     box.querySelectorAll(".obp").forEach(function (p) { var on = +p.getAttribute("data-i") === cur; p.classList.toggle("on", on); p.hidden = !on; });
     box.querySelectorAll(".obdots button").forEach(function (b, k) { b.classList.toggle("on", k === cur); b.setAttribute("aria-selected", k === cur); });
@@ -760,8 +770,99 @@ BL.onboard = function (el, leave) {
   box.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
   box.addEventListener("touchend", function (e) { if (x0 == null || !N) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) { var rtl = document.documentElement.dir === "rtl"; go(cur + ((dx < 0) !== rtl ? 1 : -1)); } }, { passive: true });
   el.addEventListener("keydown", function (e) { if (!N) return; var rtl = document.documentElement.dir === "rtl"; if (e.key === "ArrowRight") go(cur + (rtl ? -1 : 1)); else if (e.key === "ArrowLeft") go(cur + (rtl ? 1 : -1)); });
-  showPick();
+  build(S.path === "learn" || S.path === "site" ? S.path : "both");
   return { go: go };
+};
+
+/* ===== personalization: asked once when the visitor first enters, editable any time in Settings ===== */
+var PZ_GOALS = [["scratch", "pz.g.scratch", 1], ["method", "pz.g.method", 1], ["practice", "pz.g.practice", 1], ["opps", "pz.g.opps", 0], ["weekly", "pz.g.weekly", 0], ["journal", "pz.g.journal", 0]];
+BL.pzGoals = function () { return PZ_GOALS.filter(function (g) { return g[2] || BL.hasSite(); }); };
+BL.pzWeekly = function () { return { 15: 2, 30: 4, 60: 7 }[S.time] || 0; };
+function pzFinish() {
+  S.pz = 1; if (S.exp === "new" && !S.f.lv) S.f.lv = "basic"; BL.save();
+}
+function pzLabels() {
+  var sty = ["invest", "swing", "day"].filter(function (k) { return S.styles[k]; }).map(function (k) { return t("sty." + k); }).join(" · ");
+  return [["pz.name", S.name || "—"], ["pz.path", t("ob.pick." + BL.path())], BL.hasSite() ? ["pz.sty", sty] : null, ["pz.exp", S.exp ? t("pz.exp." + S.exp) : "—"], BL.hasSite() ? ["pz.mkt", t("mkt." + S.market)] : null, ["pz.time", S.time ? t("pz.time." + S.time) : "—"], ["pz.theme", t("th." + (S.theme || "light"))]].filter(Boolean);
+}
+/* settings card: every answer from the first-visit questions, changeable at any time */
+function pzCard() {
+  var sel = function (id, ch, cur, vals, lab) { return '<div class="fld"><label for="' + id + '">' + t(lab) + '</label><select id="' + id + '" data-ch="' + ch + '">' + vals.map(function (v) { return opt(v[0], v[1], cur); }).join("") + "</select></div>"; };
+  var cb = function (ch, arg, on, label) { return '<label class="pzcb"><input type="checkbox" data-ch="' + ch + '" data-arg="' + arg + '"' + (on ? " checked" : "") + "><span>" + label + "</span></label>"; };
+  var h = '<section class="card stack pzc"><div class="rowf" style="justify-content:space-between"><div><h2>' + t("pz.card") + '</h2><p class="muted">' + t("pz.card.n") + '</p></div><button class="btn sm" data-act="pzrun">' + t("pz.rerun") + "</button></div>";
+  h += '<div class="fld"><label for="pz-name">' + t("pz.name") + '</label><input type="text" id="pz-name" data-in="pzname" value="' + esc(S.name || "") + '" maxlength="30" autocomplete="given-name"></div>';
+  h += sel("pz-path", "pzpath", BL.path(), [["learn", t("ob.pick.learn")], ["both", t("ob.pick.both")], ["site", t("ob.pick.site")]], "pz.path");
+  h += '<fieldset class="pzfs"><legend>' + t("pz.sty") + '</legend><div class="rowf">' + ["invest", "swing", "day"].map(function (k) { return cb("pzsty", k, !!S.styles[k], t("sty." + k)); }).join("") + "</div></fieldset>";
+  h += sel("pz-mkt", "pzmkt", S.market, [["us", t("mkt.us")], ["il", t("mkt.il")], ["both", t("mkt.both")]], "pz.mkt");
+  h += sel("pz-exp", "pzexp", S.exp || "", [["", "—"], ["new", t("pz.exp.new")], ["some", t("pz.exp.some")], ["pro", t("pz.exp.pro")]], "pz.exp");
+  h += '<fieldset class="pzfs"><legend>' + t("pz.goals") + '</legend><div class="rowf">' + BL.pzGoals().map(function (g) { return cb("pzgoal", g[0], !!(S.goals && S.goals[g[0]]), t(g[1])); }).join("") + "</div></fieldset>";
+  h += sel("pz-time", "pztime", String(S.time || ""), [["", "—"], ["15", t("pz.time.15")], ["30", t("pz.time.30")], ["60", t("pz.time.60")]], "pz.time");
+  h += sel("pz-theme", "pztheme", S.theme || "light", [["light", t("th.light")], ["dark", t("th.dark")], ["auto", t("th.auto")]], "pz.theme");
+  h += cb("pzmot", "reduce", !!S.reduce, t("pz.reduce"));
+  return h + "</section>";
+}
+IN.pzname = function (v) { S.name = v.trim().slice(0, 30); BL.save(); };
+CH.pzpath = function (v) { S.path = v; S.learn = v === "learn" ? 1 : 0; BL.save(); BL.render(false); BL.toast(t("set.path.ok")); };
+CH.pzsty = function (v, el, k) { S.styles[k] = el.checked ? 1 : 0; if (!S.styles.invest && !S.styles.swing && !S.styles.day) S.styles = { invest: 1, swing: 1, day: 1 }; BL.save(); BL.render(false); };
+CH.pzmkt = function (v) { S.market = v; BL.save(); BL.render(false); };
+CH.pzexp = function (v) { S.exp = v; BL.save(); };
+CH.pzgoal = function (v, el, k) { S.goals = S.goals || {}; S.goals[k] = el.checked ? 1 : 0; BL.save(); };
+CH.pztime = function (v) { S.time = v; BL.save(); };
+CH.pztheme = function (v) { S.theme = v; BL.save(); BL.render(false); };
+CH.pzmot = function (v, el) { S.reduce = el.checked; BL.save(); BL.render(false); };
+ACT.pzrun = function () { BL.intro(S.name, null, { skipOpen: true }); };
+
+BL.personalize = function (el, leave, tour) {
+  var box = document.createElement("div"), cur = 0, ic = BL.ic, dir = "next", redm = S.reduce || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  S.goals = S.goals || {};
+  function steps() { var l = ["name", "path"]; if (S.path !== "learn") l.push("sty"); l.push("exp"); if (S.path !== "learn") l.push("mkt"); l.push("goals", "time", "look", "done"); return l; }
+  function oc(kind, val, ti, de, icn, on) { return '<button type="button" class="obopt' + (on ? " on" : "") + '" data-pz="' + kind + ":" + val + '" aria-pressed="' + !!on + '"><span class="obi">' + ic(icn, 24) + "</span><span><b>" + ti + "</b>" + (de ? "<small>" + de + "</small>" : "") + "</span></button>"; }
+  var S_ = {
+    name: function () { return '<div class="obv"><span class="obbig">' + ic("user", 50) + "</span></div><h2>" + t("pz.q.name") + '</h2><p class="obl">' + t("pz.q.name.p") + '</p><input type="text" id="pzi" class="pzin" maxlength="30" value="' + esc(S.name || "") + '" placeholder="' + esc(t("pz.name.ph")) + '" autocomplete="given-name">'; },
+    path: function () { return "<h2>" + t("ob.pick.h") + '</h2><div class="obgrid one">' + [["learn", "learn"], ["both", "radar"], ["site", "chart"]].map(function (x) { return oc("path", x[0], t("ob.pick." + x[0]), t("ob.pick." + x[0] + "d"), x[1], BL.path() === x[0]); }).join("") + "</div>"; },
+    sty: function () { return "<h2>" + t("pz.q.sty") + '</h2><p class="obl">' + t("pz.q.sty.p") + '</p><div class="obgrid one">' + [["invest", "chart"], ["swing", "history"], ["day", "events"]].map(function (x) { return oc("sty", x[0], t("sty." + x[0]), t("sty." + x[0] + ".d"), x[1], !!S.styles[x[0]]); }).join("") + "</div>"; },
+    exp: function () { return "<h2>" + t("pz.q.exp") + '</h2><p class="obl">' + t("pz.q.exp.p") + '</p><div class="obgrid one">' + [["new", "star"], ["some", "chart"], ["pro", "shield"]].map(function (x) { return oc("exp", x[0], t("pz.exp." + x[0]), t("pz.exp." + x[0] + ".d"), x[1], S.exp === x[0]); }).join("") + "</div>"; },
+    mkt: function () { return "<h2>" + t("pz.q.mkt") + '</h2><div class="obgrid one">' + [["us", "chart"], ["il", "shield"], ["both", "radar"]].map(function (x) { return oc("mkt", x[0], t("mkt." + x[0]), t("mkt." + x[0] + ".d"), x[1], S.market === x[0]); }).join("") + '</div><p class="xs obx">' + t("ob.4.n") + "</p>"; },
+    goals: function () { return "<h2>" + t("pz.q.goals") + '</h2><p class="obl">' + t("pz.q.goals.p") + '</p><div class="obgrid one">' + BL.pzGoals().map(function (g) { return oc("goal", g[0], t(g[1]), t(g[1] + ".d"), { scratch: "star", method: "learn", practice: "help", opps: "radar", weekly: "weekly", journal: "journal" }[g[0]], !!S.goals[g[0]]); }).join("") + "</div>"; },
+    time: function () { return "<h2>" + t("pz.q.time") + '</h2><p class="obl">' + t("pz.q.time.p") + '</p><div class="obgrid one">' + [["15", "wait"], ["30", "wait"], ["60", "wait"]].map(function (x) { return oc("time", x[0], t("pz.time." + x[0]), t("pz.time." + x[0] + ".d"), x[1], String(S.time) === x[0]); }).join("") + "</div>"; },
+    look: function () { return "<h2>" + t("pz.q.look") + '</h2><p class="obl">' + t("pz.q.look.p") + '</p><div class="obch-g">' + [["light", "sun"], ["dark", "moon"], ["auto", "settings"]].map(function (x) { return '<button type="button" class="obch' + ((S.theme || "light") === x[0] ? " on" : "") + '" data-pz="theme:' + x[0] + '"><b>' + t("th." + x[0]) + "</b><span>" + t("pz.theme." + x[0]) + "</span></button>"; }).join("") + '</div><button type="button" class="obch' + (S.reduce ? " on" : "") + '" style="width:100%" data-pz="mot:' + (S.reduce ? "off" : "on") + '"><b>' + t("pz.reduce") + "</b><span>" + t("pz.reduce.d") + "</span></button>"; },
+    done: function () { return '<div class="obv"><span class="obbig ok"><svg viewBox="0 0 20 20" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></span></div><h2>' + t("pz.done.h", { n: esc(S.name || "") }) + '</h2><div class="pzsum">' + pzLabels().map(function (r) { return "<div><span>" + t(r[0]) + "</span><b>" + esc(r[1]) + "</b></div>"; }).join("") + '</div><p class="xs obx">' + t("pz.done.n") + '</p><div class="obend"><button class="btn acc" type="button" data-pz="enter:1">' + t("pz.enter") + '</button><button class="btn" type="button" data-pz="tour:1">' + t("pz.tour") + "</button></div>"; }
+  };
+  box.className = "ob"; el.querySelector(".intro-in").style.display = "none"; el.classList.add("onb"); el.appendChild(box);
+  function burst() {
+    var cols = ["#F17462", "#C8E2D8", "#F5F1E8", "#F5C86A"], host = document.createElement("div"); host.className = "pzburst"; host.setAttribute("aria-hidden", "true");
+    for (var k = 0; k < 34; k++) { var p = document.createElement("i"), a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 190; p.style.cssText = "--x:" + Math.round(Math.cos(a) * d) + "px;--y:" + Math.round(Math.sin(a) * d - 60) + "px;--r:" + Math.round(Math.random() * 540 - 270) + "deg;--c:" + cols[k % 4] + ";--s:" + (6 + Math.round(Math.random() * 8)) + "px;animation-delay:" + (Math.random() * .25).toFixed(2) + "s"; host.appendChild(p); }
+    el.appendChild(host); setTimeout(function () { host.remove(); }, 2400);
+  }
+  function render() {
+    var l = steps(); cur = Math.max(0, Math.min(cur, l.length - 1)); var id = l[cur];
+    box.setAttribute("data-dir", dir);
+    box.innerHTML = '<div class="pzbar" aria-hidden="true"><i style="width:' + Math.round((cur + 1) / l.length * 100) + '%"></i></div><div class="obtrack"><section class="obp on pzs" data-step="' + id + '">' + S_[id]() + '</section></div><div class="obnav"><button type="button" class="btn ghost obprev"' + (cur ? "" : ' style="visibility:hidden"') + ">" + t("ob.prev") + '</button><div class="obdots">' + l.map(function (k, i) { return '<button type="button" data-d="' + i + '" class="' + (i === cur ? "on" : "") + '" aria-label="' + (i + 1) + '"></button>'; }).join("") + '</div><button type="button" class="btn acc obnext"' + (id === "done" ? ' style="visibility:hidden"' : "") + ">" + t("ob.next") + "</button></div>";
+    if (id === "done" && !redm) burst();
+    var sk = el.querySelector(".intro-skip"); if (sk) { sk.textContent = t("pz.skip"); sk.style.display = id === "done" ? "none" : "block"; }
+    var pi = box.querySelector("#pzi"); if (pi) { pi.addEventListener("input", function () { S.name = pi.value.trim().slice(0, 30); BL.save(); }); pi.addEventListener("keydown", function (e) { if (e.key === "Enter") { dir = "next"; cur++; render(); } }); setTimeout(function () { pi.focus(); }, 50); }
+    else { var f = box.querySelector(".obnext"); if (f && id !== "done") f.focus(); }
+  }
+  box.addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    if (b.classList.contains("obnext")) { dir = "next"; cur++; render(); return; }
+    if (b.classList.contains("obprev")) { dir = "prev"; cur--; render(); return; }
+    if (b.hasAttribute("data-d")) { var nd = +b.getAttribute("data-d"); dir = nd >= cur ? "next" : "prev"; cur = nd; render(); return; }
+    var z = b.getAttribute("data-pz"); if (!z) return; var p = z.split(":"), k = p[0], v = p[1];
+    if (k === "path") { S.path = v; S.learn = v === "learn" ? 1 : 0; }
+    else if (k === "sty") { S.styles[v] = S.styles[v] ? 0 : 1; if (!S.styles.invest && !S.styles.swing && !S.styles.day) S.styles = { invest: 1, swing: 1, day: 1 }; }
+    else if (k === "exp") S.exp = v; else if (k === "mkt") S.market = v; else if (k === "time") S.time = v;
+    else if (k === "goal") S.goals[v] = S.goals[v] ? 0 : 1;
+    else if (k === "theme") { S.theme = v; }
+    else if (k === "mot") { S.reduce = v === "on"; }
+    else if (k === "enter") { pzFinish(); leave(BL.homeView()); return; }
+    else if (k === "tour") { pzFinish(); box.remove(); tour(); return; }
+    dir = "same";
+    BL.save(); if (k === "theme" || k === "mot") { var d = document.documentElement; d.setAttribute("data-theme", S.theme === "auto" ? "" : S.theme); if (S.theme === "auto") d.removeAttribute("data-theme"); d.classList.toggle("reduce", !!S.reduce); }
+    render();
+  });
+  render();
+  return { skip: function () { pzFinish(); } };
 };
 ACT.intro = function () { BL.intro(S.terms && S.terms.name, null); };
 ACT.tmshow = function () { BL.openModal({ title: t("tm.h"), body: termsFull() }); };

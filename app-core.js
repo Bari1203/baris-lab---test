@@ -560,5 +560,7 @@ var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = s
 BL.start = function () {
   AU.cfg = S.audio; if (!AU.cfg.eq) AU.cfg.eq = [0, 0, 0];
   applySettings(); seeds(); render(false);
+  /* first visit after signing: ask the personalization questions once (visitors who signed earlier get them once too) */
+  if (!BL.needTerms() && !S.pz) setTimeout(function () { if (BL.intro) BL.intro(S.name, null, { skipOpen: true }); }, 700);
 };
 })();
