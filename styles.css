@@ -815,3 +815,49 @@ html[dir=ltr] .nl:hover{transform:translateX(3px)}
 .nl[aria-current="page"] .ic{background:var(--coral);color:var(--on-coral)}
 /* learning-only path: no market search, no alerts bell */
 html.path-learn .gsearch,html.path-learn [data-arg="alerts"]{display:none}
+
+/* results dashboard */
+.chip.res-win{background:var(--up-bg);color:var(--up);font-weight:700}
+.chip.res-loss{background:var(--down-bg);color:var(--down);font-weight:700}
+.chip.res-be{background:var(--mint);color:var(--ink);font-weight:700}
+.jdash{padding:26px!important}
+.jd-hero{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;margin:18px 0}
+@media(max-width:700px){.jd-hero{grid-template-columns:1fr;justify-items:center}}
+.jd-ring{--v:0;width:190px;height:190px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--up) calc(var(--v)*1%),color-mix(in srgb,var(--down) 28%,var(--line)) 0);position:relative;animation:inPop .9s cubic-bezier(.2,1.2,.4,1) both}
+.jd-ring::before{content:"";position:absolute;inset:16px;border-radius:50%;background:var(--surface)}
+.jd-ring>div{position:relative;display:grid;gap:2px;text-align:center}
+.jd-ring b{font:800 46px/1 Inter,sans-serif;color:var(--up)}
+.jd-ring span{font-weight:700;font-size:14px}
+.jd-ring small{color:var(--muted);font-size:12.5px}
+.jd-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;width:100%}
+.jd-k{background:var(--bg);border-radius:18px;padding:16px 18px;display:grid;gap:6px;border:1.5px solid transparent;transition:transform .3s var(--ease)}
+.jd-k:hover{transform:translateY(-3px)}
+.jd-k span{font-size:13px;color:var(--muted)}
+.jd-k b{font:800 28px/1.1 Inter,sans-serif}
+.jd-k.up{background:var(--up-bg);color:var(--up)}.jd-k.up span{color:inherit;opacity:.85}
+.jd-k.dn{background:var(--down-bg);color:var(--down)}.jd-k.dn span{color:inherit;opacity:.85}
+.jd-t{margin:30px 0 10px;font-size:17px}
+.jd-rib{display:flex;flex-wrap:wrap;gap:6px}
+.jd-rib i{width:22px;height:22px;border-radius:7px;display:block;animation:inPop .5s cubic-bezier(.2,1.3,.4,1) calc(var(--i)*.03s) both}
+.jd-rib i.w,.jd-leg .w::before{background:var(--up)}.jd-rib i.l,.jd-leg .l::before{background:var(--down)}.jd-rib i.b,.jd-leg .b::before{background:var(--line2)}
+.jd-leg{display:flex;gap:16px;margin-top:10px;font-size:13px;color:var(--muted)}
+.jd-leg span{display:flex;align-items:center;gap:6px}.jd-leg span::before{content:"";width:12px;height:12px;border-radius:4px}
+.jd-eq{width:100%;height:auto;background:var(--bg);border-radius:18px;padding:8px}
+.jd-eq .z{stroke:var(--line2);stroke-dasharray:4 4}
+.jd-eq .a.up{fill:color-mix(in srgb,var(--up) 18%,transparent)}.jd-eq .a.dn{fill:color-mix(in srgb,var(--down) 18%,transparent)}
+.jd-eq .l{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:inDraw 1.6s var(--ease) .2s both}
+.jd-eq .l.up,.jd-eq .d.up{stroke:var(--up);fill:none}.jd-eq .l.dn,.jd-eq .d.dn{stroke:var(--down);fill:none}
+.jd-eq .d{fill:var(--surface);stroke-width:2.5}
+.jd-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:10px}
+.jd-g{background:var(--bg);border-radius:18px;padding:16px 18px;display:grid;gap:12px;align-content:start}
+.jd-g h4{font-size:14px;color:var(--muted);letter-spacing:.04em}
+.jd-b{display:grid;gap:6px}.jd-b.few{opacity:.55}
+.jd-bl{display:flex;align-items:baseline;gap:8px}.jd-bl span{flex:1;font-weight:600}.jd-bl b{font:800 18px Inter,sans-serif}.jd-bl small{color:var(--muted);min-width:22px;text-align:end}
+.jd-bt{height:12px;border-radius:99px;background:color-mix(in srgb,var(--down) 22%,var(--line));overflow:hidden}
+.jd-bt i{display:block;height:100%;width:var(--p);border-radius:99px;background:linear-gradient(90deg,var(--up),color-mix(in srgb,var(--up) 60%,var(--mint)));transform-origin:left;animation:jdgrow 1.2s var(--ease) both}
+html[dir=rtl] .jd-bt i{transform-origin:right}
+@keyframes jdgrow{from{transform:scaleX(0)}to{transform:none}}
+.jd-ins{margin-top:22px}
+.jd-i{border-radius:18px;padding:18px 20px}.jd-i h4{margin-bottom:8px}
+.jd-i.good{background:var(--up-bg);color:var(--up)}.jd-i.bad{background:var(--down-bg);color:var(--down)}
+html.reduce .jd-ring,html.reduce .jd-rib i,html.reduce .jd-bt i,html.reduce .jd-eq .l{animation:none;stroke-dashoffset:0}

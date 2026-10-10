@@ -79,7 +79,7 @@ function entryCard(e) {
   var note = e.note ? esc(e.note.length > 170 ? e.note.slice(0, 170) + "…" : e.note) : "";
   return '<article class="entry' + (e.status !== "open" ? " done" : "") + '"><div class="rowf" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><h3>' + esc(e.title) + '</h3><span class="chip">' + t("jt." + e.type) + '</span></div><div class="rowf xs muted"><span>' + BL.fmtD(pd(e.date), { weekday: "short", day: "numeric", month: "short" }) + " " + esc(e.time) + "</span>" + (e.ticker ? '<span class="chip">' + ltr(e.ticker) + "</span>" : "") + '<span class="chip">' + t("js." + e.status) + "</span>" + (e.rem ? "<span>" + t("je.rem.short") + "</span>" : "") + "<span>" + t("je.rel") + ": " + t("rel." + e.rel) + "</span></div>" + (note ? '<p class="sm">' + note + "</p>" : "") +
     (e.scn ? '<p class="sm"><b>' + t("je.scn") + ":</b> " + esc(e.scn) + "</p>" : "") + (e.chg ? '<p class="sm"><b>' + t("je.chg") + ":</b> " + esc(e.chg) + "</p>" : "") +
-    (e.tr ? '<div class="rowf">' + [e.tr.acct && t("tr.acct." + e.tr.acct), e.tr.side && t("tr.side." + e.tr.side), e.tr.grade, e.tr.ctype && (t("tr.ctype") + " " + e.tr.ctype), e.tr.res && t("tr.res." + e.tr.res), e.tr.pnl && ("P&L " + e.tr.pnl)].filter(Boolean).map(function (x) { return '<span class="chip">' + esc(x) + "</span>"; }).join("") + (trRR(e.tr) ? '<span class="chip">R:R 1:' + trRR(e.tr).toFixed(1) + "</span>" : "") + (e.tr.book === "swing" ? swChips(e.tr) : "") + "</div>" : "") + ((e.tags || []).length ? '<div class="rowf">' + e.tags.map(function (g) { return '<span class="chip">' + esc(g) + "</span>"; }).join("") + "</div>" : "") +
+    (e.tr ? '<div class="rowf">' + (e.tr.res ? '<span class="chip res-' + e.tr.res + '">' + t("tr.res." + e.tr.res) + (e.tr.lvl ? " · " + t("tr.lvl." + e.tr.lvl) : "") + "</span>" : "") + [e.tr.acct && t("tr.acct." + e.tr.acct), e.tr.side && t("tr.side." + e.tr.side), e.tr.grade, e.tr.ctype && (t("tr.ctype") + " " + e.tr.ctype), e.tr.pnl && ("P&L " + e.tr.pnl)].filter(Boolean).map(function (x) { return '<span class="chip">' + esc(x) + "</span>"; }).join("") + (trRR(e.tr) ? '<span class="chip">R:R 1:' + trRR(e.tr).toFixed(1) + "</span>" : "") + (e.tr.book === "swing" ? swChips(e.tr) : "") + "</div>" : "") + ((e.tags || []).length ? '<div class="rowf">' + e.tags.map(function (g) { return '<span class="chip">' + esc(g) + "</span>"; }).join("") + "</div>" : "") +
     '<div class="rowf"><button class="btn sm" data-act="jedit" data-arg="' + e.id + '">' + t("edit") + '</button><button class="btn sm" data-act="jstat" data-arg="' + e.id + '">' + t(e.status === "open" ? "je.close" : "je.reopen") + '</button><button class="btn sm ghost" data-act="jdel" data-arg="' + e.id + '">' + t("delete") + "</button></div></article>";
 }
 function swChips(r) {
@@ -165,13 +165,13 @@ ACT.jdel = function (id) {
 /* structured trade fields, taken from the columns of Bari's journal */
 var TR = {
   acct: ["", "nostro", "personal"], side: ["", "long", "short"], grade: ["", "PERFECT", "GOOD", "BAD"], ctype: ["", "a", "b", "c", "d"],
-  book: ["", "day", "swing"], sstat: ["", "watching", "open", "closed"], svs: ["", "yes", "both", "no"], smt: ["", "yes", "both", "no"], tp: ["", "none", "TP1", "TP2", "final"], res: ["", "open", "win", "loss", "be"]
+  book: ["", "day", "swing"], sstat: ["", "watching", "open", "closed"], svs: ["", "yes", "both", "no"], dir: ["", "continuation", "reversal"], ent: ["", "market", "limit"], lvl: ["", "small", "normal", "big"], smt: ["", "yes", "both", "no"], tp: ["", "none", "TP1", "TP2", "final"], res: ["", "open", "win", "loss", "be"]
 };
 function trSel(id, k, cur, lab) { return '<div class="fld"><label for="tr-' + id + '">' + t("tr." + id) + '</label><select id="tr-' + id + '">' + TR[k].map(function (v) { return opt(v, v ? (lab ? t("tr." + id + "." + v) : v) : "—", cur || ""); }).join("") + "</select></div>"; }
 function trTxt(id, cur, ph) { return '<div class="fld"><label for="tr-' + id + '">' + t("tr." + id) + '</label><input type="text" id="tr-' + id + '" value="' + esc(cur || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + "></div>"; }
 function trForm(r) {
   return '<fieldset class="trbox"><legend>' + t("tr.title") + '</legend><p class="xs muted">' + t("tr.note") + '</p><div class="fgrid">' +
-    trSel("book", "book", r.book, 1).replace('id="tr-book"', 'id="tr-book" data-ch="trbook"') + trSel("acct", "acct", r.acct, 1) + trSel("side", "side", r.side, 1) + trSel("grade", "grade", r.grade) + trSel("ctype", "ctype", r.ctype) + trSel("smt", "smt", r.smt, 1) + trSel("tp", "tp", r.tp, 1) + trSel("res", "res", r.res, 1) +
+    trSel("book", "book", r.book, 1).replace('id="tr-book"', 'id="tr-book" data-ch="trbook"') + trSel("acct", "acct", r.acct, 1) + trSel("side", "side", r.side, 1) + trSel("grade", "grade", r.grade) + trSel("ctype", "ctype", r.ctype) + trSel("smt", "smt", r.smt, 1) + trSel("tp", "tp", r.tp, 1) + trSel("dir", "dir", r.dir, 1) + trSel("ent", "ent", r.ent, 1) + trSel("lvl", "lvl", r.lvl, 1) + trSel("res", "res", r.res, 1) +
     trTxt("bisus", r.bisus, "8h, D, W...") + trTxt("etf", r.etf, "15m") + trTxt("poi", r.poi) + trTxt("candle", r.candle) + trTxt("exit", r.exit) +
     trTxt("entry", r.entry) + trTxt("stop", r.stop) + trTxt("target", r.target) + trTxt("pnl", r.pnl, t("tr.pnl.ph")) + trTxt("link", r.link) + "</div>" +
     '<div id="tr-sw"' + (r.book === "swing" ? "" : " hidden") + '><h3 class="xs" style="margin:12px 0 4px">' + t("sw.h") + '</h3><p class="xs muted">' + t("sw.note") + '</p><div class="fgrid">' +
@@ -184,7 +184,7 @@ function swPct(r) { var e = parseFloat(r.entry), x = parseFloat(r.xprice); if (i
 BL.swHold = swHold; BL.swPct = swPct;
 CH.trbook = function (v) { var b = document.getElementById("tr-sw"); if (b) b.hidden = v !== "swing"; };
 function trRead(f) {
-  var r = {}; ["book", "sstat", "sector", "svs", "d1", "d2", "earn", "xprice", "acct", "side", "grade", "ctype", "smt", "tp", "res", "bisus", "etf", "poi", "candle", "exit", "entry", "stop", "target", "pnl", "link"].forEach(function (k) { var el = f.querySelector("#tr-" + k); r[k] = el ? el.value.trim() : ""; });
+  var r = {}; ["dir", "ent", "lvl", "book", "sstat", "sector", "svs", "d1", "d2", "earn", "xprice", "acct", "side", "grade", "ctype", "smt", "tp", "res", "bisus", "etf", "poi", "candle", "exit", "entry", "stop", "target", "pnl", "link"].forEach(function (k) { var el = f.querySelector("#tr-" + k); r[k] = el ? el.value.trim() : ""; });
   return r;
 }
 function trRR(r) { var e = parseFloat(r.entry), s2 = parseFloat(r.stop), tg = parseFloat(r.target); if (isNaN(e) || isNaN(s2) || isNaN(tg) || e === s2) return null; return Math.abs(tg - e) / Math.abs(e - s2); }
@@ -192,25 +192,72 @@ function trRR(r) { var e = parseFloat(r.entry), s2 = parseFloat(r.stop), tg = pa
 function realTrades() {
   return S.journal.filter(function (e) { return e.type === "trade" && e.tr && (e.tr.res === "win" || e.tr.res === "loss" || e.tr.res === "be") && !(e.tags || []).some(function (g) { return g === "דוגמה" || g === "Sample"; }); });
 }
-function statRow(label, a) {
-  var w = a.filter(function (e) { return e.tr.res === "win"; }).length, n = a.length;
-  return "<tr><th scope=\"row\">" + esc(label) + '</th><td class="num ltr">' + n + '</td><td class="num ltr">' + (n ? Math.round(w / n * 100) + "%" : "—") + "</td></tr>";
+/* results dashboard: what the trader sees about their own record. Observed history only, never a prediction. */
+function pnlNum(r) {
+  var v = parseFloat(String(r.pnl || "").replace(/[$,\s]/g, "")); if (isNaN(v)) return null;
+  return r.res === "loss" ? -Math.abs(v) : r.res === "win" ? Math.abs(v) : v;
 }
-function jStats() {
-  var a = realTrades(), n = a.length;
-  var h = '<section class="card jstats"><h2>' + t("st.h") + '</h2><p class="xs muted">' + t("st.n") + "</p>";
-  if (!n) return h + '<div class="empty" style="margin-top:10px"><strong>' + t("st.none") + "</strong><span>" + t("st.none.t") + "</span></div></section>";
-  var w = a.filter(function (e) { return e.tr.res === "win"; }).length, l = a.filter(function (e) { return e.tr.res === "loss"; }).length;
-  var rrs = a.map(function (e) { return trRR(e.tr); }).filter(function (x) { return x != null; }), avgRR = rrs.length ? (rrs.reduce(function (x, y) { return x + y; }, 0) / rrs.length) : null;
-  h += '<div class="qas five" style="margin:10px 0"><div class="kv"><span class="k">' + t("st.trades") + '</span><span class="v num">' + n + '</span></div><div class="kv"><span class="k">' + t("st.winpct") + '</span><span class="v num ltr">' + Math.round(w / n * 100) + '%</span></div><div class="kv"><span class="k">' + t("st.wl") + '</span><span class="v num ltr">' + w + " / " + l + '</span></div><div class="kv"><span class="k">' + t("st.rr") + '</span><span class="v num ltr">' + (avgRR == null ? "—" : "1:" + avgRR.toFixed(1)) + "</span></div></div>";
-  if (n < 30) h += '<p class="notice warn xs">' + t("st.small", { n: n }) + "</p>";
-  function grp(title, key, vals, lab) {
-    var rows = vals.map(function (v) { var sub = a.filter(function (e) { return e.tr[key] === v; }); return sub.length ? statRow(lab ? t("tr." + key + "." + v) : v, sub) : ""; }).join("");
-    return rows ? '<h3 style="margin-top:12px">' + title + '</h3><div class="tblw"><table><thead><tr><th></th><th>' + t("st.trades") + "</th><th>" + t("st.winpct") + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>" : "";
+function demoTrades() {
+  var seed = 7, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }, out = [], d = addDays(today(), -60);
+  var gr = ["PERFECT", "GOOD", "BAD"], ct = ["a", "b", "c", "d"];
+  for (var i = 0; i < 26; i++) {
+    d = addDays(d, 1 + Math.floor(rnd() * 3));
+    var g = gr[Math.floor(rnd() * 3)], c = ct[Math.floor(rnd() * 4)], smt = rnd() > .5 ? "yes" : "no", side = rnd() > .45 ? "short" : "long", dir = rnd() > .6 ? "reversal" : "continuation";
+    var p = .42 + (g === "PERFECT" ? .28 : g === "GOOD" ? .1 : -.12) + (c === "a" ? .1 : c === "d" ? -.14 : 0) + (smt === "yes" ? .06 : 0), win = rnd() < p, be = !win && rnd() < .1;
+    var amt = Math.round((win ? 150 + rnd() * 450 : 90 + rnd() * 160));
+    out.push({ date: ymd(d), time: "10:00", tr: { res: win ? "win" : be ? "be" : "loss", pnl: String(be ? 0 : win ? amt : -amt), grade: g, ctype: c, smt: smt, side: side, dir: dir, book: "day", entry: "100", stop: "99", target: String(100 + (1.5 + rnd() * 2).toFixed(1) * 1) } });
   }
-  h += grp(t("tr.book"), "book", ["day", "swing"], 1) + grp(t("tr.acct"), "acct", ["nostro", "personal"], 1) + grp(t("tr.grade"), "grade", ["PERFECT", "GOOD", "BAD"]) + grp(t("tr.ctype"), "ctype", ["a", "b", "c", "d"]) + grp(t("tr.smt"), "smt", ["yes", "both", "no"], 1) + grp(t("tr.svs"), "svs", ["yes", "both", "no"], 1) + grp(t("tr.tp"), "tp", ["none", "TP1", "TP2", "final"], 1);
-  return h + "</section>";
+  return out;
 }
+function barRows(a, key, vals, lab) {
+  return vals.map(function (v) {
+    var sub = a.filter(function (e) { return e.tr[key] === v; }); if (!sub.length) return null;
+    var w = sub.filter(function (e) { return e.tr.res === "win"; }).length;
+    return { label: lab ? t("tr." + key + "." + v) : (key === "ctype" ? v.toUpperCase() : v), n: sub.length, pct: Math.round(w / sub.length * 100), key: key };
+  }).filter(Boolean);
+}
+function equitySvg(a) {
+  var pts = [], run = 0; a.forEach(function (e) { var v = pnlNum(e.tr); if (v != null) { run += v; pts.push(run); } });
+  if (pts.length < 2) return "";
+  var W = 640, H = 170, mn = Math.min(0, Math.min.apply(null, pts)), mx = Math.max(0, Math.max.apply(null, pts)), rng = (mx - mn) || 1;
+  var X = function (i) { return 6 + i * (W - 12) / (pts.length - 1); }, Y = function (v) { return 8 + (mx - v) / rng * (H - 16); };
+  var line = pts.map(function (v, i) { return (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); }).join(" "), z = Y(0).toFixed(1);
+  var up = pts[pts.length - 1] >= 0;
+  return '<svg class="jd-eq ltr" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(t("jd.curve")) + '"><line x1="0" x2="' + W + '" y1="' + z + '" y2="' + z + '" class="z"/><path d="' + line + " L" + X(pts.length - 1).toFixed(1) + " " + z + " L" + X(0).toFixed(1) + " " + z + ' Z" class="a ' + (up ? "up" : "dn") + '"/><path d="' + line + '" class="l ' + (up ? "up" : "dn") + '" pathLength="1"/><circle cx="' + X(pts.length - 1).toFixed(1) + '" cy="' + Y(pts[pts.length - 1]).toFixed(1) + '" r="4.5" class="d ' + (up ? "up" : "dn") + '"/></svg>';
+}
+function money$(v) { return (v < 0 ? "-" : v > 0 ? "+" : "") + "$" + Math.abs(Math.round(v)).toLocaleString("en-US"); }
+function jStats() {
+  var demo = !!BL.jDemo, a = demo ? demoTrades() : realTrades(), n = a.length;
+  a = a.slice().sort(function (x, y) { return (x.date + x.time).localeCompare(y.date + y.time); });
+  var h = '<section class="card jstats jdash"><div class="rowf" style="justify-content:space-between"><h2>' + t("jd.h") + "</h2>" + (demo ? '<span class="chip warn">' + t("jd.demo") + "</span>" : "") + '</div><p class="xs muted">' + t("st.n") + "</p>";
+  if (!n) return h + '<div class="empty" style="margin-top:10px"><strong>' + t("st.none") + "</strong><span>" + t("st.none.t") + '</span><button class="btn sm" data-act="jdemo">' + t("jd.showdemo") + "</button></div></section>";
+  var W = a.filter(function (e) { return e.tr.res === "win"; }), L = a.filter(function (e) { return e.tr.res === "loss"; }), B = n - W.length - L.length, pct = Math.round(W.length / n * 100);
+  var pn = a.map(function (e) { return pnlNum(e.tr); }), hasP = pn.some(function (v) { return v != null; }), tot = pn.reduce(function (s, v) { return s + (v || 0); }, 0), cnt = pn.filter(function (v) { return v != null; }).length;
+  var rrs = a.map(function (e) { return trRR(e.tr); }).filter(function (x) { return x != null; }), avgRR = rrs.length ? rrs.reduce(function (x, y) { return x + y; }, 0) / rrs.length : null;
+  var st = 0, kind = ""; for (var i = a.length - 1; i >= 0; i--) { var r = a[i].tr.res; if (r === "be") continue; if (!kind) kind = r; if (r === kind) st++; else break; }
+  h += '<div class="jd-hero"><div class="jd-ring" style="--v:' + pct + '" role="img" aria-label="' + esc(t("st.winpct") + " " + pct + "%") + '"><div><b class="num ltr">' + pct + '%</b><span>' + t("jd.actual") + '</span><small>' + t("jd.of", { w: W.length, n: n }) + '</small></div></div><div class="jd-kpis">' +
+    '<div class="jd-k ' + (hasP ? (tot >= 0 ? "up" : "dn") : "") + '"><span>' + t("jd.pnl") + '</span><b class="num ltr">' + (hasP ? money$(tot) : "—") + '</b></div>' +
+    '<div class="jd-k"><span>' + t("st.trades") + '</span><b class="num ltr">' + n + '</b></div>' +
+    '<div class="jd-k"><span>' + t("jd.avg") + '</span><b class="num ltr">' + (hasP && cnt ? money$(tot / cnt) : "—") + '</b></div>' +
+    '<div class="jd-k"><span>' + t("st.rr") + '</span><b class="num ltr">' + (avgRR == null ? "—" : "1:" + avgRR.toFixed(1)) + '</b></div>' +
+    '<div class="jd-k ' + (kind === "win" ? "up" : kind === "loss" ? "dn" : "") + '"><span>' + t("jd.streak") + (kind ? " · " + t(kind === "win" ? "jd.wins" : "jd.losses") : "") + '</span><b class="num">' + (kind ? st : "—") + '</b></div>' +
+    '<div class="jd-k"><span>' + t("st.wl") + '</span><b class="num ltr">' + W.length + " / " + L.length + (B ? " / " + B : "") + "</b></div></div></div>";
+  if (n < 30) h += '<p class="notice warn xs">' + t("st.small", { n: n }) + "</p>";
+  h += '<h3 class="jd-t">' + t("jd.ribbon") + '</h3><div class="jd-rib" role="img" aria-label="' + esc(t("jd.ribbon")) + '">' + a.map(function (e, i) { var r = e.tr.res; return '<i class="' + (r === "win" ? "w" : r === "loss" ? "l" : "b") + '" style="--i:' + i + '" title="' + esc(e.date + " · " + t("tr.res." + r) + (e.tr.pnl ? " · " + e.tr.pnl : "")) + '"></i>'; }).join("") + '</div><div class="jd-leg"><span class="w">' + t("tr.res.win") + '</span><span class="l">' + t("tr.res.loss") + '</span><span class="b">' + t("tr.res.be") + "</span></div>";
+  var eq = hasP ? equitySvg(a) : ""; if (eq) h += '<h3 class="jd-t">' + t("jd.curve") + "</h3>" + eq;
+  var G = [["book", ["day", "swing"], 1], ["grade", ["PERFECT", "GOOD", "BAD"]], ["ctype", ["a", "b", "c", "d"]], ["smt", ["yes", "both", "no"], 1], ["svs", ["yes", "both", "no"], 1], ["dir", ["continuation", "reversal"], 1], ["side", ["long", "short"], 1], ["ent", ["market", "limit"], 1], ["acct", ["nostro", "personal"], 1]], all = [];
+  h += '<h3 class="jd-t">' + t("jd.rates") + '</h3><p class="xs muted">' + t("jd.rates.n") + '</p><div class="jd-groups">';
+  G.forEach(function (g) {
+    var rows = barRows(a, g[0], g[1], g[2]); if (!rows.length) return; all = all.concat(rows.map(function (r) { return Object.assign({ g: t("tr." + g[0]) }, r); }));
+    h += '<div class="jd-g"><h4>' + t("tr." + g[0]) + "</h4>" + rows.map(function (r) { return '<div class="jd-b ' + (r.n < 5 ? "few" : "") + '"><div class="jd-bl"><span>' + esc(r.label) + '</span><b class="num ltr">' + r.pct + '%</b><small class="ltr">' + r.n + "</small></div><div class=\"jd-bt\"><i style=\"--p:" + r.pct + '%"></i></div></div>'; }).join("") + "</div>";
+  });
+  h += "</div>";
+  var ok = all.filter(function (r) { return r.n >= 5; }).sort(function (x, y) { return y.pct - x.pct; });
+  h += '<div class="grid g2 jd-ins"><div class="jd-i good"><h4>' + t("jd.best") + "</h4>" + (ok.length > 1 ? "<p><b>" + esc(ok[0].g + ": " + ok[0].label) + '</b> · <span class="num ltr">' + ok[0].pct + "%</span> " + t("jd.from", { n: ok[0].n }) + "</p>" : '<p class="muted">' + t("jd.need") + "</p>") + '</div><div class="jd-i bad"><h4>' + t("jd.worst") + "</h4>" + (ok.length > 1 ? "<p><b>" + esc(ok[ok.length - 1].g + ": " + ok[ok.length - 1].label) + '</b> · <span class="num ltr">' + ok[ok.length - 1].pct + "%</span> " + t("jd.from", { n: ok[ok.length - 1].n }) + "</p>" : '<p class="muted">' + t("jd.need") + "</p>") + "</div></div>";
+  h += '<p class="xs muted" style="margin-top:14px">' + t("jd.disc") + "</p>" + (demo ? '<button class="btn sm" data-act="jdemo">' + t("jd.hidedemo") + "</button>" : "") + "</section>";
+  return h;
+}
+ACT.jdemo = function () { BL.jDemo = !BL.jDemo; BL.render(false); };
 BL.openEntry = function (pre) {
   pre = pre || {};
   var ex = pre.id ? S.journal.filter(function (x) { return x.id === pre.id; })[0] : null;
