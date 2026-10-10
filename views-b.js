@@ -788,14 +788,17 @@ function pzCard() {
   var sel = function (id, ch, cur, vals, lab) { return '<div class="fld"><label for="' + id + '">' + t(lab) + '</label><select id="' + id + '" data-ch="' + ch + '">' + vals.map(function (v) { return opt(v[0], v[1], cur); }).join("") + "</select></div>"; };
   var cb = function (ch, arg, on, label) { return '<label class="pzcb"><input type="checkbox" data-ch="' + ch + '" data-arg="' + arg + '"' + (on ? " checked" : "") + "><span>" + label + "</span></label>"; };
   var h = '<section class="card stack pzc"><div class="rowf" style="justify-content:space-between"><div><h2>' + t("pz.card") + '</h2><p class="muted">' + t("pz.card.n") + '</p></div><button class="btn sm" data-act="pzrun">' + t("pz.rerun") + "</button></div>";
-  h += '<div class="fld"><label for="pz-name">' + t("pz.name") + '</label><input type="text" id="pz-name" data-in="pzname" value="' + esc(S.name || "") + '" maxlength="30" autocomplete="given-name"></div>';
+  var site = BL.hasSite();
+  h += '<div class="pzg"><div class="fld"><label for="pz-name">' + t("pz.name") + '</label><input type="text" id="pz-name" data-in="pzname" value="' + esc(S.name || "") + '" maxlength="30" autocomplete="given-name"></div>';
   h += sel("pz-path", "pzpath", BL.path(), [["learn", t("ob.pick.learn")], ["both", t("ob.pick.both")], ["site", t("ob.pick.site")]], "pz.path");
-  h += '<fieldset class="pzfs"><legend>' + t("pz.sty") + '</legend><div class="rowf">' + ["invest", "swing", "day"].map(function (k) { return cb("pzsty", k, !!S.styles[k], t("sty." + k)); }).join("") + "</div></fieldset>";
-  h += sel("pz-mkt", "pzmkt", S.market, [["us", t("mkt.us")], ["il", t("mkt.il")], ["both", t("mkt.both")]], "pz.mkt");
+  h += "</div>";
+  if (site) h += '<fieldset class="pzfs"><legend>' + t("pz.sty") + '</legend><div class="rowf">' + ["invest", "swing", "day"].map(function (k) { return cb("pzsty", k, !!S.styles[k], t("sty." + k)); }).join("") + "</div></fieldset>";
+  h += '<div class="pzg">';
+  if (site) h += sel("pz-mkt", "pzmkt", S.market, [["us", t("mkt.us")], ["il", t("mkt.il")], ["both", t("mkt.both")]], "pz.mkt");
   h += sel("pz-exp", "pzexp", S.exp || "", [["", "—"], ["new", t("pz.exp.new")], ["some", t("pz.exp.some")], ["pro", t("pz.exp.pro")]], "pz.exp");
-  h += '<fieldset class="pzfs"><legend>' + t("pz.goals") + '</legend><div class="rowf">' + BL.pzGoals().map(function (g) { return cb("pzgoal", g[0], !!(S.goals && S.goals[g[0]]), t(g[1])); }).join("") + "</div></fieldset>";
   h += sel("pz-time", "pztime", String(S.time || ""), [["", "—"], ["15", t("pz.time.15")], ["30", t("pz.time.30")], ["60", t("pz.time.60")]], "pz.time");
-  h += sel("pz-theme", "pztheme", S.theme || "light", [["light", t("th.light")], ["dark", t("th.dark")], ["auto", t("th.auto")]], "pz.theme");
+  h += sel("pz-theme", "pztheme", S.theme || "light", [["light", t("th.light")], ["dark", t("th.dark")], ["auto", t("th.auto")]], "pz.theme") + "</div>";
+  h += '<fieldset class="pzfs"><legend>' + t("pz.goals") + '</legend><div class="rowf">' + BL.pzGoals().map(function (g) { return cb("pzgoal", g[0], !!(S.goals && S.goals[g[0]]), t(g[1])); }).join("") + "</div></fieldset>";
   h += cb("pzmot", "reduce", !!S.reduce, t("pz.reduce"));
   return h + "</section>";
 }

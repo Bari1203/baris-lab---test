@@ -933,3 +933,5 @@ html[dir=ltr] .ob[data-dir=next] .pzs>*{animation-name:pzPrev}html[dir=ltr] .ob[
 html.reduce .intro .pzs>*,html.reduce .intro .pzsum>div,html.reduce .intro .obopt,html.reduce .intro.onb::before,html.reduce .intro.onb::after{animation:none!important}
 .pzs[data-step=done]{max-height:calc(100dvh - 170px);overflow-y:auto;overflow-x:hidden;padding-bottom:8px;scrollbar-width:none}
 .pzs[data-step=done] .pzsum{gap:6px}.pzs[data-step=done] .pzsum>div{padding:7px 12px}
+.pzc{gap:12px}.pzc .pzg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 14px}
+.pzc .pzfs .rowf{gap:8px}.pzc .pzcb{min-height:38px;padding:0 12px;font-size:14px}
