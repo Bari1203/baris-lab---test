@@ -708,3 +708,7 @@ html[dir=rtl] .intro-bar i{transform-origin:right}
 .intro.still .obp.on>*,.intro.still .obc,.intro.still .obs{animation:none!important;opacity:1;transform:none}
 .obend .btn:not(.acc){background:transparent;color:#F5F1E8;border:1.5px solid rgba(245,241,232,.45)}
 .obend .btn:not(.acc):hover{background:rgba(245,241,232,.12)}
+.obch-g.one{grid-template-columns:1fr}
+.wopline{margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.obend .btn[disabled]{opacity:.55;cursor:not-allowed}
+.obtri.wide span{font-size:12px}

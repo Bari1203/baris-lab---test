@@ -357,9 +357,15 @@ ACT.hdet = function (id) {
 var EX = { step: 0, obs: "", scn: "", chg: "", con: "" }, EXN = 44;
 function exData() { return D.series("exercise-1", 60, 1.6); }
 function lvChip(l) { return '<span class="chip">' + t("lv." + l.lv) + "</span>"; }
+/* paid video learning lives on an outside platform. Fill url (and name) here once Bari sends them; until then the button says "soon". Nothing is locked on this site. */
+BL.WOP = { name: "Whop", url: "" };
+BL.wopBtn = function (cls) {
+  var w = BL.WOP;
+  return w.url ? '<a class="btn ' + (cls || "acc") + '" href="' + esc(w.url) + '" target="_blank" rel="noopener">' + t("wop.go") + "</a>" : '<button class="btn" type="button" disabled>' + t("wop.soon") + "</button>";
+};
 function lessonList() {
   var lv = S.f.lv || "", done = Object.keys(S.done).filter(function (k) { return S.done[k]; }).length;
-  var h = '<div class="ph"><div><h1>' + t("learn.h") + "</h1><p>" + t("learn.sub") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
+  var h = '<div class="ph"><div><h1>' + t("learn.h") + "</h1><p>" + t("learn.sub") + '</p><p class="xs wopline">' + t("wop.line") + " " + BL.wopBtn("sm") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
   h += '<section class="card tint" style="margin-bottom:14px"><div class="rowf" style="justify-content:space-between"><div><h2>' + t("ex.title") + '</h2><p>' + t("ex.intro") + '</p></div><button class="btn acc" data-act="exstart">' + t("ex.start") + '</button></div></section>';
   h += '<div class="rowf" style="justify-content:space-between;margin-bottom:12px"><div class="pillset">' + [["", t("lv.all")], ["basic", t("lv.basic")], ["mid", t("lv.mid")], ["adv", t("lv.adv")]].map(function (x) { return '<button class="btn' + (lv === x[0] ? " on" : "") + '" data-act="lvl" data-arg="' + x[0] + '" aria-pressed="' + (lv === x[0]) + '">' + x[1] + "</button>"; }).join("") + '</div><span class="sm muted">' + t("learn.prog", { a: done, b: D.lessons.length }) + '</span></div><div class="progress" style="margin-bottom:14px"><i style="width:' + Math.round(done / D.lessons.length * 100) + '%"></i></div>';
   function lcards(a) { return '<div class="grid g2">' + a.map(function (l) {
@@ -634,7 +640,7 @@ BL.intro = function (name, done) {
 };
 /* onboarding pages after the opening: purpose, what you get, how it works, your path, what to know, start */
 BL.onboard = function (el, leave) {
-  var ic = BL.ic, cur = 0, N = 6, box = document.createElement("div");
+  var ic = BL.ic, cur = 0, N = 7, box = document.createElement("div");
   var cn = 0;
   function card(i, t1, t2) { return '<div class="obc" style="--d:' + (0.25 + (cn++) * 0.09) + 's"><span class="obi">' + ic(i, 22) + "</span><div><b>" + t(t1) + "</b><p>" + t(t2) + "</p></div></div>"; }
   function step(n, k) { return '<div class="obs" style="--d:' + (0.3 + n * 0.14) + 's"><span class="obn">' + n + "</span><div><b>" + t("ob.h" + k) + "</b><p>" + t("ob.h" + k + "d") + "</p></div></div>"; }
@@ -644,14 +650,16 @@ BL.onboard = function (el, leave) {
     '<div class="obv"><span class="obbig">' + ic("radar", 54) + '</span></div><h2>' + t("ob.1.h") + "</h2><p class=\"obl\">" + t("ob.1.p") + '</p><div class="obtri"><span>' + t("ob.1.a") + "</span><span>" + t("ob.1.b") + "</span><span>" + t("ob.1.c") + "</span></div>",
     "<h2>" + t("ob.2.h") + '</h2><div class="obgrid">' + card("radar", "ob.2.a", "ob.2.ad") + card("learn", "ob.2.b", "ob.2.bd") + card("weekly", "ob.2.c", "ob.2.cd") + card("journal", "ob.2.d", "ob.2.dd") + card("wait", "ob.2.e", "ob.2.ed") + card("events", "ob.2.f", "ob.2.fd") + "</div>",
     "<h2>" + t("ob.3.h") + '</h2><div class="obsteps">' + step(1, 1) + step(2, 2) + step(3, 3) + '</div><p class="notice-i">' + t("ob.3.n") + "</p>",
-    "<h2>" + t("ob.4.h") + '</h2><p class="obl">' + t("ob.4.p") + '</p><h3>' + t("ob.4.m") + '</h3><div class="obch-g">' + chipsM() + '</div><h3>' + t("ob.4.s") + '</h3><div class="obch-g">' + chipsS() + '</div><p class="xs obx">' + t("ob.4.n") + "</p>",
+    "<h2>" + t("ob.4.h") + '</h2><p class="obl">' + t("ob.4.p") + '</p><h3>' + t("ob.4.m") + '</h3><div class="obch-g">' + chipsM() + '</div><h3>' + t("ob.4.s") + '</h3><div class="obch-g">' + chipsS() + '</div><h3>' + t("ob.4.l") + '</h3><div class="obch-g one">' + '<button type="button" class="obch" data-l="1"><b>' + t("ob.4.lb") + "</b><span>" + t("ob.4.ld") + "</span></button></div>" + '<p class="xs obx">' + t("ob.4.n") + "</p>",
+    '<div class="obv"><span class="obbig">' + ic("learn", 50) + '</span></div><h2>' + t("ob.L.h") + '</h2><p class="obl">' + t("ob.L.p") + '</p><h3>' + t("ob.L.in") + '</h3><div class="obtri wide">' + ["ob.L.t1","ob.L.t2","ob.L.t3","ob.L.t4","ob.L.t5","ob.L.t6","ob.L.t7","ob.L.t8"].map(function (k) { return "<span>" + t(k) + "</span>"; }).join("") + '</div><div class="obsteps">' + step(1, 7) + step(2, 9) + '</div><div class="obend"><button class="btn acc" type="button" data-to="learn">' + t("ob.L.free") + "</button>" + BL.wopBtn("") + '</div><p class="xs obx">' + t("ob.L.n") + "</p>",
     "<h2>" + t("ob.5.h") + '</h2><div class="obgrid one">' + card("shield", "ob.5.a", "ob.5.ad") + card("chart", "ob.5.b", "ob.5.bd") + card("help", "ob.5.c", "ob.5.cd") + card("settings", "ob.5.d", "ob.5.dd") + "</div>",
-    '<div class="obv"><span class="obbig ok"><svg viewBox="0 0 20 20" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></span></div><h2>' + t("ob.6.h") + '</h2><div class="obsteps">' + step(1, 4) + step(2, 5) + step(3, 6) + '</div><div class="obend"><button class="btn acc intro-go2" type="button" data-to="home">' + t("ob.6.go") + '</button><button class="btn" type="button" data-to="learn">' + t("ob.6.learn") + "</button></div>"
+    '<div class="obv"><span class="obbig ok"><svg viewBox="0 0 20 20" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></span></div><h2>' + t("ob.6.h") + '</h2><div class="obsteps">' + step(1, 4) + step(2, 5) + step(3, 6) + '</div><div class="obend"><button class="btn acc intro-go2" type="button" data-to="' + (S.learn ? "learn" : "home") + '">' + t(S.learn ? "ob.6.learn" : "ob.6.go") + '</button><button class="btn" type="button" data-to="' + (S.learn ? "home" : "learn") + '">' + t(S.learn ? "ob.6.go" : "ob.6.learn") + "</button></div>"
   ];
   box.className = "ob"; box.innerHTML = '<div class="obtrack">' + slides.map(function (h, i) { return '<section class="obp" data-i="' + i + '" aria-label="' + (i + 1) + "/" + N + '">' + h + "</section>"; }).join("") + '</div><div class="obnav"><button type="button" class="btn ghost obprev" aria-label="' + esc(t("ob.prev")) + '">' + t("ob.prev") + '</button><div class="obdots" role="tablist">' + slides.map(function (h, i) { return '<button type="button" role="tab" data-d="' + i + '" aria-label="' + (i + 1) + '"></button>'; }).join("") + '</div><button type="button" class="btn acc obnext">' + t("ob.next") + "</button></div>";
   el.querySelector(".intro-in").style.display = "none"; el.classList.add("onb"); el.appendChild(box);
   function sync() {
     box.querySelectorAll("[data-m]").forEach(function (b) { b.classList.toggle("on", S.market === b.getAttribute("data-m")); b.setAttribute("aria-pressed", S.market === b.getAttribute("data-m")); });
+    box.querySelectorAll("[data-l]").forEach(function (b) { b.classList.toggle("on", !!S.learn); b.setAttribute("aria-pressed", !!S.learn); });
     box.querySelectorAll("[data-s]").forEach(function (b) { var on = !!S.styles[b.getAttribute("data-s")]; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
   }
   function go(i) {
@@ -668,6 +676,7 @@ BL.onboard = function (el, leave) {
     if (b.classList.contains("obnext")) go(cur + 1); else if (b.classList.contains("obprev")) go(cur - 1);
     else if (b.hasAttribute("data-d")) go(+b.getAttribute("data-d"));
     else if (b.hasAttribute("data-m")) { S.market = b.getAttribute("data-m"); BL.save(); sync(); }
+    else if (b.hasAttribute("data-l")) { S.learn = S.learn ? 0 : 1; BL.save(); sync(); if (S.learn) go(cur + 1); }
     else if (b.hasAttribute("data-s")) { var k = b.getAttribute("data-s"); S.styles[k] = S.styles[k] ? 0 : 1; if (!S.styles.invest && !S.styles.swing && !S.styles.day) S.styles = { invest: 1, swing: 1, day: 1 }; BL.save(); sync(); }
     else if (b.hasAttribute("data-to")) { BL.save(); leave(b.getAttribute("data-to")); }
   });
