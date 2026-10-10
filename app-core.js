@@ -356,11 +356,20 @@ function render(top) {
     el.innerHTML = '<div class="notice">' + esc(t("err.view")) + "</div>";
   }
   try { applySub(el); } catch (e) { console.error(e); }
+  document.body.setAttribute("data-view", R.view);
+  try { BL.decorate(el); } catch (e) { console.error(e); }
   el.classList.remove("pg");
   if (top) { void el.offsetWidth; el.classList.add("pg"); window.scrollTo(0, 0); }
   BL.fx(el, top);
 }
 BL.render = render;
+/* page header icon tile, same language as the home and radar screens */
+BL.decorate = function (el) {
+  var ph = el.querySelector(".ph"), n = NAV.filter(function (x) { return x.id === R.view; })[0];
+  if (!ph || !n || ph.querySelector(".phi")) return;
+  var box = ph.firstElementChild; if (!box || box.tagName !== "DIV") return;
+  box.classList.add("phbox"); box.insertAdjacentHTML("afterbegin", '<span class="phi" aria-hidden="true">' + ic(n.ic, 26) + "</span>");
+};
 
 /* small motion helpers: count-up numbers, star pop. Skipped for reduced motion. */
 BL.fx = function (el, top) {
