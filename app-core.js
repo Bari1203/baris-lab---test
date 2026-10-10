@@ -57,6 +57,8 @@ var ICONS = {
   next: "M6 5l9 7-9 7zM18 5v14",
   plus: "M12 5v14M5 12h14",
   expand: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5",
+  sun: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
+  moon: "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z",
   star: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"
 };
 function ic(n, sz) { return '<svg class="ic" width="' + (sz || 20) + '" height="' + (sz || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (ICONS[n] || "") + '"/></svg>'; }
@@ -88,6 +90,19 @@ function applySettings() {
   if (S.theme === "auto") h.removeAttribute("data-theme"); else h.setAttribute("data-theme", S.theme);
   h.classList.toggle("reduce", !!S.reduce);
 }
+/* effective theme: explicit choice, otherwise the system setting */
+BL.dark = function () { return S.theme === "dark" || (S.theme !== "light" && !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)); };
+ACT.thm = function () {
+  var b = document.getElementById("themebtn");
+  S.theme = BL.dark() ? "light" : "dark"; save(); applySettings();
+  if (b) {
+    var d = BL.dark(), sp = b.querySelector(".tico");
+    sp.classList.add("out");
+    setTimeout(function () { sp.innerHTML = ic(d ? "sun" : "moon", 20); sp.classList.remove("out"); sp.classList.add("in"); setTimeout(function () { sp.classList.remove("in"); }, 450); }, 220);
+    b.setAttribute("aria-label", t(d ? "thm.tolight" : "thm.todark")); b.setAttribute("aria-pressed", d);
+  }
+  var sel = document.getElementById("st-theme"); if (sel) sel.value = S.theme;
+};
 function setLang(l) { S.lang = l; save(); render(false); }
 
 /* seeds */
@@ -207,7 +222,8 @@ function renderShell() {
     '<button class="langbtn" data-act="lang" aria-label="' + esc(t("lang.switch")) + '">' + (S.lang === "he" ? "EN" : "עב") + "</button>" +
     '<button class="iconbtn" data-act="music" aria-label="' + esc(t("music")) + '">' + ic("music") + "</button>" +
     '<button class="iconbtn" data-act="nav" data-arg="alerts" aria-label="' + esc(t("nav.alerts") + (c ? " (" + c + ")" : "")) + '">' + ic("bell") + (c ? '<span class="cnt">' + c + "</span>" : "") + "</button>" +
-    '<button class="iconbtn" data-act="profile" aria-label="' + esc(t("profile")) + '">' + ic("user") + "</button>";
+    '<button class="iconbtn" data-act="profile" aria-label="' + esc(t("profile")) + '">' + ic("user") + "</button>" +
+    '<button class="iconbtn themebtn" id="themebtn" data-act="thm" aria-label="' + esc(t(BL.dark() ? "thm.tolight" : "thm.todark")) + '" aria-pressed="' + BL.dark() + '"><span class="tico">' + ic(BL.dark() ? "sun" : "moon", 20) + "</span></button>";
   $("#banner").innerHTML = "<span>" + t("banner") + "</span>";
   var main = ["home", "radar", "charts", "journal"].map(function (id) { return NAV.filter(function (n) { return n.id === id; })[0]; });
   var moreCur = main.every(function (n) { return n.id !== R.view && !(R.view === "stock" && n.id === "radar"); });
