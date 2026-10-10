@@ -601,3 +601,12 @@ body.gated .app{display:block}
 .clause .ci{color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px;margin-inline-end:4px}
 .checks{display:grid;gap:10px}
 .chk.soft{opacity:.85;border-top:1px dashed var(--line2);padding-top:10px}
+
+/* weekly review as a brainstorm, plan vs result, watching card */
+.rv{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.rv li{display:flex;gap:12px;align-items:flex-start}
+.rv .rvn{flex:none;width:26px;height:26px;border-radius:50%;background:var(--teal,#123C3A);color:#F5F1E8;font:600 .8rem/26px Inter,sans-serif;text-align:center}
+.rv p{margin:2px 0 0}
+.chip.warn{background:#F9D9D2;color:#7a2a1c}
+.watchc{margin:12px 0}
+.watchc .rowf{gap:6px;margin-top:6px}

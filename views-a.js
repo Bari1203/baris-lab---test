@@ -28,7 +28,15 @@ function tile(s) {
     '<div class="th"><span class="av">' + esc(ab(s)) + '</span><div class="tn"><b class="ltr">' + s.t + '</b><span class="xs muted">' + esc(Lx(s.n)) + '</span></div><button class="iconbtn starb' + (w ? " on" : "") + '" data-act="wtog" data-arg="' + s.t + '" aria-pressed="' + w + '" aria-label="' + esc(t(w ? "watch.remove" : "watch.add") + " " + s.t) + '">' + starSvg(w, 22) + "</button></div>" +
     '<div class="tp"><div class="px"><b class="num ltr">' + money(s.price, s.dec) + "</b>" + chgChip(s) + "</div>" + BL.spark(s) + "</div>" +
     '<div class="tf">' + BL.chipSt(s.st) + '<span class="xs muted">' + distTxt(s) + "</span>" + (st ? '<span class="sring" style="--v:' + sc + '" role="img" aria-label="' + esc(t("f.score") + " " + sc) + '"><b>' + sc + "</b></span>" : '<span class="chip kind">' + t("sec." + s.sec) + "</span>") + "</div>" +
+    (st && s.ev <= 14 ? '<p class="xs"><span class="chip warn">' + t("earn.soon", { n: s.ev }) + "</span></p>" : "") +
     '<p class="twhy">' + esc(Lx(s.why)) + "</p></article>";
+}
+/* STATUS = WATCHING in Bari's swing journal is the manual basis of "the index of Bari" */
+function watchingCard() {
+  var a = (S.journal || []).filter(function (e) { return e.type === "trade" && e.tr && e.tr.book === "swing" && e.tr.sstat === "watching"; });
+  var h = '<section class="card watchc"><h3>' + t("watch.h") + '</h3><p class="xs muted">' + t("watch.n") + "</p>";
+  if (!a.length) return h + '<p class="sm muted">' + t("watch.none") + "</p></section>";
+  return h + '<div class="rowf">' + a.map(function (e) { var r = e.tr; return '<span class="chip">' + esc((e.ticker || e.title) + (r.sector ? " · " + r.sector : "") + (r.svs ? " · SMT " + t("tr.svs." + r.svs) : "")) + "</span>" + (r.earn ? '<span class="chip warn">' + t("sw.earn") + " " + esc(r.earn) + "</span>" : ""); }).join("") + "</div></section>";
 }
 function spot(s) {
   var w = !!S.watch[s.t];
@@ -160,6 +168,7 @@ V.radar = {
         return h;
       }
       h += '<div class="sectitle"><h2>' + t("radar.stocks") + '</h2><div class="seg mini" role="group"><button class="' + (f.view === "all" ? "on" : "") + '" data-act="rview" data-arg="all" aria-pressed="' + (f.view === "all") + '">' + t("radar.all") + '</button><button class="' + (f.view === "mine" ? "on" : "") + '" data-act="rview" data-arg="mine" aria-pressed="' + (f.view === "mine") + '">' + t("radar.mine") + " (" + Object.keys(S.watch).filter(function (k) { return S.watch[k] && D.stock(k) && D.stock(k).kind === "stock"; }).length + ")</button></div></div>";
+      h += watchingCard();
       h += '<div class="toolbar"><div class="grow"><label class="vh" for="rq">' + t("radar.search") + '</label><input type="search" id="rq" class="bigsearch" data-in="rq" placeholder="' + esc(t("radar.search")) + '" value="' + esc(f.q) + '"></div></div>';
       h += '<div class="pillset scroll" style="margin-bottom:12px" role="group" aria-label="' + esc(t("f.flags")) + '">' + ["all", "new", "upd", "near", "watch"].map(function (k) { return '<button class="btn' + (f.flag === k ? " on" : "") + '" data-act="rflag" data-arg="' + k + '" aria-pressed="' + (f.flag === k) + '">' + t("flag." + k) + "</button>"; }).join("") + "</div>";
       h += '<details class="filt"><summary>' + t("radar.more") + '</summary><div class="fgrid">' +
@@ -307,21 +316,47 @@ ACT.wrem = function (tk) {
 };
 
 /* ------------------------------------------------------------ weekly review */
-function weekRange(w) { var d = today(), mon = addDays(d, -((d.getDay() + 6) % 7) + w.off); return { a: mon, b: addDays(mon, 6) }; }
+/* review weeks run Sunday to Friday; on Friday and Saturday the current review week is the coming one (the review is written on Saturday) */
+function weekRange(w) { var d = today(), dow = d.getDay(), sun = addDays(d, -dow + (dow >= 5 ? 7 : 0) + w.off); return { a: sun, b: addDays(sun, 5) }; }
+function fmtWeek(r) {
+  var mn = function (x) { return new Intl.DateTimeFormat(BL.loc(), { month: "long" }).format(x); };
+  if (r.a.getMonth() === r.b.getMonth()) return mn(r.a) + " " + r.a.getFullYear() + " · \u2066" + r.a.getDate() + "–" + r.b.getDate() + "/" + (r.b.getMonth() + 1) + "\u2069";
+  return mn(r.a) + " " + r.a.getFullYear() + " · \u2066" + r.a.getDate() + "/" + (r.a.getMonth() + 1) + "–" + r.b.getDate() + "/" + (r.b.getMonth() + 1) + "\u2069";
+}
+BL.fmtWeek = fmtWeek;
 function weekText(i) {
   var w = D.weeks[i], r = weekRange(w);
-  return t("weekly.h") + " " + BL.fmtD(r.a) + " – " + BL.fmtD(r.b) + "\n" + t("sample.all") + "\n\n" + t("wk.market") + ": " + Lx(w.mkt) + "\n\n" + t("wk.concl") + ": " + Lx(w.concl) + "\n\n" + t("wk.risks") + ": " + Lx(w.risks) + "\n\n" + t("disc.short");
+  return t("weekly.h") + " " + fmtWeek(r) + "\n" + t("sample.all") + "\n\n" + t("wk.market") + ": " + Lx(w.mkt) + "\n\n" + t("wk.concl") + ": " + Lx(w.concl) + "\n\n" + t("wk.risks") + ": " + Lx(w.risks) + "\n\n" + t("disc.short");
 }
+/* the weekly review is a brainstorm, top down: monthly, 2W, weekly, daily with NQ and ES together, the story, scenarios, targets, what cancels, pace.
+   Only the review of 11-16/10 (written 10/10/2026) is filled in, from Bari's own brief. Everything else stays "not entered". */
 function nqesBody(i) {
   var none = '<span class="muted">' + t("wk.nq.none") + "</span>", b = i === 0;
-  return '<p class="xs muted" style="margin-bottom:10px">' + t("wk.nq.sub") + "</p>" + kv(t("wk.nq.asset"), "NQ / ES") + kv(t("wk.nq.bias"), b ? t("wk.nq.down") : none) + kv(t("wk.nq.range"), none) + kv(t("wk.nq.target"), b ? '<span class="num ltr">30,792 · 30,356</span>' : none) + kv(t("wk.nq.cancel"), none) +
+  var nm = function (s) { return '<span class="num ltr">' + s + "</span>"; };
+  var rows = [
+    ["wk.s.m", none], ["wk.s.2w", none],
+    ["wk.s.w", b ? "NQ: " + t("wk.r.nqw") + "<br>ES: " + t("wk.r.esw") : none],
+    ["wk.s.d", none],
+    ["wk.s.story", b ? t("wk.r.story") : none],
+    ["wk.s.a", b ? t("wk.r.scn") : none],
+    ["wk.s.b", none],
+    ["wk.s.t", b ? "NQ: " + nm("30,792") + " → " + nm("30,529.25") + " → " + nm("30,356.75") : none],
+    ["wk.s.x", b ? t("wk.r.cancel") : none],
+    ["wk.s.pace", none]];
+  return '<p class="xs muted" style="margin-bottom:10px">' + t("wk.nq.sub") + '</p><ol class="rv">' + rows.map(function (r, k) { return '<li><span class="rvn">' + (k + 1) + '</span><div><b>' + t(r[0]) + "</b><p>" + r[1] + "</p></div></li>"; }).join("") + "</ol>" +
+    '<p class="notice mint xs" style="margin-top:10px">' + t("wk.when") + "</p><p class=\"notice xs\" style=\"margin-top:8px\">" + t("wk.chart") + "</p>" +
     (b ? '<p class="xs" style="margin-top:10px"><span class="chip">' + t("wk.nq.bari") + "</span> " + t("wk.nq.src") + "</p>" : "");
 }
+function planBody(i, r) {
+  var key = BL.ymd(r.a), v = (S.wkres && S.wkres[key]) || "";
+  return '<div class="grid g2"><div class="kv"><span class="k">' + t("wk.planh") + '</span><span class="v">' + (i === 0 ? t("wk.r.scn") + "<br>" + t("wk.r.cancel") : '<span class="muted">' + t("wk.nq.none") + "</span>") + '</span></div><div class="fld"><label for="wk-res">' + t("wk.resh") + '</label><textarea id="wk-res" rows="4" data-in="wkres" data-arg="' + key + '" placeholder="' + esc(t("wk.res.ph")) + '">' + esc(v) + "</textarea></div></div><p class=\"xs muted\" style=\"margin-top:8px\">" + t("wk.res.n") + "</p>";
+}
+IN.wkres = function (val, el) { S.wkres = S.wkres || {}; S.wkres[el.getAttribute("data-arg")] = val; BL.save(); };
 V.weekly = {
   html: function () {
     var i = S.f.wk || 0, w = D.weeks[i], r = weekRange(w), sv = !!S.savedWeeks[i], items = BL.vis(D.items);
     var h = '<div class="ph"><div><h1>' + t("weekly.h") + "</h1><p>" + t("weekly.sub") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
-    h += '<div class="pillset scroll" style="margin-bottom:14px" role="group" aria-label="' + esc(t("wk.pick")) + '">' + D.weeks.map(function (x, k) { var rr = weekRange(x); return '<button class="btn' + (k === i ? " on" : "") + '" data-act="wkpick" data-arg="' + k + '" aria-pressed="' + (k === i) + '">' + BL.fmtD(rr.a, { day: "numeric", month: "short" }) + " – " + BL.fmtD(rr.b, { day: "numeric", month: "short" }) + "</button>"; }).join("") + "</div>";
+    h += '<div class="pillset scroll" style="margin-bottom:14px" role="group" aria-label="' + esc(t("wk.pick")) + '">' + D.weeks.map(function (x, k) { var rr = weekRange(x); return '<button class="btn' + (k === i ? " on" : "") + '" data-act="wkpick" data-arg="' + k + '" aria-pressed="' + (k === i) + '">' + fmtWeek(rr) + "</button>"; }).join("") + "</div>";
     h += '<section class="layer l3"><h2>' + t("wk.concl") + "</h2><p style=\"font-size:18px\">" + esc(Lx(w.concl)) + '</p><p class="xs muted">' + BL.sampleBadge() + " " + t("wk.concl.n") + "</p></section>";
     var evs = i === 0 ? BL.eventsNext(3) : [];
     h += '<div class="grid g2" style="margin-top:14px"><section class="card"><h2>' + t("wk.market") + '</h2><p>' + esc(Lx(w.mkt)) + '</p><p class="xs muted" style="margin-top:8px">' + t("wk.ai") + "</p></section>";
@@ -329,12 +364,13 @@ V.weekly = {
     h += "</div>";
     h += '<div class="folds" style="margin-top:14px">';
     h += fold(t("wk.nqes"), nqesBody(i));
+    h += fold(t("wk.plan"), planBody(i, r));
     h += fold(t("wk.radar"), '<div class="stack">' + (items.filter(function (s) { return s.upd <= 2; }).map(function (s) { return '<div><button class="btn sm ghost" data-act="open" data-arg="' + s.t + '"><b class="ltr">' + s.t + "</b></button> " + esc(Lx(s.ch)) + "</div>"; }).join("") || '<p class="muted">' + t("home.nochange") + "</p>") + "</div>", true);
     var wk = waitKeys();
     h += fold(t("wk.wait"), '<div class="stack">' + (wk.length ? wk.map(function (k) { return '<div><button class="btn sm ghost" data-act="open" data-arg="' + k + '"><b class="ltr">' + k + "</b></button> " + esc(S.waiting[k].note) + "</div>"; }).join("") : '<p class="muted">' + t("wait.empty.short") + "</p>") + "</div>");
     h += fold(t("wk.new"), (D.stocks.filter(function (s) { return s.isNew && BL.inMarket(s); }).map(function (s) { return '<div><button class="btn sm ghost" data-act="open" data-arg="' + s.t + '"><b class="ltr">' + s.t + "</b></button> " + esc(Lx(s.why)) + "</div>"; }).join("") || '<p class="muted">' + t("wk.nonew") + "</p>") + '<h3 style="margin-top:14px">' + t("wk.scn") + '</h3><p class="sm muted">' + t("wk.scn.t") + "</p>");
     h += fold(t("wk.risks"), "<p>" + esc(Lx(w.risks)) + '</p><h3 style="margin-top:14px">' + t("wk.sources") + '</h3><p class="sm muted">' + t("wk.sources.t") + "</p>");
-    h += fold(t("wk.cover"), kv(t("wk.cover"), BL.fmtD(r.a) + " – " + BL.fmtD(r.b)) + kv(t("wk.published"), t("wk.nopub")) + kv(t("wk.data"), t("wk.nodata")));
+    h += fold(t("wk.cover"), kv(t("wk.cover"), fmtWeek(r)) + kv(t("wk.published"), t("wk.nopub")) + kv(t("wk.data"), t("wk.nodata")));
     h += "</div>";
     h += '<div class="rowf" style="margin-top:14px"><button class="btn' + (sv ? " on" : "") + '" data-act="wksave" data-arg="' + i + '" aria-pressed="' + sv + '">' + t(sv ? "wk.saved" : "wk.save") + '</button><button class="btn" data-act="wkcopy" data-arg="' + i + '">' + t("wk.copy") + '</button><button class="btn" data-act="wkj" data-arg="' + i + '">' + t("wk.tojournal") + "</button></div>";
     h += '<p class="xs muted" style="margin-top:14px">' + t("disc.short") + "</p>";
@@ -344,7 +380,7 @@ V.weekly = {
 ACT.wkpick = function (i) { S.f.wk = +i; BL.save(); BL.render(false); };
 ACT.wksave = function (i) { S.savedWeeks[i] = !S.savedWeeks[i]; BL.save(); BL.toast(t(S.savedWeeks[i] ? "wk.saved.t" : "wk.unsaved.t")); BL.render(false); if (S.savedWeeks[i]) BL.cele({ big: 1, cap: t("cele.week") }); };
 ACT.wkcopy = function (i) { BL.copy(weekText(+i)); };
-ACT.wkj = function (i) { var r = weekRange(D.weeks[+i]); BL.openEntry({ type: "review", title: t("weekly.h") + " " + BL.fmtD(r.a, { day: "numeric", month: "short" }) }); };
+ACT.wkj = function (i) { var r = weekRange(D.weeks[+i]); BL.openEntry({ type: "review", title: t("weekly.h") + " " + fmtWeek(r) }); };
 
 /* ------------------------------------------------------------ chart center */
 var CHS = { t: "NVLX", tf: "D1", q: "", tab: "all" };

@@ -235,7 +235,7 @@ var SUBG = {
   wait: function (k) { var i = -1; k.forEach(function (n, j) { if (i < 0 && hc(n, "sectitle")) i = j; }); if (i < 3) return null; return [["mine", k.slice(2, i)], ["sug", k.slice(i)]]; },
   weekly: function (k) {
     var l = first(k, "layer"), g = first(k, "grid"), f = first(k, "folds"); if (!l || !g || !f) return null; var c = kd(f);
-    return [["concl", [l]], ["nqes", [c[0]]], ["market", [g.children[0]]], ["events", [g.children[1]]], ["radar", [c[1]]], ["wait", [c[2]]], ["new", [c[3]]], ["risks", [c[4], c[5]]]];
+    return [["concl", [l]], ["nqes", [c[0]]], ["plan", [c[1]]], ["market", [g.children[0]]], ["events", [g.children[1]]], ["radar", [c[2]]], ["wait", [c[3]]], ["new", [c[4]]], ["risks", [c[5], c[6]]]];
   },
   events: function (k) { return k.length > 3 ? [["daily", [k[1]]], ["evlist", k.slice(2)]] : null; },
   journal: function (k) { var g = k[k.length - 1], st = first(k, "jstats"); return hc(g, "grid") && st && k.length > 5 ? [["diary", k.slice(2, k.indexOf(st))], ["stats", [st]], ["summary", [g]]] : null; },

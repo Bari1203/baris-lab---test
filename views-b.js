@@ -79,8 +79,13 @@ function entryCard(e) {
   var note = e.note ? esc(e.note.length > 170 ? e.note.slice(0, 170) + "…" : e.note) : "";
   return '<article class="entry' + (e.status !== "open" ? " done" : "") + '"><div class="rowf" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><h3>' + esc(e.title) + '</h3><span class="chip">' + t("jt." + e.type) + '</span></div><div class="rowf xs muted"><span>' + BL.fmtD(pd(e.date), { weekday: "short", day: "numeric", month: "short" }) + " " + esc(e.time) + "</span>" + (e.ticker ? '<span class="chip">' + ltr(e.ticker) + "</span>" : "") + '<span class="chip">' + t("js." + e.status) + "</span>" + (e.rem ? "<span>" + t("je.rem.short") + "</span>" : "") + "<span>" + t("je.rel") + ": " + t("rel." + e.rel) + "</span></div>" + (note ? '<p class="sm">' + note + "</p>" : "") +
     (e.scn ? '<p class="sm"><b>' + t("je.scn") + ":</b> " + esc(e.scn) + "</p>" : "") + (e.chg ? '<p class="sm"><b>' + t("je.chg") + ":</b> " + esc(e.chg) + "</p>" : "") +
-    (e.tr ? '<div class="rowf">' + [e.tr.acct && t("tr.acct." + e.tr.acct), e.tr.side && t("tr.side." + e.tr.side), e.tr.grade, e.tr.ctype && (t("tr.ctype") + " " + e.tr.ctype), e.tr.res && t("tr.res." + e.tr.res), e.tr.pnl && ("P&L " + e.tr.pnl)].filter(Boolean).map(function (x) { return '<span class="chip">' + esc(x) + "</span>"; }).join("") + (trRR(e.tr) ? '<span class="chip">R:R 1:' + trRR(e.tr).toFixed(1) + "</span>" : "") + "</div>" : "") + ((e.tags || []).length ? '<div class="rowf">' + e.tags.map(function (g) { return '<span class="chip">' + esc(g) + "</span>"; }).join("") + "</div>" : "") +
+    (e.tr ? '<div class="rowf">' + [e.tr.acct && t("tr.acct." + e.tr.acct), e.tr.side && t("tr.side." + e.tr.side), e.tr.grade, e.tr.ctype && (t("tr.ctype") + " " + e.tr.ctype), e.tr.res && t("tr.res." + e.tr.res), e.tr.pnl && ("P&L " + e.tr.pnl)].filter(Boolean).map(function (x) { return '<span class="chip">' + esc(x) + "</span>"; }).join("") + (trRR(e.tr) ? '<span class="chip">R:R 1:' + trRR(e.tr).toFixed(1) + "</span>" : "") + (e.tr.book === "swing" ? swChips(e.tr) : "") + "</div>" : "") + ((e.tags || []).length ? '<div class="rowf">' + e.tags.map(function (g) { return '<span class="chip">' + esc(g) + "</span>"; }).join("") + "</div>" : "") +
     '<div class="rowf"><button class="btn sm" data-act="jedit" data-arg="' + e.id + '">' + t("edit") + '</button><button class="btn sm" data-act="jstat" data-arg="' + e.id + '">' + t(e.status === "open" ? "je.close" : "je.reopen") + '</button><button class="btn sm ghost" data-act="jdel" data-arg="' + e.id + '">' + t("delete") + "</button></div></article>";
+}
+function swChips(r) {
+  var a = [r.sstat && t("tr.sstat." + r.sstat), r.sector, r.svs && (t("tr.svs") + ": " + t("tr.svs." + r.svs)), r.earn && (t("sw.earn") + " " + r.earn)].filter(Boolean), h = swHold(r), p = swPct(r);
+  if (h != null) a.push(t("sw.hold") + " " + h); if (p != null) a.push("P&L " + (p > 0 ? "+" : "") + p.toFixed(1) + "%");
+  return a.map(function (x) { return '<span class="chip">' + esc(x) + "</span>"; }).join("");
 }
 function jSummary() {
   var cut = ymd(addDays(today(), -30)), a = S.journal.filter(function (e) { return e.date >= cut; });
@@ -160,18 +165,26 @@ ACT.jdel = function (id) {
 /* structured trade fields, taken from the columns of Bari's journal */
 var TR = {
   acct: ["", "nostro", "personal"], side: ["", "long", "short"], grade: ["", "PERFECT", "GOOD", "BAD"], ctype: ["", "a", "b", "c", "d"],
-  smt: ["", "yes", "both", "no"], tp: ["", "none", "TP1", "TP2", "final"], res: ["", "open", "win", "loss", "be"]
+  book: ["", "day", "swing"], sstat: ["", "watching", "open", "closed"], svs: ["", "yes", "both", "no"], smt: ["", "yes", "both", "no"], tp: ["", "none", "TP1", "TP2", "final"], res: ["", "open", "win", "loss", "be"]
 };
 function trSel(id, k, cur, lab) { return '<div class="fld"><label for="tr-' + id + '">' + t("tr." + id) + '</label><select id="tr-' + id + '">' + TR[k].map(function (v) { return opt(v, v ? (lab ? t("tr." + id + "." + v) : v) : "—", cur || ""); }).join("") + "</select></div>"; }
 function trTxt(id, cur, ph) { return '<div class="fld"><label for="tr-' + id + '">' + t("tr." + id) + '</label><input type="text" id="tr-' + id + '" value="' + esc(cur || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + "></div>"; }
 function trForm(r) {
   return '<fieldset class="trbox"><legend>' + t("tr.title") + '</legend><p class="xs muted">' + t("tr.note") + '</p><div class="fgrid">' +
-    trSel("acct", "acct", r.acct, 1) + trSel("side", "side", r.side, 1) + trSel("grade", "grade", r.grade) + trSel("ctype", "ctype", r.ctype) + trSel("smt", "smt", r.smt, 1) + trSel("tp", "tp", r.tp, 1) + trSel("res", "res", r.res, 1) +
+    trSel("book", "book", r.book, 1).replace('id="tr-book"', 'id="tr-book" data-ch="trbook"') + trSel("acct", "acct", r.acct, 1) + trSel("side", "side", r.side, 1) + trSel("grade", "grade", r.grade) + trSel("ctype", "ctype", r.ctype) + trSel("smt", "smt", r.smt, 1) + trSel("tp", "tp", r.tp, 1) + trSel("res", "res", r.res, 1) +
     trTxt("bisus", r.bisus, "8h, D, W...") + trTxt("etf", r.etf, "15m") + trTxt("poi", r.poi) + trTxt("candle", r.candle) + trTxt("exit", r.exit) +
-    trTxt("entry", r.entry) + trTxt("stop", r.stop) + trTxt("target", r.target) + trTxt("pnl", r.pnl, t("tr.pnl.ph")) + trTxt("link", r.link) + "</div></fieldset>";
+    trTxt("entry", r.entry) + trTxt("stop", r.stop) + trTxt("target", r.target) + trTxt("pnl", r.pnl, t("tr.pnl.ph")) + trTxt("link", r.link) + "</div>" +
+    '<div id="tr-sw"' + (r.book === "swing" ? "" : " hidden") + '><h3 class="xs" style="margin:12px 0 4px">' + t("sw.h") + '</h3><p class="xs muted">' + t("sw.note") + '</p><div class="fgrid">' +
+    trSel("sstat", "sstat", r.sstat, 1) + trTxt("sector", r.sector) + trSel("svs", "svs", r.svs, 1) + swDate("d1", r.d1) + swDate("d2", r.d2) + swDate("earn", r.earn) + trTxt("xprice", r.xprice) + "</div></div></fieldset>";
 }
+function swDate(id, cur) { return '<div class="fld"><label for="tr-' + id + '">' + t("sw." + id) + '</label><input type="date" id="tr-' + id + '" value="' + esc(cur || "") + '"></div>'; }
+/* swing: holding days and P&L % are computed, never typed */
+function swHold(r) { if (!r.d1 || !r.d2) return null; var n = Math.round((new Date(r.d2) - new Date(r.d1)) / 864e5); return n >= 0 ? n : null; }
+function swPct(r) { var e = parseFloat(r.entry), x = parseFloat(r.xprice); if (isNaN(e) || isNaN(x) || !e) return null; return (x - e) / e * 100 * (r.side === "short" ? -1 : 1); }
+BL.swHold = swHold; BL.swPct = swPct;
+CH.trbook = function (v) { var b = document.getElementById("tr-sw"); if (b) b.hidden = v !== "swing"; };
 function trRead(f) {
-  var r = {}; ["acct", "side", "grade", "ctype", "smt", "tp", "res", "bisus", "etf", "poi", "candle", "exit", "entry", "stop", "target", "pnl", "link"].forEach(function (k) { var el = f.querySelector("#tr-" + k); r[k] = el ? el.value.trim() : ""; });
+  var r = {}; ["book", "sstat", "sector", "svs", "d1", "d2", "earn", "xprice", "acct", "side", "grade", "ctype", "smt", "tp", "res", "bisus", "etf", "poi", "candle", "exit", "entry", "stop", "target", "pnl", "link"].forEach(function (k) { var el = f.querySelector("#tr-" + k); r[k] = el ? el.value.trim() : ""; });
   return r;
 }
 function trRR(r) { var e = parseFloat(r.entry), s2 = parseFloat(r.stop), tg = parseFloat(r.target); if (isNaN(e) || isNaN(s2) || isNaN(tg) || e === s2) return null; return Math.abs(tg - e) / Math.abs(e - s2); }
@@ -195,7 +208,7 @@ function jStats() {
     var rows = vals.map(function (v) { var sub = a.filter(function (e) { return e.tr[key] === v; }); return sub.length ? statRow(lab ? t("tr." + key + "." + v) : v, sub) : ""; }).join("");
     return rows ? '<h3 style="margin-top:12px">' + title + '</h3><div class="tblw"><table><thead><tr><th></th><th>' + t("st.trades") + "</th><th>" + t("st.winpct") + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>" : "";
   }
-  h += grp(t("tr.acct"), "acct", ["nostro", "personal"], 1) + grp(t("tr.grade"), "grade", ["PERFECT", "GOOD", "BAD"]) + grp(t("tr.ctype"), "ctype", ["a", "b", "c", "d"]) + grp(t("tr.smt"), "smt", ["yes", "both", "no"], 1) + grp(t("tr.tp"), "tp", ["none", "TP1", "TP2", "final"], 1);
+  h += grp(t("tr.book"), "book", ["day", "swing"], 1) + grp(t("tr.acct"), "acct", ["nostro", "personal"], 1) + grp(t("tr.grade"), "grade", ["PERFECT", "GOOD", "BAD"]) + grp(t("tr.ctype"), "ctype", ["a", "b", "c", "d"]) + grp(t("tr.smt"), "smt", ["yes", "both", "no"], 1) + grp(t("tr.svs"), "svs", ["yes", "both", "no"], 1) + grp(t("tr.tp"), "tp", ["none", "TP1", "TP2", "final"], 1);
   return h + "</section>";
 }
 BL.openEntry = function (pre) {
