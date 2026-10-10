@@ -935,3 +935,34 @@ html.reduce .intro .pzs>*,html.reduce .intro .pzsum>div,html.reduce .intro .obop
 .pzs[data-step=done] .pzsum{gap:6px}.pzs[data-step=done] .pzsum>div{padding:7px 12px}
 .pzc{gap:12px}.pzc .pzg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 14px}
 .pzc .pzfs .rowf{gap:8px}.pzc .pzcb{min-height:38px;padding:0 12px;font-size:14px}
+
+/* ===== trading journals (day / swing) ===== */
+.jb-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px;padding:6px;background:var(--surface);border:1.5px solid var(--line);border-radius:20px;width:fit-content;max-width:100%}
+.jb-tab{display:flex;gap:8px;align-items:center;min-height:46px;padding:0 18px;border:0;border-radius:15px;background:transparent;color:var(--muted);font:700 15px var(--font);cursor:pointer;transition:background .3s,color .3s,transform .3s var(--ease)}
+.jb-tab:hover{transform:translateY(-1px);color:var(--ink)}
+.jb-tab.on{background:var(--ink);color:var(--bg);box-shadow:0 8px 18px rgba(18,60,58,.25)}
+.jb-top{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-end;margin:6px 0 14px}
+.jb-top h2{margin:0}.jb-top p{margin:2px 0 0}
+.jb-two{display:grid;grid-template-columns:1.1fr 1fr;gap:26px;align-items:start;margin-top:8px}
+@media(max-width:900px){.jb-two{grid-template-columns:1fr}}
+.jb-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.jb-cal .dh{font-size:12px;text-align:center;color:var(--muted);font-weight:700}
+.jb-cal .c{min-height:58px;border-radius:12px;background:var(--bg);padding:5px 6px;display:grid;align-content:space-between;gap:2px;border:1.5px solid transparent;overflow:hidden}
+.jb-cal .c.out{opacity:.3}
+.jb-cal .dn{font-size:11px;color:var(--muted)}
+.jb-cal .c b{font:700 11.5px Inter,sans-serif;text-align:center}
+.jb-cal .c.w{background:color-mix(in srgb,var(--up) 14%,var(--surface))}.jb-cal .c.w.i2{background:color-mix(in srgb,var(--up) 26%,var(--surface))}.jb-cal .c.w.i3{background:color-mix(in srgb,var(--up) 40%,var(--surface))}.jb-cal .c.w.i4{background:color-mix(in srgb,var(--up) 55%,var(--surface))}
+.jb-cal .c.l{background:color-mix(in srgb,var(--down) 14%,var(--surface))}.jb-cal .c.l.i2{background:color-mix(in srgb,var(--down) 26%,var(--surface))}.jb-cal .c.l.i3{background:color-mix(in srgb,var(--down) 40%,var(--surface))}.jb-cal .c.l.i4{background:color-mix(in srgb,var(--down) 55%,var(--surface))}
+.jb-cal .c.w b{color:var(--up)}.jb-cal .c.l b{color:var(--down)}
+.upc{color:var(--up)}.dnc{color:var(--down)}
+.jb-tw{overflow-x:auto;border:1.5px solid var(--line);border-radius:16px;margin-top:8px}
+.jb-tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+.jb-tbl th{position:sticky;top:0;text-align:start;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:12px 14px;background:var(--bg);border-bottom:1.5px solid var(--line)}
+.jb-tbl td{padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+.jb-tbl tr:last-child td{border-bottom:0}
+.jb-tbl tr.clk{cursor:pointer;transition:background .2s}.jb-tbl tr.clk:hover{background:var(--card-hover)}
+.jd-k small{color:var(--muted);font-size:12px}
+@keyframes jbIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.jb-top,.jdash .jd-hero,.jb-two,.jb-tw{animation:jbIn .6s var(--ease) both}
+.jdash .jd-hero{animation-delay:.08s}.jb-two{animation-delay:.16s}.jb-tw{animation-delay:.24s}
+html.reduce .jb-top,html.reduce .jdash .jd-hero,html.reduce .jb-two,html.reduce .jb-tw{animation:none}
