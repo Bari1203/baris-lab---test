@@ -692,10 +692,8 @@ BL.intro = function (name, done, opts) {
   var ob = null;
   function startFlow() {
     ob = true;
-    BL.personalize(el, leave, function () {
-      ob = BL.onboard(el, leave, function () { var o = el.querySelector(".ob"); if (o) o.remove(); startFlow(); });
-      el.querySelector(".intro-skip").textContent = t("ob.skip"); el.querySelector(".intro-skip").style.display = "block";
-    });
+    ob = BL.onboard(el, leave);
+    el.querySelector(".intro-skip").textContent = t("ob.skip"); el.querySelector(".intro-skip").style.display = "block";
   }
   el.querySelector(".intro-skip").addEventListener("click", function () {
     if (ob) { leave(); return; }
@@ -770,7 +768,7 @@ BL.onboard = function (el, leave, backFn) {
   box.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
   box.addEventListener("touchend", function (e) { if (x0 == null || !N) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) { var rtl = document.documentElement.dir === "rtl"; go(cur + ((dx < 0) !== rtl ? 1 : -1)); } }, { passive: true });
   el.addEventListener("keydown", function (e) { if (!N) return; var rtl = document.documentElement.dir === "rtl"; if (e.key === "ArrowRight") go(cur + (rtl ? -1 : 1)); else if (e.key === "ArrowLeft") go(cur + (rtl ? 1 : -1)); });
-  build(S.path === "learn" || S.path === "site" ? S.path : "both");
+  showPick();
   return { go: go };
 };
 
