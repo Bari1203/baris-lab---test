@@ -321,6 +321,7 @@ BL.cele = function (o) {
 };
 
 BL.logo = function () { return logo(); };
+BL.ic = function (n, sz) { return ic(n, sz); };
 BL.TERMS_V = "0.1-draft";
 BL.needTerms = function () { return !(S.terms && S.terms.v === BL.TERMS_V); };
 function render(top) {
