@@ -471,7 +471,7 @@ V.settings = {
     h += '<section class="card stack"><h2>' + t("set.look") + '</h2><div class="fld"><label for="st-theme">' + t("set.theme") + '</label><select id="st-theme" data-ch="sttheme">' + opt("light", t("th.light"), S.theme) + opt("dark", t("th.dark"), S.theme) + opt("auto", t("th.auto"), S.theme) + '</select></div><label class="chk"><input type="checkbox" data-ch="stmotion"' + (S.reduce ? " checked" : "") + ">" + t("set.reduce") + "</label></section>";
     h += '<section class="card stack"><h2>' + t("set.music") + "</h2><p class=\"muted\">" + t("set.music.t") + '</p><button class="btn" data-act="music">' + ic("music", 18) + " " + t("music") + "</button></section>";
     h += '<section class="card stack"><h2>' + t("set.role") + '</h2><p class="muted">' + t("set.role.t") + '</p><div class="fld"><label for="st-role">' + t("role.now") + '</label><select id="st-role" data-ch="strole">' + ["guest", "user", "admin"].map(function (r) { return opt(r, t("role." + r), S.role); }).join("") + "</select></div></section>";
-    h += '<section class="card stack"><h2>' + t("tm.set") + "</h2>" + (S.terms ? '<p class="muted">' + t("tm.signed", { n: esc(S.terms.name) + " (" + esc(S.terms.email || "") + ")", d: BL.fmtD(new Date(S.terms.ts), { day: "numeric", month: "long", year: "numeric" }), v: esc(S.terms.v) }) + '</p><img class="sigimg" alt="" src="' + S.terms.sig + '">' : "") + '<div class="rowf"><button class="btn" data-act="tmshow">' + t("tm.view") + '</button><button class="btn ghost" data-act="tmrevoke">' + t("tm.revoke") + "</button></div></section>";
+    h += '<section class="card stack"><h2>' + t("tm.set") + "</h2>" + (S.terms ? '<p class="muted">' + t("tm.signed", { n: esc(S.terms.name) + " (" + esc(S.terms.email || "") + ")", d: BL.fmtD(new Date(S.terms.ts), { day: "numeric", month: "long", year: "numeric" }), v: esc(S.terms.v) }) + '</p><img class="sigimg" alt="" src="' + S.terms.sig + '">' : "") + '<div class="rowf"><button class="btn" data-act="tmshow">' + t("tm.view") + '</button><button class="btn" data-act="intro">' + t("in.replay") + '</button><button class="btn ghost" data-act="tmrevoke">' + t("tm.revoke") + "</button></div></section>";
     h += '<section class="card stack"><h2>' + t("set.data") + '</h2><p class="muted">' + t("set.data.t") + '</p><div class="rowf"><button class="btn" data-act="bkcopy">' + t("set.backup") + '</button><button class="btn" data-act="bkopen">' + t("set.restore") + '</button></div><button class="btn" data-act="reset">' + t("set.reset") + "</button></section>";
     return h + "</div>";
   }
@@ -598,8 +598,37 @@ ACT.tmsign = function () {
   if (!all) { err.textContent = t("tm.e.checks"); return; }
   if (!BL.sigDirty) { err.textContent = t("tm.e.sig"); return; }
   S.terms = { v: BL.TERMS_V, name: name, email: mail, news: document.getElementById("tm-news").checked, ts: Date.now(), sig: c.toDataURL("image/png"), lang: S.lang };
-  BL.save(); BL.go("home"); BL.toast(t("tm.done")); BL.cele({ big: 1, cap: t("tm.cele") });
+  BL.save(); BL.go("home"); BL.intro(name, function () { BL.toast(t("tm.done")); BL.cele({ big: 1, cap: t("tm.cele") }); });
 };
+/* opening sequence after signing: logo, the range-sweep-target drawing, a preparing checklist, welcome. Skippable; short and static for reduced motion. */
+BL.intro = function (name, done) {
+  var old = document.getElementById("intro"); if (old) old.remove();
+  var red = S.reduce || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var steps = ["in.s1", "in.s2", "in.s3", "in.s4"], el = document.createElement("div"), fin = false, timers = [];
+  el.id = "intro"; el.className = "intro" + (red ? " still" : ""); el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", t("in.aria"));
+  el.innerHTML = '<button class="intro-skip" type="button">' + t("in.skip") + '</button><div class="intro-in">' +
+    '<div class="intro-logo">' + BL.logo() + '</div><h1 class="intro-name ltr" aria-label="BARI\'S LAB">' + "BARI'S LAB".split("").map(function (c, i) { return '<span style="--i:' + i + '">' + (c === " " ? "&nbsp;" : c) + "</span>"; }).join("") + "</h1>" +
+    '<svg class="intro-chart ltr" viewBox="0 0 320 150" aria-hidden="true"><line class="rg r1" x1="10" y1="52" x2="310" y2="52"/><line class="rg r2" x1="10" y1="108" x2="310" y2="108"/>' +
+    '<text class="lb lb1" x="12" y="45">RANGE</text><text class="lb lb2" x="150" y="138">LIQUIDITY</text><text class="lb lb3" x="238" y="15">TARGET</text>' +
+    '<path class="px" pathLength="1" d="M10 82 L58 70 L98 96 L140 128 L172 102 L212 84 L254 40 L304 26"/><circle class="tg" cx="304" cy="26" r="6"/><circle class="tg2" cx="304" cy="26" r="6"/></svg>' +
+    '<p class="intro-slogan ltr">DEFINE YOUR RANGE – IDENTIFY YOUR TARGET</p>' +
+    '<ul class="intro-list">' + steps.map(function (k, i) { return '<li data-i="' + i + '"><span class="ck"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg></span>' + t(k) + "</li>"; }).join("") + '</ul>' +
+    '<div class="intro-bar" aria-hidden="true"><i></i></div>' +
+    '<div class="intro-end"><h2>' + t("in.hi", { n: esc(name || "") }) + '</h2><p>' + t("in.sub") + '</p><button class="btn acc intro-go" type="button">' + t("in.go") + '</button><p class="xs">' + t("in.note") + "</p></div></div>";
+  document.body.appendChild(el); document.body.classList.add("introing");
+  function show() { el.classList.add("ready"); var b = el.querySelector(".intro-go"); if (b) b.focus(); }
+  function leave() {
+    if (fin) return; fin = true; timers.forEach(clearTimeout); el.classList.add("out");
+    setTimeout(function () { el.remove(); document.body.classList.remove("introing"); if (done) done(); }, red ? 0 : 700);
+  }
+  el.querySelector(".intro-skip").addEventListener("click", function () { timers.forEach(clearTimeout); el.querySelectorAll("li").forEach(function (l) { l.classList.add("on"); }); el.classList.add("full"); show(); });
+  el.querySelector(".intro-go").addEventListener("click", leave);
+  el.addEventListener("keydown", function (e) { if (e.key === "Escape" && el.classList.contains("ready")) leave(); });
+  if (red) { el.querySelectorAll("li").forEach(function (l) { l.classList.add("on"); }); el.classList.add("full"); show(); return; }
+  steps.forEach(function (k, i) { timers.push(setTimeout(function () { var l = el.querySelector('li[data-i="' + i + '"]'); if (l) l.classList.add("on"); if (BL.fx && BL.fx.tick) BL.fx.tick(); }, 3600 + i * 650)); });
+  timers.push(setTimeout(show, 3600 + steps.length * 650 + 500));
+};
+ACT.intro = function () { BL.intro(S.terms && S.terms.name, null); };
 ACT.tmshow = function () { BL.openModal({ title: t("tm.h"), body: termsFull() }); };
 ACT.tmrevoke = function (a, el) { BL.confirmClick(el, function () { S.terms = null; BL.save(); BL.render(true); }); };
 

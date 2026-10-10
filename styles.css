@@ -610,3 +610,55 @@ body.gated .app{display:block}
 .chip.warn{background:#F9D9D2;color:#7a2a1c}
 .watchc{margin:12px 0}
 .watchc .rowf{gap:6px;margin-top:6px}
+
+/* opening sequence after signing */
+body.introing{overflow:hidden}
+.intro{position:fixed;inset:0;z-index:9999;background:radial-gradient(120% 90% at 50% 0%,#1d5a56 0%,#123C3A 55%,#0C2B29 100%);color:#F5F1E8;display:grid;place-items:center;overflow:auto;padding:24px 16px;transition:opacity .7s ease,transform .7s ease;animation:inFade .9s ease both}
+.intro.out{opacity:0;transform:scale(1.04);pointer-events:none}
+.intro-in{width:min(420px,100%);display:grid;gap:18px;justify-items:center;text-align:center}
+.intro-skip{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;background:transparent;border:1px solid rgba(245,241,232,.35);color:#F5F1E8;border-radius:99px;padding:6px 14px;font:500 13px Heebo,Inter,sans-serif;cursor:pointer}
+.intro-skip:hover{background:rgba(245,241,232,.12)}
+.intro-logo{width:76px;height:76px;border-radius:22px;background:#F5F1E8;display:grid;place-items:center;box-shadow:0 0 0 0 rgba(241,116,98,.6);animation:inPop 1.1s cubic-bezier(.2,1.3,.4,1) .2s both,inGlow 2.4s ease-out 1s 2}
+.intro-logo svg{width:44px;height:44px}
+.intro-name{margin:0;font:800 clamp(30px,9vw,44px)/1 Inter,sans-serif;letter-spacing:.08em;display:flex;justify-content:center}
+.intro-name span{display:inline-block;opacity:0;transform:translateY(18px);animation:inUp .7s cubic-bezier(.2,.9,.3,1) calc(.9s + var(--i)*.07s) both}
+.intro-chart{width:100%;height:auto;overflow:visible}
+.intro-chart .rg{stroke:#C8E2D8;stroke-width:1.2;stroke-dasharray:5 5;opacity:0;animation:inShow .6s ease 1.9s both}
+.intro-chart .r2{animation-delay:2.1s}
+.intro-chart .lb{fill:#C8E2D8;font:600 9px Inter,sans-serif;letter-spacing:.14em;opacity:0;animation:inShow .5s ease both}
+.intro-chart .lb1{animation-delay:2.2s}.intro-chart .lb2{animation-delay:3.1s;fill:#F17462}.intro-chart .lb3{animation-delay:4.1s;fill:#F5F1E8}
+.intro-chart .px{fill:none;stroke:#F5F1E8;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:inDraw 2.6s cubic-bezier(.45,.05,.3,1) 2.2s both}
+.intro-chart .tg{fill:#F17462;opacity:0;animation:inShow .3s ease 4.6s both}
+.intro-chart .tg2{fill:none;stroke:#F17462;stroke-width:2;opacity:0;transform-origin:304px 26px;animation:inRing 1.6s ease-out 4.6s 2}
+.intro-slogan{margin:0;font:600 11px/1.4 Inter,sans-serif;letter-spacing:.2em;color:#C8E2D8;opacity:0;animation:inShow .8s ease 1.7s both}
+.intro-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;width:100%;max-width:300px;text-align:start;font:500 14px Heebo,Inter,sans-serif;transition:opacity .4s}
+.intro-list li{display:flex;gap:10px;align-items:center;opacity:.35;transition:opacity .4s}
+.intro-list li.on{opacity:1}
+.intro-list .ck{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(245,241,232,.4);display:grid;place-items:center;transition:all .35s}
+.intro-list .ck svg{width:14px;height:14px;fill:none;stroke:#123C3A;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .4s ease .15s}
+.intro-list li.on .ck{background:#C8E2D8;border-color:#C8E2D8}
+.intro-list li.on .ck svg{stroke-dashoffset:0}
+.intro-bar{width:100%;max-width:300px;height:4px;border-radius:4px;background:rgba(245,241,232,.15);overflow:hidden;transition:opacity .4s}
+.intro-bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#C8E2D8,#F17462);transform-origin:left;transform:scaleX(0);animation:inBar 3.1s ease-in-out 3.5s both}
+.intro-end{display:none;gap:10px;justify-items:center}
+.intro-end h2{margin:0;font:700 clamp(24px,7vw,30px)/1.2 Heebo,Inter,sans-serif}
+.intro-end p{margin:0;max-width:34ch;color:#C8E2D8}
+.intro-go{margin-top:6px;animation:inBtn 1.8s ease-in-out infinite}
+.intro.ready .intro-end{display:grid;animation:inUp .7s ease both}
+.intro.ready .intro-list,.intro.ready .intro-bar{display:none}
+.intro.ready .intro-skip{display:none}
+.intro.full .intro-chart .px,.intro.still .intro-chart .px{animation:none;stroke-dashoffset:0}
+.intro.still *,.intro.still{animation:none!important;transition:none!important}
+.intro.still .intro-name span,.intro.still .rg,.intro.still .lb,.intro.still .tg,.intro.still .intro-slogan{opacity:1;transform:none}
+.intro.still .intro-chart .px{stroke-dashoffset:0}
+.intro.still .intro-bar i{transform:none}
+html[dir=rtl] .intro-bar i{transform-origin:right}
+@keyframes inFade{from{opacity:0}to{opacity:1}}
+@keyframes inPop{from{opacity:0;transform:scale(.4) rotate(-12deg)}to{opacity:1;transform:none}}
+@keyframes inGlow{0%{box-shadow:0 0 0 0 rgba(241,116,98,.55)}100%{box-shadow:0 0 0 36px rgba(241,116,98,0)}}
+@keyframes inUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes inShow{from{opacity:0}to{opacity:1}}
+@keyframes inDraw{to{stroke-dashoffset:0}}
+@keyframes inRing{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(4.5)}}
+@keyframes inBar{to{transform:scaleX(1)}}
+@keyframes inBtn{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
