@@ -737,3 +737,13 @@ html[dir=rtl] .intro-bar i{transform-origin:right}
 .themebtn[aria-pressed="true"] .tico svg{color:#F5C86A}
 @keyframes thmIn{from{transform:rotate(-90deg) scale(.3);opacity:0}to{transform:none;opacity:1}}
 html.reduce .themebtn .tico,html.reduce .themebtn .tico.in{transition:none;animation:none}
+.obpick{display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;padding:14px 2px}
+.obpick h2{margin:0;font:700 clamp(22px,6.4vw,30px)/1.25 Heebo,Inter,sans-serif}
+.obopt{display:flex;gap:14px;align-items:center;text-align:start;width:100%;background:rgba(245,241,232,.07);border:1.5px solid rgba(245,241,232,.2);border-radius:18px;padding:16px;color:#F5F1E8;cursor:pointer;transition:transform .25s,background .25s,border-color .25s;animation:inUp .7s cubic-bezier(.2,.9,.3,1) var(--d,.3s) both}
+.obopt:hover,.obopt:focus-visible{background:rgba(245,241,232,.14);border-color:#F17462;transform:translateY(-2px)}
+.obopt b{display:block;font:700 17px Heebo,Inter,sans-serif}
+.obopt small{display:block;margin-top:3px;font-size:13px;line-height:1.5;color:#C8E2D8}
+.obopt .obi{width:48px;height:48px;border-radius:14px}
+.obwhop{width:100%;max-width:340px;border:1px dashed rgba(200,226,216,.5);border-radius:16px;padding:12px 14px;display:grid;gap:6px;justify-items:center}
+.obwhop b{font:600 15px Heebo,Inter,sans-serif}.obwhop p{font-size:13px;color:#C8E2D8}
+.intro.still .obopt{animation:none!important;opacity:1}

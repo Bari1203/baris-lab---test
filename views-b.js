@@ -636,7 +636,7 @@ BL.intro = function (name, done) {
   function show() { el.classList.add("ready"); var b = el.querySelector(".intro-go"); if (b) b.focus(); }
   function leave(to) {
     if (fin) return; fin = true; timers.forEach(clearTimeout); el.classList.add("out");
-    setTimeout(function () { el.remove(); document.body.classList.remove("introing"); BL.render(true); if (typeof to === "string") BL.go(to); if (done) done(); }, red ? 0 : 700);
+    setTimeout(function () { el.remove(); document.body.classList.remove("introing"); BL.render(true); if (typeof to === "string") { if (to === "lesson1") { S.last = D.lessons[0].id; BL.go("learn", D.lessons[0].id); } else BL.go(to); } if (done) done(); }, red ? 0 : 700);
   }
   var ob = null;
   el.querySelector(".intro-skip").addEventListener("click", function () {
@@ -651,51 +651,67 @@ BL.intro = function (name, done) {
 };
 /* onboarding pages after the opening: purpose, what you get, how it works, your path, what to know, start */
 BL.onboard = function (el, leave) {
-  var ic = BL.ic, cur = 0, N = 7, box = document.createElement("div");
-  var cn = 0;
+  var ic = BL.ic, cur = 0, N = 0, path = "", box = document.createElement("div"), cn = 0;
   function card(i, t1, t2) { return '<div class="obc" style="--d:' + (0.25 + (cn++) * 0.09) + 's"><span class="obi">' + ic(i, 22) + "</span><div><b>" + t(t1) + "</b><p>" + t(t2) + "</p></div></div>"; }
   function step(n, k) { return '<div class="obs" style="--d:' + (0.3 + n * 0.14) + 's"><span class="obn">' + n + "</span><div><b>" + t("ob.h" + k) + "</b><p>" + t("ob.h" + k + "d") + "</p></div></div>"; }
   function chipsM() { return ["us", "il", "both"].map(function (k) { return '<button type="button" class="obch" data-m="' + k + '"><b>' + t("mkt." + k) + "</b><span>" + t("mkt." + k + ".d") + "</span></button>"; }).join(""); }
   function chipsS() { return ["invest", "swing", "day"].map(function (k) { return '<button type="button" class="obch" data-s="' + k + '"><b>' + t("sty." + k) + "</b><span>" + t("sty." + k + ".d") + "</span></button>"; }).join(""); }
-  var slides = [
-    '<div class="obv"><span class="obbig">' + ic("radar", 54) + '</span></div><h2>' + t("ob.1.h") + "</h2><p class=\"obl\">" + t("ob.1.p") + '</p><div class="obtri"><span>' + t("ob.1.a") + "</span><span>" + t("ob.1.b") + "</span><span>" + t("ob.1.c") + "</span></div>",
-    "<h2>" + t("ob.2.h") + '</h2><div class="obgrid">' + card("radar", "ob.2.a", "ob.2.ad") + card("learn", "ob.2.b", "ob.2.bd") + card("weekly", "ob.2.c", "ob.2.cd") + card("journal", "ob.2.d", "ob.2.dd") + card("wait", "ob.2.e", "ob.2.ed") + card("events", "ob.2.f", "ob.2.fd") + "</div>",
-    "<h2>" + t("ob.3.h") + '</h2><div class="obsteps">' + step(1, 1) + step(2, 2) + step(3, 3) + '</div><p class="notice-i">' + t("ob.3.n") + "</p>",
-    "<h2>" + t("ob.4.h") + '</h2><p class="obl">' + t("ob.4.p") + '</p><h3>' + t("ob.4.m") + '</h3><div class="obch-g">' + chipsM() + '</div><h3>' + t("ob.4.s") + '</h3><div class="obch-g">' + chipsS() + '</div><h3>' + t("ob.4.l") + '</h3><div class="obch-g one">' + '<button type="button" class="obch" data-l="1"><b>' + t("ob.4.lb") + "</b><span>" + t("ob.4.ld") + "</span></button></div>" + '<p class="xs obx">' + t("ob.4.n") + "</p>",
-    '<div class="obv"><span class="obbig">' + ic("learn", 50) + '</span></div><h2>' + t("ob.L.h") + '</h2><p class="obl">' + t("ob.L.p") + '</p><h3>' + t("ob.L.in") + '</h3><div class="obtri wide">' + ["ob.L.t0","ob.L.t1","ob.L.t2","ob.L.t3","ob.L.t4","ob.L.t5","ob.L.t6","ob.L.t7","ob.L.t8"].map(function (k) { return "<span>" + t(k) + "</span>"; }).join("") + '</div><div class="obsteps">' + step(1, 7) + step(2, 8) + step(3, 9) + '</div><div class="obend"><button class="btn acc" type="button" data-to="learn">' + t("ob.L.free") + "</button>" + BL.wopBtn("") + '</div><p class="xs obx">' + t("ob.L.n") + "</p>",
-    "<h2>" + t("ob.5.h") + '</h2><div class="obgrid one">' + card("shield", "ob.5.a", "ob.5.ad") + card("chart", "ob.5.b", "ob.5.bd") + card("help", "ob.5.c", "ob.5.cd") + card("settings", "ob.5.d", "ob.5.dd") + "</div>",
-    '<div class="obv"><span class="obbig ok"><svg viewBox="0 0 20 20" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></span></div><h2>' + t("ob.6.h") + '</h2><div class="obsteps">' + step(1, 4) + step(2, 5) + step(3, 6) + '</div><div class="obend"><button class="btn acc intro-go2" type="button" data-to="' + (S.learn ? "learn" : "home") + '">' + t(S.learn ? "ob.6.learn" : "ob.6.go") + '</button><button class="btn" type="button" data-to="' + (S.learn ? "home" : "learn") + '">' + t(S.learn ? "ob.6.go" : "ob.6.learn") + "</button></div>"
-  ];
-  box.className = "ob"; box.innerHTML = '<div class="obtrack">' + slides.map(function (h, i) { return '<section class="obp" data-i="' + i + '" aria-label="' + (i + 1) + "/" + N + '">' + h + "</section>"; }).join("") + '</div><div class="obnav"><button type="button" class="btn ghost obprev" aria-label="' + esc(t("ob.prev")) + '">' + t("ob.prev") + '</button><div class="obdots" role="tablist">' + slides.map(function (h, i) { return '<button type="button" role="tab" data-d="' + i + '" aria-label="' + (i + 1) + '"></button>'; }).join("") + '</div><button type="button" class="btn acc obnext">' + t("ob.next") + "</button></div>";
-  el.querySelector(".intro-in").style.display = "none"; el.classList.add("onb"); el.appendChild(box);
+  var big = function (n, cls) { return '<div class="obv"><span class="obbig ' + (cls || "") + '">' + ic(n, 50) + "</span></div>"; };
+  var okbig = '<div class="obv"><span class="obbig ok"><svg viewBox="0 0 20 20" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></span></div>';
+  var SL = {
+    mission: function () { return big("radar") + "<h2>" + t("ob.1.h") + '</h2><p class="obl">' + t("ob.1.p") + '</p><div class="obtri"><span>' + t("ob.1.a") + "</span><span>" + t("ob.1.b") + "</span><span>" + t("ob.1.c") + "</span></div>"; },
+    get: function () { return "<h2>" + t("ob.2.h") + '</h2><div class="obgrid">' + card("radar", "ob.2.a", "ob.2.ad") + card("learn", "ob.2.b", "ob.2.bd") + card("weekly", "ob.2.c", "ob.2.cd") + card("journal", "ob.2.d", "ob.2.dd") + card("wait", "ob.2.e", "ob.2.ed") + card("events", "ob.2.f", "ob.2.fd") + "</div>"; },
+    how: function () { return "<h2>" + t("ob.3.h") + '</h2><div class="obsteps">' + step(1, 1) + step(2, 2) + step(3, 3) + '</div><p class="notice-i">' + t("ob.3.n") + "</p>"; },
+    you: function () { return "<h2>" + t("ob.4.h") + '</h2><p class="obl">' + t("ob.4.p") + "</p><h3>" + t("ob.4.m") + '</h3><div class="obch-g">' + chipsM() + "</div><h3>" + t("ob.4.s") + '</h3><div class="obch-g">' + chipsS() + '</div><p class="xs obx">' + t("ob.4.n") + "</p>"; },
+    whop: function () { return big("learn") + "<h2>" + t("ob.L.h") + '</h2><p class="obl">' + t("ob.L.p") + "</p><h3>" + t("ob.L.in") + '</h3><div class="obtri wide">' + ["ob.L.t0", "ob.L.t1", "ob.L.t2", "ob.L.t3", "ob.L.t4", "ob.L.t5", "ob.L.t6", "ob.L.t7", "ob.L.t8"].map(function (k) { return "<span>" + t(k) + "</span>"; }).join("") + '</div><div class="obsteps">' + step(1, 7) + step(2, 8) + step(3, 9) + '</div><div class="obend"><button class="btn acc" type="button" data-to="learn">' + t("ob.L.free") + "</button>" + BL.wopBtn("") + '</div><p class="xs obx">' + t("ob.L.n") + "</p>"; },
+    know: function () { return "<h2>" + t("ob.5.h") + '</h2><div class="obgrid one">' + card("shield", "ob.5.a", "ob.5.ad") + card("chart", "ob.5.b", "ob.5.bd") + card("help", "ob.5.c", "ob.5.cd") + card("settings", "ob.5.d", "ob.5.dd") + "</div>"; },
+    start: function () { return okbig + "<h2>" + t("ob.6.h") + '</h2><div class="obsteps">' + step(1, 4) + step(2, 5) + step(3, 6) + '</div><div class="obend"><button class="btn acc" type="button" data-to="home">' + t("ob.6.go") + '</button><button class="btn" type="button" data-to="learn">' + t("ob.6.learn") + "</button></div>"; },
+    l1: function () { return big("learn") + "<h2>" + t("ob.l1.h") + '</h2><p class="obl">' + t("ob.l1.p") + '</p><div class="obgrid one">' + card("learn", "ob.l1.a", "ob.l1.ad") + card("history", "ob.l1.b", "ob.l1.bd") + card("help", "ob.l1.c", "ob.l1.cd") + "</div>"; },
+    l2: function () { return "<h2>" + t("ob.l2.h") + '</h2><div class="obgrid one">' + card("shield", "ob.5.a", "ob.5.ad") + card("help", "ob.l2.a", "ob.l2.ad") + card("chart", "ob.l2.b", "ob.l2.bd") + card("settings", "ob.l2.c", "ob.l2.cd") + "</div>"; },
+    l3: function () { return okbig + "<h2>" + t("ob.l3.h") + '</h2><p class="obl">' + t("ob.l3.p") + '</p><div class="obend"><button class="btn acc" type="button" data-to="lesson1">' + t("ob.l3.go") + '</button></div><div class="obwhop"><b>' + t("ob.l3.w") + "</b><p>" + t("ob.l3.wd") + "</p>" + BL.wopBtn("") + '</div><p class="xs obx">' + t("ob.l3.n") + "</p>"; }
+  };
+  var PATHS = { learn: ["l1", "l2", "l3"], both: ["mission", "get", "how", "you", "whop", "know", "start"], site: ["mission", "get", "how", "you", "know", "start"] };
+  var pick = '<section class="obpick"><h2>' + t("ob.pick.h") + '</h2><p class="obl">' + t("ob.pick.p") + '</p><div class="obgrid one">' + [["learn", "learn"], ["both", "radar"], ["site", "chart"]].map(function (x, i) { return '<button type="button" class="obopt" data-path="' + x[0] + '" style="--d:' + (0.25 + i * 0.1) + 's"><span class="obi">' + ic(x[1], 24) + "</span><span><b>" + t("ob.pick." + x[0]) + "</b><small>" + t("ob.pick." + x[0] + "d") + "</small></span></button>"; }).join("") + "</div></section>";
+  box.className = "ob"; el.querySelector(".intro-in").style.display = "none"; el.classList.add("onb"); el.appendChild(box);
+  function showPick() {
+    box.innerHTML = '<div class="obtrack">' + pick + "</div>"; path = ""; N = 0;
+    var sk = el.querySelector(".intro-skip"); if (sk) sk.style.display = "block";
+    var f = box.querySelector(".obopt"); if (f) f.focus();
+  }
+  function build(p) {
+    path = p; S.path = p; S.learn = p === "learn" ? 1 : 0; BL.save(); cn = 0;
+    var list = PATHS[p]; N = list.length;
+    box.innerHTML = '<div class="obtrack">' + list.map(function (k, i) { return '<section class="obp" data-i="' + i + '" aria-label="' + (i + 1) + "/" + N + '">' + SL[k]() + "</section>"; }).join("") + '</div><div class="obnav"><button type="button" class="btn ghost obprev">' + t("ob.prev") + '</button><div class="obdots" role="tablist">' + list.map(function (k, i) { return '<button type="button" role="tab" data-d="' + i + '" aria-label="' + (i + 1) + '"></button>'; }).join("") + '</div><button type="button" class="btn acc obnext">' + t("ob.next") + "</button></div>";
+    go(0); box.querySelector(".obnext").focus();
+  }
   function sync() {
     box.querySelectorAll("[data-m]").forEach(function (b) { b.classList.toggle("on", S.market === b.getAttribute("data-m")); b.setAttribute("aria-pressed", S.market === b.getAttribute("data-m")); });
-    box.querySelectorAll("[data-l]").forEach(function (b) { b.classList.toggle("on", !!S.learn); b.setAttribute("aria-pressed", !!S.learn); });
     box.querySelectorAll("[data-s]").forEach(function (b) { var on = !!S.styles[b.getAttribute("data-s")]; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
   }
   function go(i) {
-    cur = Math.max(0, Math.min(N - 1, i));
+    if (!N) return;
+    if (i < 0) { showPick(); return; }
+    cur = Math.min(N - 1, i);
     box.querySelectorAll(".obp").forEach(function (p) { var on = +p.getAttribute("data-i") === cur; p.classList.toggle("on", on); p.hidden = !on; });
     box.querySelectorAll(".obdots button").forEach(function (b, k) { b.classList.toggle("on", k === cur); b.setAttribute("aria-selected", k === cur); });
-    box.querySelector(".obprev").style.visibility = cur ? "visible" : "hidden";
-    var nx = box.querySelector(".obnext"); nx.style.visibility = cur === N - 1 ? "hidden" : "visible";
+    box.querySelector(".obnext").style.visibility = cur === N - 1 ? "hidden" : "visible";
     var sk = el.querySelector(".intro-skip"); if (sk) sk.style.display = cur === N - 1 ? "none" : "block";
     var p = box.querySelector('.obp[data-i="' + cur + '"]'); if (p) p.scrollTop = 0; sync();
   }
   box.addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
-    if (b.classList.contains("obnext")) go(cur + 1); else if (b.classList.contains("obprev")) go(cur - 1);
+    if (b.hasAttribute("data-path")) build(b.getAttribute("data-path"));
+    else if (b.classList.contains("obnext")) go(cur + 1); else if (b.classList.contains("obprev")) go(cur - 1);
     else if (b.hasAttribute("data-d")) go(+b.getAttribute("data-d"));
     else if (b.hasAttribute("data-m")) { S.market = b.getAttribute("data-m"); BL.save(); sync(); }
-    else if (b.hasAttribute("data-l")) { S.learn = S.learn ? 0 : 1; BL.save(); sync(); if (S.learn) go(cur + 1); }
     else if (b.hasAttribute("data-s")) { var k = b.getAttribute("data-s"); S.styles[k] = S.styles[k] ? 0 : 1; if (!S.styles.invest && !S.styles.swing && !S.styles.day) S.styles = { invest: 1, swing: 1, day: 1 }; BL.save(); sync(); }
     else if (b.hasAttribute("data-to")) { BL.save(); leave(b.getAttribute("data-to")); }
   });
   var x0 = null;
   box.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
-  box.addEventListener("touchend", function (e) { if (x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) { var rtl = document.documentElement.dir === "rtl"; go(cur + ((dx < 0) !== rtl ? 1 : -1)); } }, { passive: true });
-  el.addEventListener("keydown", function (e) { var rtl = document.documentElement.dir === "rtl"; if (e.key === "ArrowRight") go(cur + (rtl ? -1 : 1)); else if (e.key === "ArrowLeft") go(cur + (rtl ? 1 : -1)); });
-  go(0); box.querySelector(".obnext").focus();
+  box.addEventListener("touchend", function (e) { if (x0 == null || !N) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) { var rtl = document.documentElement.dir === "rtl"; go(cur + ((dx < 0) !== rtl ? 1 : -1)); } }, { passive: true });
+  el.addEventListener("keydown", function (e) { if (!N) return; var rtl = document.documentElement.dir === "rtl"; if (e.key === "ArrowRight") go(cur + (rtl ? -1 : 1)); else if (e.key === "ArrowLeft") go(cur + (rtl ? 1 : -1)); });
+  showPick();
   return { go: go };
 };
 ACT.intro = function () { BL.intro(S.terms && S.terms.name, null); };
