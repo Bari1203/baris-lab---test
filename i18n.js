@@ -335,6 +335,7 @@ var P = [
 ["tr.dir","כיוון התנועה","Move type"],["tr.dir.continuation","המשך","Continuation"],["tr.dir.reversal","היפוך","Reversal"],
 ["tr.ent","סוג כניסה","Entry type"],["tr.ent.market","מרקט","Market"],["tr.ent.limit","לימיט","Limit"],
 ["tr.lvl","גודל התוצאה","Result size"],["tr.lvl.small","קטן","Small"],["tr.lvl.normal","רגיל","Normal"],["tr.lvl.big","גדול","Big"],
+["focus.on","מצב מסך מלא: הסתר תפריטים","Full-screen mode: hide menus"],["focus.off","חזרה לתצוגה רגילה","Back to the normal view"],["focus.on.t","מצב מסך מלא. אפשר לחזור עם אותו כפתור","Full-screen mode. Use the same button to go back"],["focus.off.t","חזרה לתצוגה רגילה","Back to the normal view"],
 ["tm.cele", "נכנסת. ברוך הבא ל-BARI'S LAB", "You're in. Welcome to BARI'S LAB"],
 ["tm.set", "תנאי שימוש", "Terms of use"],
 ["tm.signed", "נחתם על ידי {n} בתאריך {d}, גרסה {v}.", "Signed by {n} on {d}, version {v}."],

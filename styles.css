@@ -861,3 +861,25 @@ html[dir=rtl] .jd-bt i{transform-origin:right}
 .jd-i{border-radius:18px;padding:18px 20px}.jd-i h4{margin-bottom:8px}
 .jd-i.good{background:var(--up-bg);color:var(--up)}.jd-i.bad{background:var(--down-bg);color:var(--down)}
 html.reduce .jd-ring,html.reduce .jd-rib i,html.reduce .jd-bt i,html.reduce .jd-eq .l{animation:none;stroke-dashoffset:0}
+
+/* full-screen (focus) mode: menus out of the way */
+.focusbtn[aria-pressed="true"]{background:var(--mint)}
+html.focus .bottom,html.focus .mini{display:none}
+html.focus main{padding-bottom:60px}
+@media(min-width:960px){
+  html.focus .app{grid-template-columns:minmax(0,1fr)}
+  html.focus .side{display:none}
+  html.focus .top .brand{display:flex}
+  html.focus main{max-width:1560px}
+}
+/* edge tab that folds the side menu (desktop) */
+.sidetab{display:none}
+@media(min-width:960px){
+  .sidetab{display:grid;place-items:center;position:fixed;z-index:45;top:50%;inset-inline-start:264px;width:22px;height:72px;margin-top:-36px;padding:0;border:0;cursor:pointer;background:var(--ink);color:var(--bg);border-start-end-radius:14px;border-end-end-radius:14px;box-shadow:var(--shadow-sm);opacity:.75;transition:inset-inline-start .35s var(--ease),opacity .25s,width .25s,background .25s}
+  .sidetab:hover,.sidetab:focus-visible{opacity:1;width:30px;background:var(--coral);color:var(--on-coral)}
+  .sidetab svg{--f:1;transform:scaleX(var(--f));transition:transform .35s var(--ease)}
+  html[dir=ltr] .sidetab svg{--f:-1}
+  html.focus .sidetab{inset-inline-start:0}
+  html.focus .sidetab svg{--f:-1}
+  html[dir=ltr].focus .sidetab svg{--f:1}
+}

@@ -57,6 +57,8 @@ var ICONS = {
   next: "M6 5l9 7-9 7zM18 5v14",
   plus: "M12 5v14M5 12h14",
   expand: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5",
+  chev: "M9 6l6 6-6 6",
+  shrink: "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5",
   sun: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
   moon: "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z",
   star: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"
@@ -88,7 +90,7 @@ function applySettings() {
   var h = document.documentElement;
   h.lang = S.lang; h.dir = S.lang === "he" ? "rtl" : "ltr";
   if (S.theme === "auto") h.removeAttribute("data-theme"); else h.setAttribute("data-theme", S.theme);
-  h.classList.toggle("reduce", !!S.reduce);
+  h.classList.toggle("reduce", !!S.reduce); h.classList.toggle("focus", !!S.focus);
   h.classList.toggle("path-learn", BL.path() === "learn"); h.classList.toggle("path-site", BL.path() === "site");
 }
 /* effective theme: explicit choice, otherwise the system setting */
@@ -226,12 +228,16 @@ function renderShell() {
     '</nav><p class="rolebadge">' + t("role.now") + ": " + t("role." + S.role) + "</p>";
   var c = BL.unread();
   $("#top").innerHTML = '<button class="brand" data-act="nav" data-arg="' + BL.homeView() + '" aria-label="' + esc(t("nav.home")) + '">' + logo() + '<span class="bt">BARI\'S LAB</span></button>' +
+    '<button class="iconbtn focusbtn" id="focusbtn" data-act="focus" aria-pressed="' + !!S.focus + '" aria-label="' + esc(t(S.focus ? "focus.off" : "focus.on")) + '" title="' + esc(t(S.focus ? "focus.off" : "focus.on")) + '">' + ic(S.focus ? "shrink" : "expand", 20) + "</button>" +
     '<div class="gsearch"><span class="si">' + ic("search", 18) + '</span><input type="search" id="gs" data-in="gs" placeholder="' + esc(t("search.ph")) + '" aria-label="' + esc(t("search.ph")) + '" autocomplete="off"><div class="gsr" id="gsr" hidden></div></div><span class="spacer"></span>' +
     '<button class="langbtn" data-act="lang" aria-label="' + esc(t("lang.switch")) + '">' + (S.lang === "he" ? "EN" : "עב") + "</button>" +
     '<button class="iconbtn" data-act="music" aria-label="' + esc(t("music")) + '">' + ic("music") + "</button>" +
     '<button class="iconbtn" data-act="nav" data-arg="alerts" aria-label="' + esc(t("nav.alerts") + (c ? " (" + c + ")" : "")) + '">' + ic("bell") + (c ? '<span class="cnt">' + c + "</span>" : "") + "</button>" +
     '<button class="iconbtn" data-act="profile" aria-label="' + esc(t("profile")) + '">' + ic("user") + "</button>" +
     '<button class="iconbtn themebtn" id="themebtn" data-act="thm" aria-label="' + esc(t(BL.dark() ? "thm.tolight" : "thm.todark")) + '" aria-pressed="' + BL.dark() + '"><span class="tico">' + ic(BL.dark() ? "sun" : "moon", 20) + "</span></button>";
+  var stab = document.getElementById("sidetab");
+  if (!stab) { stab = document.createElement("button"); stab.id = "sidetab"; stab.type = "button"; stab.className = "sidetab"; stab.setAttribute("data-act", "focus"); document.body.appendChild(stab); }
+  stab.innerHTML = ic("chev", 18); stab.setAttribute("aria-label", t(S.focus ? "focus.off" : "focus.on")); stab.title = t(S.focus ? "focus.off" : "focus.on");
   $("#banner").innerHTML = "<span>" + t("banner") + "</span>";
   var vis = visibleItems(), main = (BL.hasSite() ? ["home", "radar", "charts", "journal"] : ["learn", "help", "settings"]).map(function (id) { return NAV.filter(function (n) { return n.id === id; })[0]; }).filter(function (n) { return n && vis.indexOf(n) > -1; });
   var moreCur = main.every(function (n) { return n.id !== R.view && !(R.view === "stock" && n.id === "radar"); });
@@ -475,6 +481,8 @@ ACT.close = function () { closeModal(); };
 ACT.nav = function (id) { go(id); };
 ACT.open = function (tk) { go("stock", tk); };
 ACT.lang = function () { setLang(S.lang === "he" ? "en" : "he"); };
+ACT.focus = function () { S.focus = !S.focus; save(); applySettings(); var b = document.getElementById("focusbtn"); var tb = document.getElementById("sidetab"); if (tb) { tb.setAttribute("aria-label", t(S.focus ? "focus.off" : "focus.on")); tb.title = t(S.focus ? "focus.off" : "focus.on"); }
+  if (b) { b.innerHTML = ic(S.focus ? "shrink" : "expand", 20); b.setAttribute("aria-pressed", !!S.focus); b.setAttribute("aria-label", t(S.focus ? "focus.off" : "focus.on")); b.title = t(S.focus ? "focus.off" : "focus.on"); } BL.toast(t(S.focus ? "focus.on.t" : "focus.off.t")); };
 ACT.more = function () {
   openModal({ title: t("more"), body: '<div class="grid g2">' + visibleItems().map(function (n) { return '<button class="btn" data-act="nav" data-arg="' + n.id + '">' + ic(n.ic) + " " + t("nav." + n.id) + "</button>"; }).join("") + '</div><button class="btn" data-act="music">' + ic("music") + " " + t("music") + "</button>" });
 };
