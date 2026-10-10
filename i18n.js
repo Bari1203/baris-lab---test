@@ -48,7 +48,7 @@ var P = [
 ["st.new", "חדש", "New"], ["st.watch", "במעקב", "Watching"], ["st.wait", "ממתין", "Waiting"], ["st.near", "קרוב לאזור", "Near zone"],
 ["st.zone", "באזור", "In zone"], ["st.update", "עודכן", "Updated"], ["st.cancel", "בוטל", "Cancelled"], ["st.archive", "בארכיון", "Archived"],
 ["sp.low", "ספקולטיביות נמוכה", "Low speculation"], ["sp.mid", "ספקולטיביות בינונית", "Medium speculation"], ["sp.high", "ספקולטיביות גבוהה", "High speculation"],
-["sec.tech", "טכנולוגיה", "Technology"], ["sec.bio", "ביו ובריאות", "Bio and health"], ["sec.apparel", "אופנה וקמעונאות", "Apparel and retail"], ["sec.defense", "ביטחון", "Defense"], ["sec.space", "חלל", "Space"], ["sec.index", "מדד", "Index"], ["sec.crypto", "קריפטו", "Crypto"], ["sec.fx", "מט״ח", "FX"],
+["sec.futures", "חוזים עתידיים", "Futures"], ["sec.tech", "טכנולוגיה", "Technology"], ["sec.bio", "ביו ובריאות", "Bio and health"], ["sec.apparel", "אופנה וקמעונאות", "Apparel and retail"], ["sec.defense", "ביטחון", "Defense"], ["sec.space", "חלל", "Space"], ["sec.index", "מדד", "Index"], ["sec.crypto", "קריפטו", "Crypto"], ["sec.fx", "מט״ח", "FX"],
 ["comp.price", "מחיר מול שיא", "Price vs. high"], ["comp.narr", "נרטיב", "Narrative"], ["comp.quality", "איכות עסק", "Business quality"],
 ["comp.fin", "מצב פיננסי", "Financials"], ["comp.pa", "פעולת מחיר", "Price action"], ["comp.cat", "קטליזטור קרוב", "Near catalyst"],
 ["hz.Y1", "שנה", "1 year"], ["hz.M6", "6 חודשים", "6 months"], ["hz.M3", "3 חודשים", "3 months"], ["hz.M1", "חודש", "1 month"],
@@ -297,7 +297,7 @@ var P = [
 ["ob.6.go","כניסה לדף הבית","Enter the home page"],["ob.6.learn","התחל מהשיעור הראשון","Start with the first lesson"],
 ["wop.go","ללמוד ממני ב-Whop","Learn from me on Whop"],["wop.soon","הלימוד אצלי ב-Whop: בקרוב","Learning with me on Whop: soon"],
 ["wop.line","כל השיעורים באתר חינמיים. ללמוד ממני ישירות, עם כל הסרטונים והלייבים, אפשר ב-Whop, בתשלום.","All lessons on this site are free. To learn from me directly, with all the videos and lives, go to Whop (paid)."],
-["ob.4.l","מטרה","Goal"],["ob.4.lb","אני גם רוצה ללמוד לעומק","I also want to learn in depth"],["ob.4.ld","סרטונים בפלטפורמה חיצונית, בתשלום","Videos on an outside platform, paid"],
+
 ["ob.L.h","רוצה ללמוד ממני ישירות?","Want to learn from me directly?"],["ob.L.p","כל השיעורים באתר חינמיים. אם אתה רוצה ללמוד ישירות ממני, לראות את כל הסרטונים והלייבים ולקבל הזדמנות ללמוד אישית, זה נמצא ב-Whop, בקהילה של Trade_mor, והוא בתשלום.","All lessons on this site are free. If you want to learn from me directly, watch all the videos and lives and get the chance to learn personally, that is on Whop, in the Trade_mor community, and it is paid."],
 ["ob.h7","השיעורים באתר: חינם","Lessons on the site: free"],["ob.h7d","כל שיעורי הבסיס והשיטה באתר פתוחים, בלי הרשמה לתשלום.","All basics and method lessons on the site are open, with no paid sign-up."],
 ["ob.h8","ללמוד ממני ישירות","Learn from me directly"],["ob.h8d","כל הסרטונים, הלייבים והזדמנות ללמוד אישית, ב-Whop בלבד, בתשלום.","All videos, lives and the chance to learn personally, on Whop only, paid."],
@@ -307,7 +307,7 @@ var P = [
 ["ob.L.t0","לייבים","Live sessions"],
 ["ob.L.t1","וובינר מלא של כ-3.5 שעות","Full webinar, about 3.5 hours"],["ob.L.t2","נזילות","Liquidity"],["ob.L.t3","מומנטום ורכיבה עליו","Momentum and riding it"],["ob.L.t4","אורך הפתיל","Wick length"],
 ["ob.L.t5","רגל מניפולציה","Manipulation leg"],["ob.L.t6","נזילות פנימית קיצונית","Extreme internal liquidity"],["ob.L.t7","Protected Low וסווינג פוינט","Protected Low and swing point"],["ob.L.t8","סווינג למניות, מדדים וקריפטו","Swing for stocks, indices and crypto"],
-["ob.L.free","טעימה חינמית באתר","Free taste on the site"],
+
 ["learn.lesson","שיעור {n}","Lesson {n}"],["learn.half","חצי הושלם","Half done"],["learn.cele","שיעור הושלם","Lesson completed"],
 ["thm.todark","מעבר לעיצוב כהה","Switch to dark theme"],["thm.tolight","מעבר לעיצוב בהיר","Switch to light theme"],
 ["ob.pick.h","איך תרצה להשתמש באתר?","How would you like to use the site?"],["ob.pick.p","תבחר מסלול ואציג לך רק את מה שרלוונטי אליך. אפשר להחליף בכל רגע מההגדרות.","Pick a path and I will show only what is relevant to you. You can change it anytime in settings."],
@@ -325,9 +325,9 @@ var P = [
 ["ob.l3.h","מוכן ללמוד","Ready to learn"],["ob.l3.p","מתחילים משיעור 1 וממשיכים בקצב שלך. שום דבר כאן אינו המלצה לפעולה.","Start with lesson 1 and go at your own pace. Nothing here is a recommendation to act."],
 ["ob.l3.go","התחל משיעור 1","Start with lesson 1"],["ob.l3.w","רוצה ללמוד ממני ישירות?","Want to learn from me directly?"],["ob.l3.wd","כל הסרטונים והלייבים והזדמנות ללמוד אישית נמצאים ב-Whop, בתשלום.","All the videos, lives and the chance to learn personally are on Whop, paid."],
 ["ob.l3.n","האתר המלא עם הרדאר והיומן זמין לך בכל רגע, ואפשר להחליף מסלול בהגדרות.","The full site with the radar and journal is available anytime, and you can change the path in settings."],
-["set.path","מסלול שימוש","Usage path"],["set.path.n","מה האתר מציג לך: רק את הלימוד, הכול, או רק את האתר בלי לימוד. אפשר להחליף בכל רגע.","What the site shows you: only learning, everything, or only the site without learning. You can change it anytime."],["set.path.ok","המסלול עודכן","Path updated"],
+["set.path.ok","המסלול עודכן","Path updated"],
 ["jd.h","התוצאות שלי","My results"],["jd.demo","דוגמה להמחשה, לא נתונים אמיתיים","Illustration sample, not real data"],["jd.showdemo","הצג דוגמה","Show a sample"],["jd.hidedemo","הסתר את הדוגמה","Hide the sample"],
-["jd.actual","אחוז הצלחה בפועל","Actual win rate"],["jd.of","{w} מתוך {n} עסקאות","{w} of {n} trades"],["jd.pnl","רווח או הפסד מצטבר","Cumulative P&L"],["jd.avg","ממוצע לעסקה","Average per trade"],["jd.streak","רצף נוכחי","Current streak"],["jd.wins","רווחים ברצף","wins in a row"],["jd.losses","הפסדים ברצף","losses in a row"],
+
 ["jd.ribbon","כל העסקאות לפי הסדר","Every trade in order"],["jd.curve","מסלול הרווח המצטבר","Cumulative P&L path"],
 ["jd.rates","אחוז הצלחה לפי סוג","Win rate by type"],["jd.rates.n","כל שורה היא מה שקרה בפועל בעסקאות שלך מהסוג הזה. המספר הקטן הוא כמות העסקאות, ושורה חלשה בגלל מעט עסקאות מסומנת בעמעום.","Each row is what actually happened in your trades of that type. The small number is the trade count, and a row with few trades is dimmed."],
 ["jd.best","מה עבד הכי טוב","What worked best"],["jd.worst","מה עבד הכי פחות","What worked least"],["jd.from","מתוך {n} עסקאות","from {n} trades"],["jd.need","יתעדכן כשיהיו לפחות 5 עסקאות בכמה סוגים.","Updates once there are at least 5 trades in a few types."],
@@ -338,9 +338,9 @@ var P = [
 ["focus.on","מצב מסך מלא: הסתר תפריטים","Full-screen mode: hide menus"],["focus.off","חזרה לתצוגה רגילה","Back to the normal view"],["focus.on.t","מצב מסך מלא. אפשר לחזור עם אותו כפתור","Full-screen mode. Use the same button to go back"],["focus.off.t","חזרה לתצוגה רגילה","Back to the normal view"],
 ["pz.card","התאמה אישית","Personalization"],
 ["pz.card.n","התשובות שנתת בכניסה הראשונה. אפשר לשנות כל דבר בכל רגע.","The answers you gave on your first visit. You can change anything at any time."],
-["pz.rerun","עבור שוב על השאלות","Go through the questions again"],
+["pz.rerun","הצג שוב את ההסבר על האתר","Show the site introduction again"],
 ["pz.name","שם פרטי","First name"],
-["pz.name.ph","איך לקרוא לך?","What should I call you?"],
+
 ["pz.path","מסלול","Path"],
 ["pz.sty","איזה סוחר או משקיע אתה","What kind of trader or investor you are"],
 ["pz.mkt","שוק","Market"],
@@ -349,52 +349,52 @@ var P = [
 ["pz.time","זמן ביום","Time per day"],
 ["pz.theme","עיצוב","Theme"],
 ["pz.exp.new","רק מתחיל","Just starting"],
-["pz.exp.new.d","עוד לא סחרתי, או סחרתי מעט מאוד. אתחיל מהבסיס.","I have not traded, or very little. I will start from the basics."],
+
 ["pz.exp.some","יש לי קצת נסיון","Some experience"],
-["pz.exp.some.d","עד כשנתיים. אני מכיר מושגים, ורוצה לסדר ולהבין לעומק.","Up to about two years. I know the terms and want order and depth."],
+
 ["pz.exp.pro","מנוסה","Experienced"],
-["pz.exp.pro.d","יותר משנתיים. אני רוצה כלים, תיעוד ובדיקה של התוצאות.","More than two years. I want tools, logging and a review of my results."],
+
 ["pz.g.scratch","להתחיל מאפס","Start from scratch"],
-["pz.g.scratch.d","סדר שיעורים מהבסיס","A lesson order from the basics"],
+
 ["pz.g.method","להבין את השיטה לעומק","Understand the method in depth"],
-["pz.g.method.d","טווח, סחיטת נזילות, סגירות ו-SMT","Range, liquidity sweeps, closes and SMT"],
+
 ["pz.g.practice","לתרגל קריאת גרף","Practice reading a chart"],
-["pz.g.practice.d","התרגיל 'לפני הנר הבא'","The 'before the next candle' exercise"],
+
 ["pz.g.opps","למצוא הזדמנויות","Find opportunities"],
-["pz.g.opps.d","רדאר מסודר לפי ציון, ורשימת מעקב","A score-ordered radar and a watch list"],
+
 ["pz.g.weekly","לעקוב אחרי השבוע בשוק","Follow the week in the market"],
-["pz.g.weekly.d","סיכום שבועי בפורמט סיעור מוחות","A brainstorm-style weekly review"],
+
 ["pz.g.journal","לתעד ולבדוק את התוצאות שלי","Log and review my results"],
-["pz.g.journal.d","יומן ולוח תוצאות","A journal and results dashboard"],
+
 ["pz.time.15","עד 15 דקות","Up to 15 minutes"],
-["pz.time.15.d","הצעה: 2 שיעורים בשבוע","Suggestion: 2 lessons a week"],
+
 ["pz.time.30","כ-30 דקות","About 30 minutes"],
-["pz.time.30.d","הצעה: 4 שיעורים בשבוע","Suggestion: 4 lessons a week"],
+
 ["pz.time.60","שעה ויותר","An hour or more"],
-["pz.time.60.d","הצעה: 7 שיעורים בשבוע","Suggestion: 7 lessons a week"],
-["pz.theme.light","רקע בהיר","A light background"],
-["pz.theme.dark","רקע כהה, נוח לעיניים בערב","A dark background, easy on the eyes at night"],
-["pz.theme.auto","לפי הגדרת המכשיר","Follows your device setting"],
+
+
+
+
 ["pz.reduce","פחות אנימציות","Fewer animations"],
-["pz.reduce.d","אם תנועה מפריעה או מעייפת","If motion bothers or tires you"],
-["pz.q.name","איך לקרוא לך?","What should I call you?"],
-["pz.q.name.p","רק שם פרטי. הוא יופיע בברכה ובדף הבית, ונשמר במכשיר שלך בלבד.","First name only. It appears in the greeting and on the home page, and stays on your device only."],
-["pz.q.sty","איזה סוחר או משקיע אתה?","What kind of trader or investor are you?"],
-["pz.q.sty.p","אפשר לבחור כמה. האתר יציג רק את מה שרלוונטי לסגנון שלך.","You can pick several. The site shows only what is relevant to your style."],
-["pz.q.exp","כמה נסיון יש לך?","How much experience do you have?"],
-["pz.q.exp.p","זה קובע מאיפה נתחיל. אפשר לשנות בהמשך.","This decides where we start. You can change it later."],
-["pz.q.mkt","באיזה שוק אתה פעיל?","Which market do you work in?"],
-["pz.q.goals","מה אתה רוצה מהאתר?","What do you want from the site?"],
-["pz.q.goals.p","אפשר לבחור כמה. נבנה לך דף בית עם הצעדים הבאים.","You can pick several. I will build a home page with your next steps."],
-["pz.q.time","כמה זמן יש לך ביום?","How much time do you have each day?"],
-["pz.q.time.p","רק כדי להציע קצב לימוד. זו הצעה ולא חובה.","Only to suggest a learning pace. A suggestion, not an obligation."],
-["pz.q.look","איך תרצה שהאתר ייראה?","How would you like the site to look?"],
-["pz.q.look.p","השינוי מופיע מיד, ואפשר להחליף בכל רגע גם מהכפתור שלמעלה.","The change appears immediately, and you can switch anytime from the button at the top."],
-["pz.done.h","מוכן, {n}. זה האתר שלך","Ready, {n}. This is your site"],
-["pz.done.n","אפשר לשנות כל דבר בהגדרות, תחת התאמה אישית.","You can change anything in Settings, under Personalization."],
-["pz.enter","כניסה לאתר","Enter the site"],
-["pz.tour","הסבר קצר על האתר","A short tour of the site"],
-["pz.skip","דלג על ההתאמה","Skip personalization"],
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ["pz.p.scratch","להתחיל משיעור 1","Start with lesson 1"],
 ["pz.p.method","שיעורי השיטה","The method lessons"],
 ["pz.p.practice","תרגיל קריאת גרף","Chart-reading exercise"],
@@ -410,7 +410,7 @@ var P = [
 ["pz.plan.week","יעד שבועי מוצע: {n} שיעורים.","Suggested weekly goal: {n} lessons."],
 ["pz.plan.done","הושלמו {a} מתוך {b}.","{a} of {b} completed."],
 ["pz.plan.none","סמן מה אתה רוצה מהאתר בהגדרות, ונציע לך צעדים.","Mark what you want from the site in Settings and we will suggest steps."],
-["jb.tab.day","מסחר יומי","Day trading"],["jb.tab.swing","סווינג","Swing"],["jb.tab.gen","יומן כללי","General journal"],["jb.day.h","יומן מסחר יומי","Day-trading journal"],["jb.day.sub","כל עסקה יומית, התוצאה שלה, ומה המספרים אומרים על הדרך שבה אתה סוחר.","Every day trade, its result, and what the numbers say about how you trade."],["jb.sw.h","יומן סווינג","Swing journal"],["jb.sw.sub","עסקאות של ימים עד שבועות: כניסה, יציאה, ימי החזקה ורווח באחוזים.","Trades held days to weeks: entry, exit, holding days and P&L in percent."],["jb.add","עסקה חדשה","New trade"],["jb.range","טווח זמן","Time range"],["jb.range.all","הכול","All"],["jb.range.30","30 יום","30 days"],["jb.range.90","90 יום","90 days"],["jb.net","רווח נקי","Net P&L"],["jb.pf","Profit factor","Profit factor"],["jb.pf.n","סך הרווחים חלקי סך ההפסדים","Total gains divided by total losses"],["jb.payoff","יחס רווח להפסד","Avg win / avg loss"],["jb.daywin","ימים ברווח","Winning days"],["jb.daywin.n","מתוך ימי המסחר","of trading days"],["jb.hold","החזקה ממוצעת","Average hold"],["jb.hold.u","ימים","days"],["jb.cal","לוח תוצאות","Results calendar"],["jb.month","סה״כ החודש","Month total"],["jb.days","{n} ימים עם עסקאות","{n} days with trades"],["jb.log","יומן העסקאות","Trade log"],["jb.c.date","תאריך","Date"],["jb.c.tk","נכס","Symbol"],["jb.c.res","תוצאה","Result"],["jb.c.pnl","רווח/הפסד","P&L"],["jb.c.pct","רווח/הפסד %","P&L %"],["jb.none.day","עדיין אין עסקאות ביומן המסחר היומי","No day trades in the journal yet"],["jb.none.sw","עדיין אין עסקאות ביומן הסווינג","No swing trades in the journal yet"],["jb.note.day","מחושב רק מעסקאות שסימנת כרווח, הפסד או BE. עסקאות פתוחות לא נספרות.","Calculated only from trades you marked win, loss or BE. Open trades are not counted."],["jb.note.sw","מחושב מעסקאות שנסגרו. הרווח באחוזים נגזר ממחיר הכניסה והיציאה, וימי ההחזקה מתאריכי הכניסה והיציאה.","Calculated from closed trades. P&L in percent comes from entry and exit prices, holding days from entry and exit dates."],
+["jb.tab.day","מסחר יומי","Day trading"],["jb.tab.swing","סווינג","Swing"],["jb.tab.gen","יומן כללי","General journal"],["jb.day.h","יומן מסחר יומי","Day-trading journal"],["jb.day.sub","כל עסקה יומית, התוצאה שלה, ומה המספרים אומרים על הדרך שבה אתה סוחר.","Every day trade, its result, and what the numbers say about how you trade."],["jb.sw.h","יומן סווינג","Swing journal"],["jb.sw.sub","עסקאות של ימים עד שבועות: כניסה, יציאה, ימי החזקה ורווח באחוזים.","Trades held days to weeks: entry, exit, holding days and P&L in percent."],["jb.add","עסקה חדשה","New trade"],["jb.range","טווח זמן","Time range"],["jb.range.all","הכול","All"],["jb.range.30","30 יום","30 days"],["jb.range.90","90 יום","90 days"],["jb.net","רווח נקי","Net P&L"],["jb.pf","Profit factor","Profit factor"],["jb.pf.n","סך הרווחים חלקי סך ההפסדים","Total gains divided by total losses"],["jb.payoff","יחס רווח להפסד","Avg win / avg loss"],["jb.daywin","ימים ברווח","Winning days"],["jb.hold","החזקה ממוצעת","Average hold"],["jb.hold.u","ימים","days"],["jb.month","סה״כ החודש","Month total"],["jb.days","{n} ימים עם עסקאות","{n} days with trades"],["jb.log","יומן העסקאות","Trade log"],["jb.c.date","תאריך","Date"],["jb.c.tk","נכס","Symbol"],["jb.c.res","תוצאה","Result"],["jb.c.pnl","רווח/הפסד","P&L"],["jb.c.pct","רווח/הפסד %","P&L %"],["jb.none.day","עדיין אין עסקאות ביומן המסחר היומי","No day trades in the journal yet"],["jb.none.sw","עדיין אין עסקאות ביומן הסווינג","No swing trades in the journal yet"],["jb.note.day","מחושב רק מעסקאות שסימנת כרווח, הפסד או BE. עסקאות פתוחות לא נספרות.","Calculated only from trades you marked win, loss or BE. Open trades are not counted."],["jb.note.sw","מחושב מעסקאות שנסגרו. הרווח באחוזים נגזר ממחיר הכניסה והיציאה, וימי ההחזקה מתאריכי הכניסה והיציאה.","Calculated from closed trades. P&L in percent comes from entry and exit prices, holding days from entry and exit dates."],
 ["jb.sub","יומן מסחר יומי ויומן סווינג: כל עסקה, כל תוצאה, כל יום.","Day-trading and swing journals: every trade, every result, every day."],["jb.tn","{n} עסקאות","{n} trades"],["jb.week","שבוע","Week"],["jb.dsum","{n} עסקאות, {w} ברווח","{n} trades, {w} winners"],["jb.dnone","אין עסקאות ביום הזה","No trades on this day"],["jb.notes","הערות ומחקר מהיום הזה","Notes and research from this day"],
 ["jb.t1","עסקה אחת","1 trade"],
 ["tm.cele", "נכנסת. ברוך הבא ל-BARI'S LAB", "You're in. Welcome to BARI'S LAB"],

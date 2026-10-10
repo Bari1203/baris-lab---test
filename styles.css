@@ -1,3 +1,4 @@
+[hidden]{display:none!important}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 var(--font);overflow-x:hidden;text-rendering:optimizeLegibility}
@@ -353,7 +354,7 @@ main.pg .tiles>*:nth-child(n+5),main.pg .hgrid>*:nth-child(n+5),main.pg .rail>*:
 @keyframes starpop{0%{transform:scale(1)}40%{transform:scale(1.55) rotate(-12deg)}100%{transform:scale(1)}}
 @keyframes reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 .pop svg{animation:starpop .5s var(--ease)}
-.cn{animation:cn .8s ease 1.4s both,pulse 2.6s ease-in-out 2.4s infinite;transform-box:fill-box;transform-origin:center}
+.cn{animation:cn .8s ease 1.4s both,pulse 2.6s ease-in-out 2.4s 4;transform-box:fill-box;transform-origin:center}
 .chartcard.rv svg{animation:reveal 1s var(--ease) both}
 
 /* hero: compact, glowing */
@@ -374,7 +375,8 @@ main.pg .tiles>*:nth-child(n+5),main.pg .hgrid>*:nth-child(n+5),main.pg .rail>*:
 .ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--line2)}
 .rg-watch .ring::before{background:var(--mint)}
 .rg-near .ring::before{background:var(--coral-soft)}
-.rg-zone .ring::before{background:conic-gradient(var(--coral),var(--coral-hero),var(--mint),var(--coral));animation:spin 5s linear infinite}
+.rg-zone .ring::before{background:conic-gradient(var(--coral),var(--coral-hero),var(--mint),var(--coral));animation:spin 5s linear infinite;animation-play-state:paused}
+.rg-zone:hover .ring::before,.rg-zone:focus-within .ring::before,.rg-zone .ring.hot::before{animation-play-state:running}
 .story .av{position:relative;width:58px;height:58px;font-size:15px;border:3px solid var(--bg)}
 .av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--hero-bg);color:var(--hero-fg);font-weight:800;font-size:14px;flex:none;letter-spacing:.3px}
 .av.big{width:64px;height:64px;font-size:20px}
@@ -501,7 +503,7 @@ main.pg .tiles>*:nth-child(n+5),main.pg .hgrid>*:nth-child(n+5),main.pg .rail>*:
 .spot .px b{font-size:32px}
 .spot .spk{width:100%;height:auto}
 .spot .tn b{font-size:17px}
-.spk .sd{fill:currentColor;transform-box:fill-box;transform-origin:center;animation:pulse 1.8s ease-in-out infinite}
+.spk .sd{fill:currentColor;transform-box:fill-box;transform-origin:center;animation:pulse 1.8s ease-in-out 3}
 .chip.kind{background:var(--line);color:var(--muted)}
 .av{font-size:13px;text-align:center;line-height:1}
 
@@ -891,20 +893,6 @@ html.focus main{padding-bottom:60px}
 .intro.onb::after{width:300px;height:300px;background:#2f7f76;bottom:-80px;inset-inline-start:-70px;animation:pzfloat 14s ease-in-out -4s infinite alternate-reverse}
 .intro.onb .ob{position:relative;z-index:1}
 @keyframes pzfloat{from{transform:translate(0,0) scale(1)}to{transform:translate(-40px,50px) scale(1.18)}}
-.pzbar{height:5px;border-radius:5px;background:rgba(245,241,232,.15);overflow:hidden;margin-bottom:6px}
-.pzbar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#C8E2D8,#F17462);box-shadow:0 0 14px rgba(241,116,98,.7);transition:width .7s cubic-bezier(.2,.9,.3,1)}
-html[dir=rtl] .pzbar i{margin-inline-start:auto}
-.ob[data-dir=next] .pzs>*{animation:pzNext .75s cubic-bezier(.2,.9,.3,1) both}
-.ob[data-dir=prev] .pzs>*{animation:pzPrev .75s cubic-bezier(.2,.9,.3,1) both}
-.ob[data-dir=same] .pzs>*{animation:none!important}
-.pzs>*:nth-child(2){animation-delay:.08s!important}.pzs>*:nth-child(3){animation-delay:.16s!important}.pzs>*:nth-child(4){animation-delay:.24s!important}.pzs>*:nth-child(5){animation-delay:.32s!important}
-@keyframes pzNext{from{opacity:0;transform:translateX(-46px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
-@keyframes pzPrev{from{opacity:0;transform:translateX(46px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
-html[dir=ltr] .ob[data-dir=next] .pzs>*{animation-name:pzPrev}html[dir=ltr] .ob[data-dir=prev] .pzs>*{animation-name:pzNext}
-.pzs .obopt{position:relative;overflow:hidden}
-.ob[data-dir=next] .pzs .obgrid>.obopt,.ob[data-dir=prev] .pzs .obgrid>.obopt{animation:pzPop .7s cubic-bezier(.2,1.25,.4,1) calc(.25s + var(--n,0)*.09s) both}
-.pzs .obgrid>.obopt:nth-child(1){--n:0}.pzs .obgrid>.obopt:nth-child(2){--n:1}.pzs .obgrid>.obopt:nth-child(3){--n:2}.pzs .obgrid>.obopt:nth-child(4){--n:3}.pzs .obgrid>.obopt:nth-child(5){--n:4}.pzs .obgrid>.obopt:nth-child(6){--n:5}
-@keyframes pzPop{from{opacity:0;transform:translateY(26px) scale(.9)}to{opacity:1;transform:none}}
 .obopt .obi{transition:transform .4s cubic-bezier(.2,1.4,.4,1),background .3s,color .3s}
 .obopt:hover .obi{transform:rotate(-10deg) scale(1.12)}
 .obopt.on{background:#F5F1E8;border-color:#F5F1E8;color:#123C3A;transform:translateY(-3px) scale(1.015);box-shadow:0 14px 30px rgba(0,0,0,.35),0 0 0 4px rgba(241,116,98,.55);animation:pzSel .55s cubic-bezier(.2,1.5,.4,1)}
@@ -913,26 +901,10 @@ html[dir=ltr] .ob[data-dir=next] .pzs>*{animation-name:pzPrev}html[dir=ltr] .ob[
 .obopt.on::after{content:"";position:absolute;inset-block-start:12px;inset-inline-end:14px;width:24px;height:24px;border-radius:50%;background:#123C3A url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23F5F1E8' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 10.5l4 4 8-9'/%3E%3C/svg%3E") center/14px no-repeat;animation:inPop .5s cubic-bezier(.2,1.5,.4,1) both}
 @keyframes pzSel{0%{transform:scale(.96)}60%{transform:translateY(-5px) scale(1.04)}100%{transform:translateY(-3px) scale(1.015)}}
 .obch.on{animation:pzSel .5s cubic-bezier(.2,1.5,.4,1)}
-.pzin{width:100%;max-width:340px;font:700 22px Heebo,Inter,sans-serif;text-align:center;color:#F5F1E8;background:rgba(245,241,232,.08);border:2px solid rgba(245,241,232,.3);border-radius:18px;padding:16px 18px;outline:none;transition:border-color .3s,box-shadow .3s,background .3s}
-.pzin::placeholder{color:rgba(245,241,232,.5);font-weight:500}
-.pzin:focus{border-color:#F17462;background:rgba(245,241,232,.14);box-shadow:0 0 0 5px rgba(241,116,98,.28),0 0 34px rgba(241,116,98,.35)}
-.pzs .obbig{animation:inGlow 2.6s ease-out infinite,pzBob 3.4s ease-in-out infinite}
-@keyframes pzBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.pzsum{width:100%;max-width:380px;display:grid;gap:8px;text-align:start}
-.pzsum>div{display:flex;justify-content:space-between;gap:12px;align-items:center;background:rgba(245,241,232,.08);border:1px solid rgba(245,241,232,.15);border-radius:14px;padding:10px 14px;animation:pzNext .6s cubic-bezier(.2,.9,.3,1) calc(.35s + var(--n,0)*.08s) both}
-.pzsum>div:nth-child(1){--n:0}.pzsum>div:nth-child(2){--n:1}.pzsum>div:nth-child(3){--n:2}.pzsum>div:nth-child(4){--n:3}.pzsum>div:nth-child(5){--n:4}.pzsum>div:nth-child(6){--n:5}.pzsum>div:nth-child(7){--n:6}
-.pzsum span{color:#C8E2D8;font-size:13px}.pzsum b{font:600 14px Heebo,Inter,sans-serif;text-align:end}
-.pzburst{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
-.pzburst i{position:absolute;top:34%;inset-inline-start:50%;width:var(--s);height:var(--s);border-radius:2px;background:var(--c);opacity:0;animation:pzConf 1.9s cubic-bezier(.15,.8,.3,1) both}
-@keyframes pzConf{0%{opacity:1;transform:translate(0,0) rotate(0)}80%{opacity:1}100%{opacity:0;transform:translate(var(--x),calc(var(--y) + 240px)) rotate(var(--r))}}
 .pzcb{display:flex;gap:10px;align-items:center;min-height:44px;padding:0 14px;border:1.5px solid var(--line2);border-radius:14px;background:var(--surface);cursor:pointer;font-weight:600;transition:background .25s,border-color .25s}
 .pzcb:has(input:checked){background:var(--mint);border-color:var(--ink)}
 .pzcb input{width:18px;height:18px;accent-color:var(--coral)}
 .pzfs{border:0;padding:0;margin:0;display:grid;gap:8px}.pzfs legend{font-weight:600;font-size:14px;color:var(--muted);margin-bottom:6px}
-.intro.still .pzs>*,.intro.still .pzsum>div,.intro.still .obopt{animation:none!important}
-html.reduce .intro .pzs>*,html.reduce .intro .pzsum>div,html.reduce .intro .obopt,html.reduce .intro.onb::before,html.reduce .intro.onb::after{animation:none!important}
-.pzs[data-step=done]{max-height:calc(100dvh - 170px);overflow-y:auto;overflow-x:hidden;padding-bottom:8px;scrollbar-width:none}
-.pzs[data-step=done] .pzsum{gap:6px}.pzs[data-step=done] .pzsum>div{padding:7px 12px}
 .pzc{gap:12px}.pzc .pzg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 14px}
 .pzc .pzfs .rowf{gap:8px}.pzc .pzcb{min-height:38px;padding:0 12px;font-size:14px}
 
@@ -1013,3 +985,8 @@ html.reduce .jb-top,html.reduce .jdash .jd-hero,html.reduce .jb-two,html.reduce 
 .jb-wd.w{background:color-mix(in srgb,var(--up) 12%,var(--surface))}.jb-wd.l{background:color-mix(in srgb,var(--down) 12%,var(--surface))}
 .jb-mini{display:flex;justify-content:space-between;gap:6px;border:0;border-radius:10px;padding:6px 8px;font:600 12px Inter,sans-serif;cursor:pointer;background:var(--surface)}
 .jb-mini.w{color:var(--up)}.jb-mini.l{color:var(--down)}
+
+body.gated .sidetab,body.introing .sidetab,body.gated #focusbtn,body.introing #focusbtn{display:none!important}
+@media(max-width:959px){#focusbtn{display:none!important}}
+@media(max-width:560px){.top{padding-inline:10px;gap:3px}.top .iconbtn{width:38px;height:38px}.top .langbtn{min-height:38px;padding:0 10px}.top .brand{min-width:0;flex:0 1 auto}.top .brand *{white-space:nowrap}}
+@media(max-width:560px){.top .brand .bt{display:none}.gsearch{flex:1 1 120px}}

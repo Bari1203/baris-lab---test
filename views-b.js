@@ -66,14 +66,6 @@ ACT.evrem = function (id) {
 /* ------------------------------------------------------------ journal */
 var JT = ["research", "watch", "scenario", "reminder", "event", "note", "trade", "review", "exercise"];
 function jv() { return S.jv; }
-function jmatch(e) {
-  var v = jv(), q = (v.q || "").toLowerCase();
-  if (q && (e.title + " " + e.note + " " + e.ticker + " " + (e.tags || []).join(" ")).toLowerCase().indexOf(q) < 0) return false;
-  if (v.type && e.type !== v.type) return false;
-  if (v.status && e.status !== v.status) return false;
-  return true;
-}
-function jday(date) { return S.journal.filter(function (e) { return e.date === date && jmatch(e); }).sort(function (a, b) { return a.time.localeCompare(b.time); }); }
 function dayName(i, fmt) { return new Intl.DateTimeFormat(BL.loc(), { weekday: fmt || "short" }).format(new Date(2023, 0, 1 + i)); }
 function entryCard(e) {
   var note = e.note ? esc(e.note.length > 170 ? e.note.slice(0, 170) + "…" : e.note) : "";
@@ -87,47 +79,6 @@ function swChips(r) {
   if (h != null) a.push(t("sw.hold") + " " + h); if (p != null) a.push("P&L " + (p > 0 ? "+" : "") + p.toFixed(1) + "%");
   return a.map(function (x) { return '<span class="chip">' + esc(x) + "</span>"; }).join("");
 }
-function jSummary() {
-  var cut = ymd(addDays(today(), -30)), a = S.journal.filter(function (e) { return e.date >= cut; });
-  var byType = {}; a.forEach(function (e) { byType[e.type] = (byType[e.type] || 0) + 1; });
-  var noChg = S.journal.filter(function (e) { return e.status === "open" && (e.type === "scenario" || e.type === "research") && !e.chg; }).length;
-  var tk = {}; S.journal.forEach(function (e) { if (e.ticker) tk[e.ticker] = (tk[e.ticker] || 0) + 1; });
-  var top = Object.keys(tk).sort(function (x, y) { return tk[y] - tk[x]; })[0];
-  var up = S.journal.filter(function (e) { return e.rem && e.status === "open" && e.date >= ymd(today()); }).length;
-  return '<section class="card tint"><h2>' + t("js.sum") + '</h2><p class="xs">' + t("js.sum.n") + '</p><ul style="margin:10px 0 0;padding-inline-start:20px;display:grid;gap:4px"><li>' + t("js.sum.total", { n: a.length }) + "</li>" + Object.keys(byType).map(function (k) { return "<li>" + t("jt." + k) + ": " + byType[k] + "</li>"; }).join("") + "<li>" + t("js.sum.nochg", { n: noChg }) + "</li><li>" + t("js.sum.up", { n: up }) + "</li>" + (top ? "<li>" + t("js.sum.top", { t: top }) + "</li>" : "") + "</ul></section>";
-}
-function jLabel() {
-  var v = jv(), c = pd(v.cur || ymd(today()));
-  if (v.view === "month") return BL.fmtD(c, { month: "long", year: "numeric" });
-  if (v.view === "week") { var s0 = addDays(c, -c.getDay()); return BL.fmtD(s0, { day: "numeric", month: "short" }) + " – " + BL.fmtD(addDays(s0, 6), { day: "numeric", month: "short", year: "numeric" }); }
-  if (v.view === "day") return BL.fmtD(c, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  return t("jv.list");
-}
-function jBody() {
-  var v = jv(), c = pd(v.cur || ymd(today())), td = ymd(today()), sel = v.sel || td, h = "";
-  if (v.view === "month") {
-    var y = c.getFullYear(), m = c.getMonth(), first = new Date(y, m, 1), off = first.getDay(), dim = new Date(y, m + 1, 0).getDate(), rows = Math.ceil((off + dim) / 7);
-    h += '<div class="jlayout m"><div><div class="cal" role="grid" aria-label="' + esc(jLabel()) + '">';
-    for (var i = 0; i < 7; i++) h += '<div class="dh" role="columnheader">' + dayName(i) + "</div>";
-    for (var k = 0; k < rows * 7; k++) {
-      var d = addDays(first, k - off), ds = ymd(d), es = jday(ds), out = d.getMonth() !== m;
-      h += '<button class="cell' + (out ? " out" : "") + (ds === td ? " today" : "") + (ds === sel ? " sel" : "") + '" data-act="jsel" data-arg="' + ds + '" aria-label="' + esc(BL.fmtD(d, { weekday: "long", day: "numeric", month: "long" }) + ", " + t("js.count", { n: es.length })) + '" aria-pressed="' + (ds === sel) + '"><span class="dn2">' + d.getDate() + "</span>" + es.slice(0, 2).map(function (e) { return '<span class="ce">' + esc(e.title) + "</span>"; }).join("") + (es.length > 2 ? '<span class="ce">+' + (es.length - 2) + "</span>" : "") + '<span class="cdots">' + es.slice(0, 5).map(function () { return "<i></i>"; }).join("") + "</span></button>";
-    }
-    h += '</div></div><div class="stack"><div class="rowf" style="justify-content:space-between"><h2 style="font-size:19px">' + BL.fmtD(pd(sel), { weekday: "long", day: "numeric", month: "long" }) + '</h2><button class="btn sm acc" data-act="jnew" data-arg="' + sel + '">' + ic("plus", 18) + " " + t("je.new") + "</button></div>" + dayList(sel) + "</div></div>";
-  } else if (v.view === "week") {
-    var s0 = addDays(c, -c.getDay());
-    h += '<div class="wk7">' + [0, 1, 2, 3, 4, 5, 6].map(function (i) { var d = addDays(s0, i), ds = ymd(d); return '<div class="col1"><div class="rowf" style="justify-content:space-between"><b>' + dayName(i, "short") + " " + d.getDate() + '</b><button class="iconbtn" style="width:36px;height:36px" data-act="jnew" data-arg="' + ds + '" aria-label="' + esc(t("je.new")) + '">' + ic("plus", 18) + "</button></div>" + (jday(ds).map(entryCard).join("") || '<span class="xs muted">' + t("js.noday") + "</span>") + "</div>"; }).join("") + "</div>";
-  } else if (v.view === "day") {
-    var ds2 = ymd(c);
-    h += '<div class="stack"><div class="rowf"><button class="btn sm acc" data-act="jnew" data-arg="' + ds2 + '">' + ic("plus", 18) + " " + t("je.new") + "</button></div>" + dayList(ds2) + "</div>";
-  } else {
-    var all = S.journal.filter(jmatch).sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
-    h += '<div class="stack">' + (all.length ? all.map(entryCard).join("") : emptyJ()) + "</div>";
-  }
-  return h;
-}
-function dayList(ds) { var es = jday(ds); return es.length ? '<div class="stack">' + es.map(entryCard).join("") + "</div>" : '<div class="empty"><span>' + t("js.noday") + '</span><button class="btn sm" data-act="jnew" data-arg="' + ds + '">' + t("je.new") + "</button></div>"; }
-function emptyJ() { return '<div class="empty"><strong>' + t("js.empty") + '</strong><span>' + t("js.empty.t") + '</span><button class="btn acc" data-act="jnew">' + t("je.new") + "</button></div>"; }
 V.journal = {
   html: function () {
     var v = jv();
@@ -139,18 +90,6 @@ V.journal = {
   }
 };
 function jrefresh() { BL.save(); BL.render(false); }
-ACT.jview = function (k) { jv().view = k; jrefresh(); };
-ACT.jsel = function (ds) { jv().sel = ds; jv().cur = ds; jrefresh(); };
-ACT.jtoday = function () { jv().cur = ymd(today()); jv().sel = ymd(today()); jrefresh(); };
-ACT.jnav = function (d) {
-  var v = jv(), c = pd(v.cur || ymd(today())); d = +d;
-  if (v.view === "month") v.cur = ymd(new Date(c.getFullYear(), c.getMonth() + d, 1));
-  else if (v.view === "week") v.cur = ymd(addDays(c, 7 * d));
-  else v.cur = ymd(addDays(c, d));
-  jrefresh();
-};
-IN.jq = function (v) { jv().q = v; BL.save(); document.getElementById("jbody").innerHTML = S.journal.length ? jBody() : emptyJ(); };
-CH.jf = function (v, el, k) { jv()[k] = v; jrefresh(); };
 ACT.jnew = function (ds) { BL.openEntry(ds ? { date: ds } : {}); };
 ACT.jedit = function (id) { BL.openEntry({ id: id }); };
 ACT.jstat = function (id) { var e = S.journal.filter(function (x) { return x.id === id; })[0]; if (e) { e.status = e.status === "open" ? "closed" : "open"; jrefresh(); BL.toast(t("saved")); } };
@@ -373,7 +312,7 @@ FORM.jentry = function (f) {
   if (rec.type === "trade") rec.tr = trRead(f);
   var id = g("je-id").value, ex = id ? S.journal.filter(function (x) { return x.id === id; })[0] : null;
   if (ex) Object.assign(ex, rec); else { rec.id = BL.uid(); S.journal.push(rec); }
-  jv().sel = date; jv().cur = date; BL.save(); BL.closeModal(); BL.render(false); BL.toast(t("saved")); BL.cele({ big: 1, cap: t(ex ? "cele.edit" : "cele.journal") });
+  jv().sel = date; jv().cur = date; if (rec.tr) { var jb = rec.tr.book === "swing" ? "swing" : "day"; jv().tab = jb; jv().bsel = jb === "swing" && rec.tr.d2 ? rec.tr.d2 : date; jv().bcal = jv().bsel.slice(0, 7) + "-01"; } BL.save(); BL.closeModal(); BL.render(false); BL.toast(t("saved")); BL.cele({ big: 1, cap: t(ex ? "cele.edit" : "cele.journal") });
 };
 
 /* ------------------------------------------------------------ alerts */
@@ -867,13 +806,6 @@ BL.onboard = function (el, leave, backFn) {
 var PZ_GOALS = [["scratch", "pz.g.scratch", 1], ["method", "pz.g.method", 1], ["practice", "pz.g.practice", 1], ["opps", "pz.g.opps", 0], ["weekly", "pz.g.weekly", 0], ["journal", "pz.g.journal", 0]];
 BL.pzGoals = function () { return PZ_GOALS.filter(function (g) { return g[2] || BL.hasSite(); }); };
 BL.pzWeekly = function () { return { 15: 2, 30: 4, 60: 7 }[S.time] || 0; };
-function pzFinish() {
-  S.pz = 1; if (S.exp === "new" && !S.f.lv) S.f.lv = "basic"; BL.save();
-}
-function pzLabels() {
-  var sty = ["invest", "swing", "day"].filter(function (k) { return S.styles[k]; }).map(function (k) { return t("sty." + k); }).join(" · ");
-  return [["pz.name", S.name || "—"], ["pz.path", t("ob.pick." + BL.path())], BL.hasSite() ? ["pz.sty", sty] : null, ["pz.exp", S.exp ? t("pz.exp." + S.exp) : "—"], BL.hasSite() ? ["pz.mkt", t("mkt." + S.market)] : null, ["pz.time", S.time ? t("pz.time." + S.time) : "—"], ["pz.theme", t("th." + (S.theme || "light"))]].filter(Boolean);
-}
 /* settings card: every answer from the first-visit questions, changeable at any time */
 function pzCard() {
   var sel = function (id, ch, cur, vals, lab) { return '<div class="fld"><label for="' + id + '">' + t(lab) + '</label><select id="' + id + '" data-ch="' + ch + '">' + vals.map(function (v) { return opt(v[0], v[1], cur); }).join("") + "</select></div>"; };
@@ -904,58 +836,6 @@ CH.pztheme = function (v) { S.theme = v; BL.save(); BL.render(false); };
 CH.pzmot = function (v, el) { S.reduce = el.checked; BL.save(); BL.render(false); };
 ACT.pzrun = function () { BL.intro(S.name, null, { skipOpen: true }); };
 
-BL.personalize = function (el, leave, tour) {
-  var box = document.createElement("div"), cur = 0, ic = BL.ic, dir = "next", redm = S.reduce || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  S.goals = S.goals || {};
-  function steps() { var l = ["name", "path"]; if (S.path !== "learn") l.push("sty"); l.push("exp"); if (S.path !== "learn") l.push("mkt"); l.push("goals", "time", "look", "done"); return l; }
-  function oc(kind, val, ti, de, icn, on) { return '<button type="button" class="obopt' + (on ? " on" : "") + '" data-pz="' + kind + ":" + val + '" aria-pressed="' + !!on + '"><span class="obi">' + ic(icn, 24) + "</span><span><b>" + ti + "</b>" + (de ? "<small>" + de + "</small>" : "") + "</span></button>"; }
-  var S_ = {
-    name: function () { return '<div class="obv"><span class="obbig">' + ic("user", 50) + "</span></div><h2>" + t("pz.q.name") + '</h2><p class="obl">' + t("pz.q.name.p") + '</p><input type="text" id="pzi" class="pzin" maxlength="30" value="' + esc(S.name || "") + '" placeholder="' + esc(t("pz.name.ph")) + '" autocomplete="given-name">'; },
-    path: function () { return "<h2>" + t("ob.pick.h") + '</h2><div class="obgrid one">' + [["learn", "learn"], ["both", "radar"], ["site", "chart"]].map(function (x) { return oc("path", x[0], t("ob.pick." + x[0]), t("ob.pick." + x[0] + "d"), x[1], BL.path() === x[0]); }).join("") + "</div>"; },
-    sty: function () { return "<h2>" + t("pz.q.sty") + '</h2><p class="obl">' + t("pz.q.sty.p") + '</p><div class="obgrid one">' + [["invest", "chart"], ["swing", "history"], ["day", "events"]].map(function (x) { return oc("sty", x[0], t("sty." + x[0]), t("sty." + x[0] + ".d"), x[1], !!S.styles[x[0]]); }).join("") + "</div>"; },
-    exp: function () { return "<h2>" + t("pz.q.exp") + '</h2><p class="obl">' + t("pz.q.exp.p") + '</p><div class="obgrid one">' + [["new", "star"], ["some", "chart"], ["pro", "shield"]].map(function (x) { return oc("exp", x[0], t("pz.exp." + x[0]), t("pz.exp." + x[0] + ".d"), x[1], S.exp === x[0]); }).join("") + "</div>"; },
-    mkt: function () { return "<h2>" + t("pz.q.mkt") + '</h2><div class="obgrid one">' + [["us", "chart"], ["il", "shield"], ["both", "radar"]].map(function (x) { return oc("mkt", x[0], t("mkt." + x[0]), t("mkt." + x[0] + ".d"), x[1], S.market === x[0]); }).join("") + '</div><p class="xs obx">' + t("ob.4.n") + "</p>"; },
-    goals: function () { return "<h2>" + t("pz.q.goals") + '</h2><p class="obl">' + t("pz.q.goals.p") + '</p><div class="obgrid one">' + BL.pzGoals().map(function (g) { return oc("goal", g[0], t(g[1]), t(g[1] + ".d"), { scratch: "star", method: "learn", practice: "help", opps: "radar", weekly: "weekly", journal: "journal" }[g[0]], !!S.goals[g[0]]); }).join("") + "</div>"; },
-    time: function () { return "<h2>" + t("pz.q.time") + '</h2><p class="obl">' + t("pz.q.time.p") + '</p><div class="obgrid one">' + [["15", "wait"], ["30", "wait"], ["60", "wait"]].map(function (x) { return oc("time", x[0], t("pz.time." + x[0]), t("pz.time." + x[0] + ".d"), x[1], String(S.time) === x[0]); }).join("") + "</div>"; },
-    look: function () { return "<h2>" + t("pz.q.look") + '</h2><p class="obl">' + t("pz.q.look.p") + '</p><div class="obch-g">' + [["light", "sun"], ["dark", "moon"], ["auto", "settings"]].map(function (x) { return '<button type="button" class="obch' + ((S.theme || "light") === x[0] ? " on" : "") + '" data-pz="theme:' + x[0] + '"><b>' + t("th." + x[0]) + "</b><span>" + t("pz.theme." + x[0]) + "</span></button>"; }).join("") + '</div><button type="button" class="obch' + (S.reduce ? " on" : "") + '" style="width:100%" data-pz="mot:' + (S.reduce ? "off" : "on") + '"><b>' + t("pz.reduce") + "</b><span>" + t("pz.reduce.d") + "</span></button>"; },
-    done: function () { return '<div class="obv"><span class="obbig ok"><svg viewBox="0 0 20 20" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></span></div><h2>' + t("pz.done.h", { n: esc(S.name || "") }) + '</h2><div class="pzsum">' + pzLabels().map(function (r) { return "<div><span>" + t(r[0]) + "</span><b>" + esc(r[1]) + "</b></div>"; }).join("") + '</div><p class="xs obx">' + t("pz.done.n") + '</p><div class="obend"><button class="btn acc" type="button" data-pz="enter:1">' + t("pz.enter") + '</button><button class="btn" type="button" data-pz="tour:1">' + t("pz.tour") + "</button></div>"; }
-  };
-  box.className = "ob"; el.querySelector(".intro-in").style.display = "none"; el.classList.add("onb"); el.appendChild(box);
-  function burst() {
-    var cols = ["#F17462", "#C8E2D8", "#F5F1E8", "#F5C86A"], host = document.createElement("div"); host.className = "pzburst"; host.setAttribute("aria-hidden", "true");
-    for (var k = 0; k < 34; k++) { var p = document.createElement("i"), a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 190; p.style.cssText = "--x:" + Math.round(Math.cos(a) * d) + "px;--y:" + Math.round(Math.sin(a) * d - 60) + "px;--r:" + Math.round(Math.random() * 540 - 270) + "deg;--c:" + cols[k % 4] + ";--s:" + (6 + Math.round(Math.random() * 8)) + "px;animation-delay:" + (Math.random() * .25).toFixed(2) + "s"; host.appendChild(p); }
-    el.appendChild(host); setTimeout(function () { host.remove(); }, 2400);
-  }
-  function render() {
-    var l = steps(); cur = Math.max(0, Math.min(cur, l.length - 1)); var id = l[cur];
-    box.setAttribute("data-dir", dir);
-    box.innerHTML = '<div class="pzbar" aria-hidden="true"><i style="width:' + Math.round((cur + 1) / l.length * 100) + '%"></i></div><div class="obtrack"><section class="obp on pzs" data-step="' + id + '">' + S_[id]() + '</section></div><div class="obnav"><button type="button" class="btn ghost obprev"' + (cur ? "" : ' style="visibility:hidden"') + ">" + t("ob.prev") + '</button><div class="obdots">' + l.map(function (k, i) { return '<button type="button" data-d="' + i + '" class="' + (i === cur ? "on" : "") + '" aria-label="' + (i + 1) + '"></button>'; }).join("") + '</div><button type="button" class="btn acc obnext"' + (id === "done" ? ' style="visibility:hidden"' : "") + ">" + t("ob.next") + "</button></div>";
-    if (id === "done" && !redm) burst();
-    var sk = el.querySelector(".intro-skip"); if (sk) { sk.textContent = t("pz.skip"); sk.style.display = id === "done" ? "none" : "block"; }
-    var pi = box.querySelector("#pzi"); if (pi) { pi.addEventListener("input", function () { S.name = pi.value.trim().slice(0, 30); BL.save(); }); pi.addEventListener("keydown", function (e) { if (e.key === "Enter") { dir = "next"; cur++; render(); } }); setTimeout(function () { pi.focus(); }, 50); }
-    else { var f = box.querySelector(".obnext"); if (f && id !== "done") f.focus(); }
-  }
-  box.addEventListener("click", function (e) {
-    var b = e.target.closest("button"); if (!b) return;
-    if (b.classList.contains("obnext")) { dir = "next"; cur++; render(); return; }
-    if (b.classList.contains("obprev")) { dir = "prev"; cur--; render(); return; }
-    if (b.hasAttribute("data-d")) { var nd = +b.getAttribute("data-d"); dir = nd >= cur ? "next" : "prev"; cur = nd; render(); return; }
-    var z = b.getAttribute("data-pz"); if (!z) return; var p = z.split(":"), k = p[0], v = p[1];
-    if (k === "path") { S.path = v; S.learn = v === "learn" ? 1 : 0; }
-    else if (k === "sty") { S.styles[v] = S.styles[v] ? 0 : 1; if (!S.styles.invest && !S.styles.swing && !S.styles.day) S.styles = { invest: 1, swing: 1, day: 1 }; }
-    else if (k === "exp") S.exp = v; else if (k === "mkt") S.market = v; else if (k === "time") S.time = v;
-    else if (k === "goal") S.goals[v] = S.goals[v] ? 0 : 1;
-    else if (k === "theme") { S.theme = v; }
-    else if (k === "mot") { S.reduce = v === "on"; }
-    else if (k === "enter") { pzFinish(); leave(BL.homeView()); return; }
-    else if (k === "tour") { pzFinish(); box.remove(); tour(); return; }
-    dir = "same";
-    BL.save(); if (k === "theme" || k === "mot") { var d = document.documentElement; d.setAttribute("data-theme", S.theme === "auto" ? "" : S.theme); if (S.theme === "auto") d.removeAttribute("data-theme"); d.classList.toggle("reduce", !!S.reduce); }
-    render();
-  });
-  render();
-  return { skip: function () { pzFinish(); } };
-};
 ACT.intro = function () { BL.intro(S.terms && S.terms.name, null); };
 ACT.tmshow = function () { BL.openModal({ title: t("tm.h"), body: termsFull() }); };
 ACT.tmrevoke = function (a, el) { BL.confirmClick(el, function () { S.terms = null; BL.save(); BL.render(true); }); };

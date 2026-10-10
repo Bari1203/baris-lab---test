@@ -30,3 +30,9 @@
 - סקירה שבועית בפורמט סיעור מוחות, שבוע ראשון–שישי בשם "חודש · תאריכים", וקיפול "תוכנית מול מה שקרה" (נשמר מקומית).
 - יומן סווינג (WATCHING/OPEN/CLOSED, SMT מול מדד, תאריך דוחות, ימי החזקה ו-P&L באחוזים), כרטיס WATCHING ברדאר, אזהרת דוחות על כרטיס מניה (נתוני דוגמה).
 - עדיין לא נבנה: מנוע סריקה, נתוני שוק, סקירה אוטומטית, סנכרון Notion, Pine Script, שרת. פתוחים ולא הומצאו: ניהול סיכון, סשנים, תהליך הכנה מלא, חובה/בונוס בסטאפ, לונג מלא, עסקאות הפסד, פרמטרי רדאר בסיסיים.
+
+## Session cleanup (Oct 10)
+- Journal: only two trading journals (day, swing), each with a stat strip, results calendar, day panel, week and list views. Everything is sample data until real trades are entered; stored in the browser only.
+- Intro: first visit must be read to the end before the site opens; personalization lives in Settings.
+- Removed the 9-step wizard, the old general journal code and unused text keys; slower infinite animations now stop or run on hover only.
+- Fixed: global `[hidden]` rule (the page no longer depends on the host), phone header overflow, missing `sec.futures` label.
