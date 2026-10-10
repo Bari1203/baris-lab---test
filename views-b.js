@@ -132,16 +132,10 @@ V.journal = {
   html: function () {
     var v = jv();
     if (!v.cur) v.cur = ymd(today());
-    var h = '<div class="ph"><div><h1>' + t("js.h") + "</h1><p>" + t("js.sub") + '</p></div>' + (v.tab === "gen" ? '<button class="btn acc" data-act="jnew">' + ic("plus", 18) + " " + t("je.new") + "</button>" : "") + "</div>";
-    var tab = v.tab || "day";
-    h += '<div class="jb-tabs" role="tablist" aria-label="' + esc(t("js.h")) + '">' + [["day", "chart"], ["swing", "history"], ["gen", "journal"]].map(function (k) { return '<button class="jb-tab' + (tab === k[0] ? " on" : "") + '" role="tab" aria-selected="' + (tab === k[0]) + '" data-act="jtab" data-arg="' + k[0] + '">' + ic(k[1], 20) + "<span>" + t("jb.tab." + k[0]) + "</span></button>"; }).join("") + "</div>";
-    if (tab !== "gen") return h + '<div class="notice mint" style="margin:14px 0">' + t("js.priv") + "</div>" + jBook(tab);
-    h += '<div class="notice mint" style="margin-bottom:14px">' + t("js.priv") + "</div>";
-    h += '<div class="toolbar"><div class="pillset" role="group" aria-label="' + esc(t("js.views")) + '">' + ["month", "week", "day", "list"].map(function (k) { return '<button class="btn' + (v.view === k ? " on" : "") + '" data-act="jview" data-arg="' + k + '" aria-pressed="' + (v.view === k) + '">' + t("jv." + k) + "</button>"; }).join("") + "</div>" +
-      (v.view !== "list" ? '<div class="rowf"><button class="btn" data-act="jnav" data-arg="-1" aria-label="' + esc(t("prev")) + '">' + (S.lang === "he" ? "›" : "‹") + '</button><button class="btn" data-act="jtoday">' + t("js.today") + '</button><button class="btn" data-act="jnav" data-arg="1" aria-label="' + esc(t("next")) + '">' + (S.lang === "he" ? "‹" : "›") + "</button></div>" : "") + '<b id="jlabel" style="font-size:18px">' + esc(jLabel()) + "</b></div>";
-    h += '<div class="toolbar"><div class="grow"><label class="vh" for="jq">' + t("js.search") + '</label><input type="search" id="jq" data-in="jq" placeholder="' + esc(t("js.search")) + '" value="' + esc(v.q || "") + '"></div><select data-ch="jf" data-arg="type" aria-label="' + esc(t("je.type")) + '">' + opt("", t("js.alltype"), v.type) + JT.map(function (k) { return opt(k, t("jt." + k), v.type); }).join("") + '</select><select data-ch="jf" data-arg="status" aria-label="' + esc(t("je.status")) + '">' + opt("", t("js.allstatus"), v.status) + ["open", "closed", "cancelled"].map(function (k) { return opt(k, t("js." + k), v.status); }).join("") + "</select></div>";
-    h += '<div id="jbody">' + (S.journal.length ? jBody() : emptyJ()) + '</div>' + '<div class="grid g2" style="margin-top:18px">' + jSummary() + '<section class="card"><h2>' + t("js.fut") + "</h2><p class=\"muted\">" + t("js.fut.t") + "</p></section></div>";
-    return h;
+    var h = '<div class="ph"><div><h1>' + t("js.h") + "</h1><p>" + t("jb.sub") + '</p></div>' + "" + "</div>";
+    var tab = v.tab === "swing" ? "swing" : "day";
+    h += '<div class="jb-tabs" role="tablist" aria-label="' + esc(t("js.h")) + '">' + [["day", "chart"], ["swing", "history"]].map(function (k) { return '<button class="jb-tab' + (tab === k[0] ? " on" : "") + '" role="tab" aria-selected="' + (tab === k[0]) + '" data-act="jtab" data-arg="' + k[0] + '">' + ic(k[1], 20) + "<span>" + t("jb.tab." + k[0]) + "</span></button>"; }).join("") + "</div>";
+    return h + '<div class="notice mint" style="margin:14px 0">' + t("js.priv") + "</div>" + jBook(tab);
   }
 };
 function jrefresh() { BL.save(); BL.render(false); }
@@ -256,20 +250,51 @@ function bookStats(a, book) {
     var h = swHold(e.tr); if (h != null) holds.push(h);
   });
   var dk = Object.keys(days), dw = dk.filter(function (k) { return days[k] > 0; }).length;
-  return { n: n, W: W, L: L, B: n - W - L, pct: n ? Math.round(W / n * 100) : 0, net: net, hasV: cnt > 0, pf: ls ? g / ls : (g ? Infinity : null), avgW: gc ? g / gc : null, avgL: lc ? ls / lc : null, dayPct: dk.length ? Math.round(dw / dk.length * 100) : null, hold: holds.length ? holds.reduce(function (x, y) { return x + y; }, 0) / holds.length : null, days: days };
+  return { n: n, W: W, L: L, B: n - W - L, pct: n ? Math.round(W / n * 100) : 0, net: net, gains: g, loss: ls, hasV: cnt > 0, pf: ls ? g / ls : (g ? Infinity : null), avgW: gc ? g / gc : null, avgL: lc ? ls / lc : null, dayPct: dk.length ? Math.round(dw / dk.length * 100) : null, hold: holds.length ? holds.reduce(function (x, y) { return x + y; }, 0) / holds.length : null, days: days };
 }
+function tcnt(n) { return t(n === 1 ? "jb.t1" : "jb.tn", { n: n }); }
+function bookByDate(a, book) { var m = {}; a.forEach(function (e) { var k = bdate(e, book); (m[k] || (m[k] = [])).push(e); }); return m; }
+function dsum(es, book) { var n = 0, any = false; es.forEach(function (e) { var v = bval(e, book); if (v != null) { n += v; any = true; } }); return any ? n : null; }
 function bookCal(a, book, st) {
-  var v = jv(); if (!v.bcal) { var last = a.length ? bdate(a[a.length - 1], book) : ymd(today()); v.bcal = last.slice(0, 7) + "-01"; }
-  var c = pd(v.bcal), y = c.getFullYear(), m = c.getMonth(), first = new Date(y, m, 1), off = first.getDay(), dim = new Date(y, m + 1, 0).getDate(), rows = Math.ceil((off + dim) / 7), mx = 0, tot = 0, cntm = 0, k, d, ds;
-  for (k = 1; k <= dim; k++) { ds = ymd(new Date(y, m, k)); if (st.days[ds] != null) { mx = Math.max(mx, Math.abs(st.days[ds])); tot += st.days[ds]; cntm++; } }
-  var h = '<div class="rowf" style="justify-content:space-between"><h3 class="jd-t" style="margin:0">' + t("jb.cal") + '</h3><div class="rowf"><button class="btn sm" data-act="jbnav" data-arg="-1" aria-label="' + esc(t("prev")) + '">' + (S.lang === "he" ? "›" : "‹") + '</button><b>' + BL.fmtD(c, { month: "long", year: "numeric" }) + '</b><button class="btn sm" data-act="jbnav" data-arg="1" aria-label="' + esc(t("next")) + '">' + (S.lang === "he" ? "‹" : "›") + '</button></div></div>' +
-    '<p class="xs muted" style="margin:6px 0 10px">' + t("jb.month") + ': <b class="num ltr ' + (tot > 0 ? "upc" : tot < 0 ? "dnc" : "") + '">' + (cntm ? fmtV(tot, book) : "—") + "</b> · " + t("jb.days", { n: cntm }) + '</p><div class="jb-cal" role="grid">';
-  for (k = 0; k < 7; k++) h += '<div class="dh" role="columnheader">' + dayName(k) + "</div>";
-  for (k = 0; k < rows * 7; k++) {
-    d = addDays(first, k - off); ds = ymd(d); var out = d.getMonth() !== m, val = st.days[ds], cl = "";
-    if (!out && val != null) cl = (val > 0 ? " w" : val < 0 ? " l" : " b") + " i" + Math.min(4, Math.max(1, Math.ceil(Math.abs(val) / (mx || 1) * 4)));
-    h += '<div class="c' + (out ? " out" : "") + cl + '" role="gridcell"><span class="dn">' + d.getDate() + "</span>" + (!out && val != null ? '<b class="num ltr">' + fmtV(val, book) + "</b>" : "") + "</div>";
+  var v = jv(), by = bookByDate(a, book);
+  if (!v.bcal) { var last = a.length ? bdate(a[a.length - 1], book) : ymd(today()); v.bcal = last.slice(0, 7) + "-01"; }
+  if (!v.bsel) v.bsel = a.length ? bdate(a[a.length - 1], book) : ymd(today());
+  var c = pd(v.bcal), y = c.getFullYear(), m = c.getMonth(), first = new Date(y, m, 1), off = first.getDay(), dim = new Date(y, m + 1, 0).getDate(), rows = Math.ceil((off + dim) / 7), mx = 0, tot = 0, cntm = 0, tn = 0, k, d, ds, td = ymd(today());
+  for (k = 1; k <= dim; k++) { ds = ymd(new Date(y, m, k)); if (by[ds]) { var sv = dsum(by[ds], book); tn += by[ds].length; if (sv != null) { mx = Math.max(mx, Math.abs(sv)); tot += sv; cntm++; } } }
+  var h = '<div class="jb-calh"><div class="rowf"><button class="btn sm" data-act="jbnav" data-arg="-1" aria-label="' + esc(t("prev")) + '">' + (S.lang === "he" ? "›" : "‹") + '</button><h3>' + BL.fmtD(c, { month: "long", year: "numeric" }) + '</h3><button class="btn sm" data-act="jbnav" data-arg="1" aria-label="' + esc(t("next")) + '">' + (S.lang === "he" ? "‹" : "›") + '</button><button class="btn sm" data-act="jbtoday">' + t("js.today") + '</button></div><div class="jb-mstat"><span>' + t("jb.month") + '</span><b class="num ltr ' + (tot > 0 ? "upc" : tot < 0 ? "dnc" : "") + '">' + (cntm ? fmtV(tot, book) : "—") + '</b><span>' + t("jb.days", { n: cntm }) + " · " + tcnt(tn) + "</span></div></div>";
+  h += '<div class="jb-cal" role="grid">';
+  for (k = 0; k < 7; k++) h += '<div class="dh" role="columnheader">' + dayName(k) + "</div>"; h += '<div class="dh wk" role="columnheader">' + t("jb.week") + "</div>";
+  for (var r = 0; r < rows; r++) {
+    var wsum = 0, wn = 0, wany = false;
+    for (k = 0; k < 7; k++) {
+      d = addDays(first, r * 7 + k - off); ds = ymd(d); var out = d.getMonth() !== m, es = by[ds] || [], val = es.length ? dsum(es, book) : null, cl = "";
+      if (!out && es.length) { wn += es.length; if (val != null) { wsum += val; wany = true; } }
+      if (!out && es.length) cl = (val == null ? " n" : val > 0 ? " w" : val < 0 ? " l" : " b") + (val ? " i" + Math.min(4, Math.max(1, Math.ceil(Math.abs(val) / (mx || 1) * 4))) : "");
+      h += '<button class="c' + (out ? " out" : "") + cl + (ds === td ? " today" : "") + (ds === v.bsel ? " sel" : "") + '" data-act="jbsel" data-arg="' + ds + '" aria-pressed="' + (ds === v.bsel) + '" aria-label="' + esc(BL.fmtD(d, { weekday: "long", day: "numeric", month: "long" })) + '"><span class="dn">' + d.getDate() + "</span>" + (!out && es.length ? '<b class="num ltr">' + fmtV(val, book) + "</b><small>" + tcnt(es.length) + "</small>" : "") + "</button>";
+    }
+    h += '<div class="c wk' + (wany ? (wsum > 0 ? " w" : wsum < 0 ? " l" : "") : "") + '"><span class="dn">' + t("jb.week") + " " + (r + 1) + "</span>" + (wn ? '<b class="num ltr">' + fmtV(wany ? wsum : null, book) + "</b><small>" + tcnt(wn) + "</small>" : "") + "</div>";
   }
+  return h + "</div>";
+}
+function tradeCard(e, book) {
+  var v = bval(e, book), rr = trRR(e.tr), hd = swHold(e.tr), tr = e.tr, note = e.note ? esc(e.note.length > 160 ? e.note.slice(0, 160) + "…" : e.note) : "";
+  var chips = [tr.side && t("tr.side." + tr.side), tr.grade, tr.ctype && (t("tr.ctype") + " " + tr.ctype.toUpperCase()), tr.dir && t("tr.dir." + tr.dir), tr.sector, hd != null && (t("sw.hold") + " " + hd), rr != null && ("R:R 1:" + rr.toFixed(1))].filter(Boolean).map(function (x) { return '<span class="chip">' + esc(x) + "</span>"; }).join("");
+  return '<article class="jb-tc ' + (tr.res === "win" ? "w" : tr.res === "loss" ? "l" : "b") + '"><div class="jb-tch"><div><b class="ltr tk">' + esc(e.ticker || "—") + '</b><span class="chip res-' + tr.res + '">' + t("tr.res." + tr.res) + '</span></div><b class="num ltr val ' + (v > 0 ? "upc" : v < 0 ? "dnc" : "") + '">' + fmtV(v, book) + "</b></div>" + (e.title ? '<p class="sm">' + esc(e.title) + "</p>" : "") +
+    '<div class="rowf">' + chips + "</div>" + ((tr.entry || tr.stop || tr.target || tr.xprice) ? '<div class="jb-lv ltr">' + [["Entry", tr.entry], ["Stop", tr.stop], ["Target", tr.target], ["Exit", tr.xprice]].filter(function (x) { return x[1]; }).map(function (x) { return "<span>" + x[0] + " <b>" + esc(x[1]) + "</b></span>"; }).join("") + "</div>" : "") +
+    (note ? '<p class="xs muted">' + note + "</p>" : "") + (e.id ? '<div class="rowf"><button class="btn sm" data-act="jedit" data-arg="' + e.id + '">' + t("edit") + '</button><button class="btn sm ghost" data-act="jdel" data-arg="' + e.id + '">' + t("delete") + "</button></div>" : "") + "</article>";
+}
+function bookDay(a, book, ds) {
+  var es = (bookByDate(a, book)[ds] || []), sv = dsum(es, book), notes = S.journal.filter(function (e) { return e.date === ds && e.type !== "trade"; });
+  var wins = es.filter(function (e) { return e.tr.res === "win"; }).length;
+  var h = '<div class="jb-dayh"><div><h3>' + BL.fmtD(pd(ds), { weekday: "long", day: "numeric", month: "long" }) + '</h3><p class="xs muted">' + (es.length ? t("jb.dsum", { n: es.length, w: wins }) : t("jb.dnone")) + '</p></div><div class="jb-dv"><b class="num ltr ' + (sv > 0 ? "upc" : sv < 0 ? "dnc" : "") + '">' + (es.length ? fmtV(sv, book) : "") + '</b><button class="btn sm acc" data-act="jtrade" data-arg="' + book + '" data-d="' + ds + '">' + ic("plus", 16) + " " + t("jb.add") + "</button></div></div>";
+  h += '<div class="stack">' + es.map(function (e) { return tradeCard(e, book); }).join("") + "</div>";
+  if (notes.length) h += '<h4 class="jd-t" style="margin-top:14px">' + t("jb.notes") + '</h4><div class="stack">' + notes.map(entryCard).join("") + "</div>";
+  return h;
+}
+function bookWeek(a, book) {
+  var v = jv(), by = bookByDate(a, book), c = pd(v.bsel || ymd(today())), s0 = addDays(c, -c.getDay());
+  var h = '<div class="rowf" style="justify-content:space-between;margin-bottom:10px"><div class="rowf"><button class="btn sm" data-act="jbwnav" data-arg="-1">' + (S.lang === "he" ? "›" : "‹") + "</button><b>" + BL.fmtD(s0, { day: "numeric", month: "short" }) + " – " + BL.fmtD(addDays(s0, 6), { day: "numeric", month: "short", year: "numeric" }) + '</b><button class="btn sm" data-act="jbwnav" data-arg="1">' + (S.lang === "he" ? "‹" : "›") + '</button></div></div><div class="jb-wk">';
+  for (var i = 0; i < 7; i++) { var d = addDays(s0, i), ds = ymd(d), es = by[ds] || [], sv = dsum(es, book); h += '<div class="jb-wd' + (sv > 0 ? " w" : sv < 0 ? " l" : "") + '"><div class="rowf" style="justify-content:space-between"><b>' + dayName(i) + " " + d.getDate() + '</b><button class="iconbtn" style="width:32px;height:32px" data-act="jtrade" data-arg="' + book + '" data-d="' + ds + '" aria-label="' + esc(t("jb.add")) + '">' + ic("plus", 16) + '</button></div>' + (es.length ? '<b class="num ltr ' + (sv > 0 ? "upc" : sv < 0 ? "dnc" : "") + '">' + fmtV(sv, book) + "</b>" : '<span class="xs muted">—</span>') + es.map(function (e) { return '<button class="jb-mini ' + (e.tr.res === "win" ? "w" : e.tr.res === "loss" ? "l" : "b") + '"' + (e.id ? ' data-act="jedit" data-arg="' + e.id + '"' : "") + '><b class="ltr">' + esc(e.ticker || "—") + '</b><span class="num ltr">' + fmtV(bval(e, book), book) + "</span></button>"; }).join("") + "</div>"; }
   return h + "</div>";
 }
 function bookTable(a, book) {
@@ -283,20 +308,24 @@ function bookTable(a, book) {
   return h + "</tbody></table></div>";
 }
 function jBook(book) {
-  var demo = !!BL.jDemo, sw = book === "swing", a = bookTrades(book, demo), st = bookStats(a, book), v = jv(), n = a.length;
+  var demo = !!BL.jDemo, sw = book === "swing", a = bookTrades(book, demo), st = bookStats(a, book), v = jv(), n = a.length, vw = v.bview || "month";
   var h = '<div class="jb-top"><div><h2>' + t(sw ? "jb.sw.h" : "jb.day.h") + '</h2><p class="muted">' + t(sw ? "jb.sw.sub" : "jb.day.sub") + '</p></div><div class="rowf"><div class="pillset" role="group" aria-label="' + esc(t("jb.range")) + '">' + ["all", "30", "90"].map(function (k) { return '<button class="btn' + ((v.rng || "all") === k ? " on" : "") + '" data-act="jrng" data-arg="' + k + '" aria-pressed="' + ((v.rng || "all") === k) + '">' + t("jb.range." + k) + "</button>"; }).join("") + '</div><button class="btn acc" data-act="jtrade" data-arg="' + book + '">' + ic("plus", 18) + " " + t("jb.add") + "</button></div></div>";
-  h += '<section class="card jstats jdash"><div class="rowf" style="justify-content:space-between"><h2>' + t("jd.h") + "</h2>" + (demo ? '<span class="chip warn">' + t("jd.demo") + "</span>" : "") + '</div><p class="xs muted">' + t(sw ? "jb.note.sw" : "jb.note.day") + "</p>";
-  if (!n) return h + '<div class="empty" style="margin-top:10px"><strong>' + t(sw ? "jb.none.sw" : "jb.none.day") + "</strong><span>" + t("st.none.t") + '</span><div class="rowf"><button class="btn acc" data-act="jtrade" data-arg="' + book + '">' + t("jb.add") + '</button><button class="btn sm" data-act="jdemo">' + t("jd.showdemo") + "</button></div></div></section>";
-  var pf = st.pf == null ? "—" : st.pf === Infinity ? "∞" : st.pf.toFixed(2), pay = st.avgW != null && st.avgL ? st.avgW / st.avgL : null;
-  var kp = function (cls, lab, val, sub) { return '<div class="jd-k ' + cls + '"><span>' + lab + '</span><b class="num ltr">' + val + "</b>" + (sub ? "<small>" + sub + "</small>" : "") + "</div>"; };
-  h += '<div class="jd-hero"><div class="jd-ring" style="--v:' + st.pct + '" role="img" aria-label="' + esc(t("st.winpct") + " " + st.pct + "%") + '"><div><b class="num ltr">' + st.pct + '%</b><span>' + t("jd.actual") + '</span><small>' + t("jd.of", { w: st.W, n: n }) + '</small></div></div><div class="jd-kpis">' +
-    kp(st.hasV ? (st.net >= 0 ? "up" : "dn") : "", t("jb.net"), st.hasV ? fmtV(st.net, book) : "—") + kp(st.pf != null && st.pf >= 1 ? "up" : st.pf != null ? "dn" : "", t("jb.pf"), pf, t("jb.pf.n")) +
-    kp("", t("jb.payoff"), pay == null ? "—" : pay.toFixed(2), st.avgW != null ? fmtV(st.avgW, book) + " / " + fmtV(-(st.avgL || 0), book) : "") +
-    (sw ? kp("", t("jb.hold"), st.hold == null ? "—" : st.hold.toFixed(1), t("jb.hold.u")) : kp("", t("jb.daywin"), st.dayPct == null ? "—" : st.dayPct + "%", t("jb.daywin.n"))) +
-    kp("", t("st.trades"), String(n), t("st.wl") + " " + st.W + "/" + st.L + (st.B ? "/" + st.B : "")) + "</div></div>";
+  if (demo) h += '<div class="notice warn xs" style="margin-bottom:12px">' + t("jd.demo") + ' <button class="btn sm" data-act="jdemo">' + t("jd.hidedemo") + "</button></div>";
+  if (!n) return h + '<section class="card jdash"><div class="empty"><strong>' + t(sw ? "jb.none.sw" : "jb.none.day") + "</strong><span>" + t("st.none.t") + '</span><div class="rowf"><button class="btn acc" data-act="jtrade" data-arg="' + book + '">' + t("jb.add") + '</button><button class="btn sm" data-act="jdemo">' + t("jd.showdemo") + "</button></div></div></section>";
+  var pf = st.pf == null ? "—" : st.pf === Infinity ? "∞" : st.pf.toFixed(2), tot = st.gains + st.loss, wP = n ? st.W / n * 100 : 0, bP = n ? st.B / n * 100 : 0, aw = st.avgW || 0, al = st.avgL || 0, sm = aw + al;
+  h += '<div class="jb-strip">' +
+    '<div class="jb-kc"><span class="l">' + t("jb.net") + ' <i class="hint" title="' + esc(t(sw ? "jb.note.sw" : "jb.note.day")) + '">i</i></span><b class="num ltr big ' + (st.hasV ? (st.net >= 0 ? "upc" : "dnc") : "") + '">' + (st.hasV ? fmtV(st.net, book) : "—") + '</b><span class="chip">' + tcnt(n) + "</span></div>" +
+    '<div class="jb-kc"><span class="l">' + t("st.winpct") + '</span><div class="jb-g"><div class="jb-donut" style="--a:' + wP.toFixed(1) + ";--b:" + (wP + bP).toFixed(1) + '"><b class="num ltr">' + st.pct + '%</b></div><div class="jb-gl"><span class="w">' + st.W + '</span><span class="b">' + st.B + '</span><span class="l">' + st.L + "</span></div></div></div>" +
+    '<div class="jb-kc"><span class="l">' + t("jb.pf") + ' <i class="hint" title="' + esc(t("jb.pf.n")) + '">i</i></span><div class="jb-g"><div class="jb-donut pf" style="--a:' + (tot ? (st.gains / tot * 100).toFixed(1) : 0) + ";--b:" + (tot ? (st.gains / tot * 100).toFixed(1) : 0) + '"><b class="num ltr">' + pf + "</b></div></div></div>" +
+    (sw ? '<div class="jb-kc"><span class="l">' + t("jb.hold") + '</span><b class="num ltr big">' + (st.hold == null ? "—" : st.hold.toFixed(1)) + '</b><span class="xs muted">' + t("jb.hold.u") + "</span></div>" : '<div class="jb-kc"><span class="l">' + t("jb.daywin") + '</span><div class="jb-g"><div class="jb-donut" style="--a:' + (st.dayPct || 0) + ";--b:" + (st.dayPct || 0) + '"><b class="num ltr">' + (st.dayPct == null ? "—" : st.dayPct + "%") + "</b></div></div></div>") +
+    '<div class="jb-kc"><span class="l">' + t("jb.payoff") + '</span><b class="num ltr big">' + (aw && al ? (aw / al).toFixed(2) : "—") + '</b><div class="jb-wl"><i class="w" style="flex:' + (aw || .0001) + '"></i><i class="l" style="flex:' + (al || .0001) + '"></i></div><div class="jb-wlv num ltr"><span class="upc">' + fmtV(st.avgW, book) + '</span><span class="dnc">' + fmtV(st.avgL == null ? null : -st.avgL, book) + "</span></div></div></div>";
   if (n < 30) h += '<p class="notice warn xs">' + t("st.small", { n: n }) + "</p>";
+  h += '<div class="jb-views"><div class="pillset" role="group" aria-label="' + esc(t("js.views")) + '">' + ["month", "week", "list"].map(function (k) { return '<button class="btn' + (vw === k ? " on" : "") + '" data-act="jbview" data-arg="' + k + '" aria-pressed="' + (vw === k) + '">' + t("jv." + k) + "</button>"; }).join("") + "</div></div>";
+  if (vw === "month") h += '<div class="jb-main"><section class="card jb-calc">' + bookCal(a, book, st) + '</section><section class="card jb-dayc">' + bookDay(a, book, v.bsel) + "</section></div>";
+  else if (vw === "week") h += '<section class="card">' + bookWeek(a, book) + "</section>";
+  else h += '<section class="card">' + bookTable(a, book) + "</section>";
   var eq = st.hasV ? equitySvg(a, function (e) { return bval(e, book); }) : "";
-  h += '<div class="jb-two"><div>' + (eq ? '<h3 class="jd-t" style="margin-top:0">' + t("jd.curve") + "</h3>" + eq : "") + '<h3 class="jd-t">' + t("jd.ribbon") + '</h3><div class="jd-rib" role="img" aria-label="' + esc(t("jd.ribbon")) + '">' + a.map(function (e, i) { var r = e.tr.res; return '<i class="' + (r === "win" ? "w" : r === "loss" ? "l" : "b") + '" style="--i:' + i + '" title="' + esc(bdate(e, book) + " · " + t("tr.res." + r)) + '"></i>'; }).join("") + '</div></div><div>' + (st.hasV ? bookCal(a, book, st) : "") + "</div></div>";
+  h += '<section class="card jstats jdash" style="margin-top:18px"><h2>' + t("jd.h") + '</h2><p class="xs muted">' + t(sw ? "jb.note.sw" : "jb.note.day") + "</p>" + (eq ? '<h3 class="jd-t" style="margin-top:12px">' + t("jd.curve") + "</h3>" + eq : "") + '<h3 class="jd-t">' + t("jd.ribbon") + '</h3><div class="jd-rib" role="img" aria-label="' + esc(t("jd.ribbon")) + '">' + a.map(function (e, i) { var r = e.tr.res; return '<i class="' + (r === "win" ? "w" : r === "loss" ? "l" : "b") + '" style="--i:' + i + '" title="' + esc(bdate(e, book) + " · " + t("tr.res." + r)) + '"></i>'; }).join("") + "</div>";
   var secs = {}; a.forEach(function (e) { if (e.tr.sector) secs[e.tr.sector] = 1; });
   var G = sw ? [["grade", ["PERFECT", "GOOD", "BAD"]], ["svs", ["yes", "both", "no"], 1], ["dir", ["continuation", "reversal"], 1], ["side", ["long", "short"], 1], ["sector", Object.keys(secs)]] : [["grade", ["PERFECT", "GOOD", "BAD"]], ["ctype", ["a", "b", "c", "d"]], ["smt", ["yes", "both", "no"], 1], ["dir", ["continuation", "reversal"], 1], ["side", ["long", "short"], 1], ["ent", ["market", "limit"], 1], ["acct", ["nostro", "personal"], 1]], all = [];
   h += '<h3 class="jd-t">' + t("jd.rates") + '</h3><p class="xs muted">' + t("jd.rates.n") + '</p><div class="jd-groups">';
@@ -307,14 +336,17 @@ function jBook(book) {
   h += "</div>";
   var ok = all.filter(function (r) { return r.n >= 5; }).sort(function (x, y) { return y.pct - x.pct; }), ins = function (cls, key, r) { return '<div class="jd-i ' + cls + '"><h4>' + t(key) + "</h4>" + (ok.length > 1 ? "<p><b>" + esc(r.g + ": " + r.label) + '</b> · <span class="num ltr">' + r.pct + "%</span> " + t("jd.from", { n: r.n }) + "</p>" : '<p class="muted">' + t("jd.need") + "</p>") + "</div>"; };
   h += '<div class="grid g2 jd-ins">' + ins("good", "jd.best", ok[0]) + ins("bad", "jd.worst", ok[ok.length - 1]) + "</div>";
-  h += bookTable(a, book);
-  h += '<p class="xs muted" style="margin-top:14px">' + t("jd.disc") + "</p>" + (demo ? '<button class="btn sm" data-act="jdemo">' + t("jd.hidedemo") + "</button>" : "") + "</section>";
+  h += '<p class="xs muted" style="margin-top:14px">' + t("jd.disc") + "</p></section>";
   return h;
 }
+ACT.jbview = function (k) { jv().bview = k; jrefresh(); };
+ACT.jbsel = function (ds) { var v = jv(); v.bsel = ds; v.bcal = ds.slice(0, 7) + "-01"; jrefresh(); };
+ACT.jbtoday = function () { var v = jv(); v.bsel = ymd(today()); v.bcal = v.bsel.slice(0, 7) + "-01"; jrefresh(); };
+ACT.jbwnav = function (d) { var v = jv(); v.bsel = ymd(addDays(pd(v.bsel || ymd(today())), 7 * (+d))); jrefresh(); };
 ACT.jtab = function (k) { jv().tab = k; jv().bcal = ""; jrefresh(); };
 ACT.jrng = function (k) { jv().rng = k; jv().bcal = ""; jrefresh(); };
 ACT.jbnav = function (d) { var c = pd(jv().bcal); jv().bcal = ymd(new Date(c.getFullYear(), c.getMonth() + (+d), 1)); jrefresh(); };
-ACT.jtrade = function (book) { BL.openEntry({ type: "trade", tr: { book: book, res: "open" } }); };
+ACT.jtrade = function (book, el) { var d = el && el.getAttribute("data-d"); BL.openEntry(Object.assign({ type: "trade", tr: { book: book, res: "open" } }, d ? { date: d } : {})); };
 ACT.jdemo = function () { BL.jDemo = !BL.jDemo; BL.render(false); };
 BL.openEntry = function (pre) {
   pre = pre || {};
