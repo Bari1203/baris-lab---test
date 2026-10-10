@@ -813,3 +813,5 @@ html[dir=ltr] .nl:hover{transform:translateX(3px)}
 .nl:hover .ic{background:var(--mint);transform:rotate(-8deg) scale(1.08)}
 .nl[aria-current="page"]{background:linear-gradient(135deg,var(--ink),color-mix(in srgb,var(--ink) 80%,var(--coral)));box-shadow:0 8px 18px color-mix(in srgb,var(--ink) 26%,transparent)}
 .nl[aria-current="page"] .ic{background:var(--coral);color:var(--on-coral)}
+/* learning-only path: no market search, no alerts bell */
+html.path-learn .gsearch,html.path-learn [data-arg="alerts"]{display:none}

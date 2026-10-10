@@ -89,6 +89,7 @@ function applySettings() {
   h.lang = S.lang; h.dir = S.lang === "he" ? "rtl" : "ltr";
   if (S.theme === "auto") h.removeAttribute("data-theme"); else h.setAttribute("data-theme", S.theme);
   h.classList.toggle("reduce", !!S.reduce);
+  h.classList.toggle("path-learn", BL.path() === "learn"); h.classList.toggle("path-site", BL.path() === "site");
 }
 /* effective theme: explicit choice, otherwise the system setting */
 BL.dark = function () { return S.theme === "dark" || (S.theme !== "light" && !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)); };
@@ -166,7 +167,14 @@ var NAV = [
 function styleOk(n) { return !n.st || n.st.some(function (k) { return BL.style(k); }); }
 function newsOn() { return BL.style("day") && S.market !== "il"; }
 BL.news = newsOn;
-function visibleItems() { return NAV.filter(function (n) { return !(n.il && !il()) && !(n.news && !newsOn()) && !(n.admin && S.role !== "admin") && styleOk(n); }); }
+/* path chosen in the opening: "learn" shows only the learning screens, "site" hides learning, "both" shows everything */
+BL.path = function () { return S.path === "learn" || S.path === "site" ? S.path : "both"; };
+BL.hasLearn = function () { return BL.path() !== "site"; };
+BL.hasSite = function () { return BL.path() !== "learn"; };
+BL.homeView = function () { return BL.hasSite() ? "home" : "learn"; };
+var LEARN_ONLY = ["learn", "help", "settings", "admin"];
+function pathOk(n) { var p = BL.path(); return p === "learn" ? LEARN_ONLY.indexOf(n.id) > -1 : p === "site" ? n.id !== "learn" : true; }
+function visibleItems() { return NAV.filter(function (n) { return pathOk(n) && !(n.il && !il()) && !(n.news && !newsOn()) && !(n.admin && S.role !== "admin") && styleOk(n); }); }
 /* modes: market (us / il / both) and style (invest / swing / day, any mix) */
 BL.inMarket = function (x) { return S.market === "both" || (x.mkt || "us") === S.market; };
 BL.inStyle = function (x) { return !x.sty || x.sty.some(function (k) { return BL.style(k); }); };
@@ -213,11 +221,11 @@ BL.back = function () { var p = stack.pop(); if (p) { R.view = p.view; R.arg = p
 function renderShell() {
   var items = visibleItems(), groups = ["a", "b", "c", "d", "e"];
   $("#skip").textContent = t("skip");
-  $("#side").innerHTML = '<button class="brand" data-act="nav" data-arg="home" aria-label="' + esc(t("nav.home")) + '">' + logo() + '<span class="bt">BARI\'S LAB<small>' + t("brand.sub") + "</small></span></button><nav aria-label=\"" + esc(t("nav.label")) + '">' +
+  $("#side").innerHTML = '<button class="brand" data-act="nav" data-arg="' + BL.homeView() + '" aria-label="' + esc(t("nav.home")) + '">' + logo() + '<span class="bt">BARI\'S LAB<small>' + t("brand.sub") + "</small></span></button><nav aria-label=\"" + esc(t("nav.label")) + '">' +
     groups.map(function (g) { var it = items.filter(function (n) { return n.g === g; }); return it.length ? '<div class="ng"><h3>' + t("ng." + g) + "</h3>" + it.map(function (n) { return navBtn(n, "nl"); }).join("") + "</div>" : ""; }).join("") +
     '</nav><p class="rolebadge">' + t("role.now") + ": " + t("role." + S.role) + "</p>";
   var c = BL.unread();
-  $("#top").innerHTML = '<button class="brand" data-act="nav" data-arg="home" aria-label="' + esc(t("nav.home")) + '">' + logo() + '<span class="bt">BARI\'S LAB</span></button>' +
+  $("#top").innerHTML = '<button class="brand" data-act="nav" data-arg="' + BL.homeView() + '" aria-label="' + esc(t("nav.home")) + '">' + logo() + '<span class="bt">BARI\'S LAB</span></button>' +
     '<div class="gsearch"><span class="si">' + ic("search", 18) + '</span><input type="search" id="gs" data-in="gs" placeholder="' + esc(t("search.ph")) + '" aria-label="' + esc(t("search.ph")) + '" autocomplete="off"><div class="gsr" id="gsr" hidden></div></div><span class="spacer"></span>' +
     '<button class="langbtn" data-act="lang" aria-label="' + esc(t("lang.switch")) + '">' + (S.lang === "he" ? "EN" : "עב") + "</button>" +
     '<button class="iconbtn" data-act="music" aria-label="' + esc(t("music")) + '">' + ic("music") + "</button>" +
@@ -225,7 +233,7 @@ function renderShell() {
     '<button class="iconbtn" data-act="profile" aria-label="' + esc(t("profile")) + '">' + ic("user") + "</button>" +
     '<button class="iconbtn themebtn" id="themebtn" data-act="thm" aria-label="' + esc(t(BL.dark() ? "thm.tolight" : "thm.todark")) + '" aria-pressed="' + BL.dark() + '"><span class="tico">' + ic(BL.dark() ? "sun" : "moon", 20) + "</span></button>";
   $("#banner").innerHTML = "<span>" + t("banner") + "</span>";
-  var main = ["home", "radar", "charts", "journal"].map(function (id) { return NAV.filter(function (n) { return n.id === id; })[0]; });
+  var vis = visibleItems(), main = (BL.hasSite() ? ["home", "radar", "charts", "journal"] : ["learn", "help", "settings"]).map(function (id) { return NAV.filter(function (n) { return n.id === id; })[0]; }).filter(function (n) { return n && vis.indexOf(n) > -1; });
   var moreCur = main.every(function (n) { return n.id !== R.view && !(R.view === "stock" && n.id === "radar"); });
   $("#bottom").innerHTML = main.map(function (n) { return navBtn(n, ""); }).join("") +
     '<button data-act="more"' + (moreCur ? ' aria-current="page"' : "") + ">" + ic("more") + "<span>" + t("more") + "</span></button>";
@@ -342,7 +350,7 @@ BL.TERMS_V = "0.1-draft";
 BL.needTerms = function () { return !(S.terms && S.terms.v === BL.TERMS_V); };
 function render(top) {
   applySettings();
-  if (!visibleView(R.view)) { R.view = "home"; R.arg = null; }
+  if (!visibleView(R.view)) { R.view = BL.homeView(); R.arg = null; }
   /* terms gate: nothing else is reachable until the current version is signed */
   var gated = BL.needTerms(); if (gated) { R.view = "terms"; R.arg = null; }
   document.body.classList.toggle("gated", gated);

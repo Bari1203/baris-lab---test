@@ -325,6 +325,7 @@ var P = [
 ["ob.l3.h","מוכן ללמוד","Ready to learn"],["ob.l3.p","מתחילים משיעור 1 וממשיכים בקצב שלך. שום דבר כאן אינו המלצה לפעולה.","Start with lesson 1 and go at your own pace. Nothing here is a recommendation to act."],
 ["ob.l3.go","התחל משיעור 1","Start with lesson 1"],["ob.l3.w","רוצה ללמוד ממני ישירות?","Want to learn from me directly?"],["ob.l3.wd","כל הסרטונים והלייבים והזדמנות ללמוד אישית נמצאים ב-Whop, בתשלום.","All the videos, lives and the chance to learn personally are on Whop, paid."],
 ["ob.l3.n","האתר המלא עם הרדאר והיומן זמין לך בכל רגע, ואפשר להחליף מסלול בהגדרות.","The full site with the radar and journal is available anytime, and you can change the path in settings."],
+["set.path","מסלול שימוש","Usage path"],["set.path.n","מה האתר מציג לך: רק את הלימוד, הכול, או רק את האתר בלי לימוד. אפשר להחליף בכל רגע.","What the site shows you: only learning, everything, or only the site without learning. You can change it anytime."],["set.path.ok","המסלול עודכן","Path updated"],
 ["tm.cele", "נכנסת. ברוך הבא ל-BARI'S LAB", "You're in. Welcome to BARI'S LAB"],
 ["tm.set", "תנאי שימוש", "Terms of use"],
 ["tm.signed", "נחתם על ידי {n} בתאריך {d}, גרסה {v}.", "Signed by {n} on {d}, version {v}."],

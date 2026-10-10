@@ -100,7 +100,7 @@ V.home = {
     h += '<div class="qas">' +
       '<button class="qa c1" data-act="jnew"><span class="qi">' + ic("plus", 22) + "</span>" + t("qa.journal") + "</button>" +
       '<button class="qa c2" data-act="rnew"><span class="qi">' + ic("bell", 22) + "</span>" + t("qa.alert") + "</button>" +
-      '<button class="qa c3" data-act="exercise"><span class="qi">' + ic("learn", 22) + "</span>" + t("qa.ex") + "</button>" +
+      (BL.hasLearn() ? '<button class="qa c3" data-act="exercise"><span class="qi">' + ic("learn", 22) + "</span>" + t("qa.ex") + "</button>" : "") +
       '<button class="qa c4" data-act="nav" data-arg="wait"><span class="qi">' + ic("wait", 22) + "</span>" + t("qa.wait") + "</button></div>";
     var near = items.filter(function (s) { return (s.st === "near" || s.st === "zone") && s.kind !== "index"; }).sort(function (a, b) { return D.dist(a).pct - D.dist(b).pct; });
     if (near.length) h += '<div class="sectitle"><h2>' + t("home.near") + '</h2><button class="btn sm ghost" data-act="nav" data-arg="radar">' + t("nav.radar") + '</button></div><div class="rail">' + near.slice(0, 6).map(tile).join("") + "</div>";
@@ -118,7 +118,7 @@ V.home = {
     h += homeCard(t("home.watch"), wl.length ? '<div class="rowf">' + wl.map(function (k) { return '<button class="btn sm" data-act="open" data-arg="' + k + '"><b class="ltr">' + k + "</b></button>"; }).join("") + "</div>" : '<div class="empty"><span>' + t("home.watch.empty") + '</span><button class="btn sm" data-act="nav" data-arg="radar">' + t("nav.radar") + "</button></div>", "", "star");
     var wn = Object.keys(S.waiting).filter(function (k) { return D.stock(k) && BL.inMarket(D.stock(k)); });
     h += homeCard(t("nav.wait"), wn.length ? '<div class="stack">' + wn.slice(0, 3).map(function (k) { return '<div><button class="btn sm ghost" data-act="open" data-arg="' + k + '"><b class="ltr">' + k + "</b></button> " + esc(S.waiting[k].note) + "</div>"; }).join("") + "</div>" : '<p class="muted">' + t("wait.empty.short") + "</p>", goBtn("wait", t("nav.wait")), "wait");
-    h += homeCard(t("home.learn"), "<h3>" + esc(Lx(lesson.ti)) + '</h3><div class="progress" style="margin:8px 0"><i style="width:' + Math.round(done / D.lessons.length * 100) + '%"></i></div><p class="xs muted">' + t("learn.prog", { a: done, b: D.lessons.length }) + "</p>", '<button class="btn sm ghost" data-act="lesson" data-arg="' + lesson.id + '">' + t("learn.cont") + "</button>", "learn");
+    if (BL.hasLearn()) h += homeCard(t("home.learn"), "<h3>" + esc(Lx(lesson.ti)) + '</h3><div class="progress" style="margin:8px 0"><i style="width:' + Math.round(done / D.lessons.length * 100) + '%"></i></div><p class="xs muted">' + t("learn.prog", { a: done, b: D.lessons.length }) + "</p>", '<button class="btn sm ghost" data-act="lesson" data-arg="' + lesson.id + '">' + t("learn.cont") + "</button>", "learn");
     h += homeCard(t("home.journal"), nextJ ? "<h3>" + esc(nextJ.title) + '</h3><p class="sm muted">' + BL.fmtD(BL.pd(nextJ.date)) + " " + esc(nextJ.time) + "</p>" : '<p class="muted">' + t("home.nojournal") + "</p>", goBtn("journal", t("nav.journal")), "journal");
     h += homeCard(t("home.bari"), "<p>" + t("home.bari.t", { n: D.stocks.filter(function (s) { return s.sc; }).length }) + '</p><p class="xs muted" style="margin-top:6px">' + t("home.bari.n") + "</p>", goBtn("history", t("nav.history")), "history");
     h += "</div>";
