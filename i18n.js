@@ -308,6 +308,7 @@ var P = [
 ["ob.L.t1","וובינר מלא של כ-3.5 שעות","Full webinar, about 3.5 hours"],["ob.L.t2","נזילות","Liquidity"],["ob.L.t3","מומנטום ורכיבה עליו","Momentum and riding it"],["ob.L.t4","אורך הפתיל","Wick length"],
 ["ob.L.t5","רגל מניפולציה","Manipulation leg"],["ob.L.t6","נזילות פנימית קיצונית","Extreme internal liquidity"],["ob.L.t7","Protected Low וסווינג פוינט","Protected Low and swing point"],["ob.L.t8","סווינג למניות, מדדים וקריפטו","Swing for stocks, indices and crypto"],
 ["ob.L.free","טעימה חינמית באתר","Free taste on the site"],
+["learn.lesson","שיעור {n}","Lesson {n}"],["learn.half","חצי הושלם","Half done"],["learn.cele","שיעור הושלם","Lesson completed"],
 ["tm.cele", "נכנסת. ברוך הבא ל-BARI'S LAB", "You're in. Welcome to BARI'S LAB"],
 ["tm.set", "תנאי שימוש", "Terms of use"],
 ["tm.signed", "נחתם על ידי {n} בתאריך {d}, גרסה {v}.", "Signed by {n} on {d}, version {v}."],

@@ -363,14 +363,19 @@ BL.wopBtn = function (cls) {
   var w = BL.WOP;
   return w.url ? '<a class="btn ' + (cls || "acc") + '" href="' + esc(w.url) + '" target="_blank" rel="noopener">' + t("wop.go") + "</a>" : '<button class="btn" type="button" disabled>' + t("wop.soon") + "</button>";
 };
+/* lesson progress: "done", "half" (in progress) or nothing. Old boolean true counts as done. */
+BL.lstate = function (id) { var v = S.done[id]; return v === true || v === "done" ? "done" : v === "half" ? "half" : ""; };
+BL.doneCount = function () { return D.lessons.filter(function (l) { return BL.lstate(l.id) === "done"; }).length; };
+BL.halfCount = function () { return D.lessons.filter(function (l) { return BL.lstate(l.id) === "half"; }).length; };
 function lessonList() {
-  var lv = S.f.lv || "", done = Object.keys(S.done).filter(function (k) { return S.done[k]; }).length;
+  var lv = S.f.lv || "", done = BL.doneCount();
   var h = '<div class="ph"><div><h1>' + t("learn.h") + "</h1><p>" + t("learn.sub") + '</p><p class="xs wopline">' + t("wop.line") + " " + BL.wopBtn("sm") + '</p></div><span class="sample">' + t("sample.all") + "</span></div>";
   h += '<section class="card tint" style="margin-bottom:14px"><div class="rowf" style="justify-content:space-between"><div><h2>' + t("ex.title") + '</h2><p>' + t("ex.intro") + '</p></div><button class="btn acc" data-act="exstart">' + t("ex.start") + '</button></div></section>';
   h += '<div class="rowf" style="justify-content:space-between;margin-bottom:12px"><div class="pillset">' + [["", t("lv.all")], ["basic", t("lv.basic")], ["mid", t("lv.mid")], ["adv", t("lv.adv")]].map(function (x) { return '<button class="btn' + (lv === x[0] ? " on" : "") + '" data-act="lvl" data-arg="' + x[0] + '" aria-pressed="' + (lv === x[0]) + '">' + x[1] + "</button>"; }).join("") + '</div><span class="sm muted">' + t("learn.prog", { a: done, b: D.lessons.length }) + '</span></div><div class="progress" style="margin-bottom:14px"><i style="width:' + Math.round(done / D.lessons.length * 100) + '%"></i></div>';
-  function lcards(a) { return '<div class="grid g2">' + a.map(function (l) {
-    return '<article class="card"><div class="rowf" style="justify-content:space-between"><h3 style="margin:0">' + esc(Lx(l.ti)) + "</h3>" + lvChip(l) + '</div><div class="rowf" style="margin-top:12px"><button class="btn sm" data-act="lesson" data-arg="' + l.id + '">' + t(l.id === S.last ? "learn.cont" : "learn.open") + "</button>" + (S.done[l.id] ? '<span class="chip up">' + t("learn.done") + "</span>" : "") + "</div></article>";
-  }).join("") + "</div>"; }
+  function lcards(a) { return '<ol class="lseq">' + a.map(function (l) {
+    var st = BL.lstate(l.id), no = D.lessons.indexOf(l) + 1;
+    return '<li class="lrow ' + (st ? "is-" + st : "") + '"><span class="lno" aria-hidden="true">' + (st === "done" ? '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg>' : no) + '</span><div class="lmain"><div class="rowf" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><div><span class="xs muted">' + t("learn.lesson", { n: no }) + "</span><h3>" + esc(Lx(l.ti)) + "</h3></div>" + lvChip(l) + '</div><div class="rowf lbtns"><button class="btn sm" data-act="lesson" data-arg="' + l.id + '">' + t(l.id === S.last ? "learn.cont" : "learn.open") + '</button><button class="btn sm lb-half' + (st === "half" ? " on" : "") + '" data-act="lmark" data-arg="' + l.id + '|half" aria-pressed="' + (st === "half") + '">' + t("learn.half") + '</button><button class="btn sm lb-done' + (st === "done" ? " on" : "") + '" data-act="lmark" data-arg="' + l.id + '|done" aria-pressed="' + (st === "done") + '">' + t("learn.done") + "</button></div></div></li>";
+  }).join("") + "</ol>"; }
   var fl = D.lessons.filter(function (l) { return !lv || l.lv === lv; }), me = fl.filter(function (l) { return l.track === "method"; }), ba = fl.filter(function (l) { return l.track !== "method"; });
   if (me.length) h += '<div class="sectitle"><h2>' + t("learn.method") + "</h2></div>" + lcards(me);
   if (ba.length) h += '<div class="sectitle"><h2>' + t("learn.base") + "</h2></div>" + lcards(ba);
@@ -391,7 +396,7 @@ function lessonBody(l) {
 }
 function lessonView(id) {
   var i = D.lessons.map(function (l) { return l.id; }).indexOf(id), l = D.lessons[i], nx = D.lessons[i + 1];
-  return '<div class="rowf"><button class="btn sm" data-act="nav" data-arg="learn">' + (S.lang === "he" ? "→ " : "← ") + t("back") + '</button></div><article class="card" style="margin-top:14px;max-width:760px"><div class="rowf">' + lvChip(l) + "</div><h1 style=\"margin:10px 0\">" + esc(Lx(l.ti)) + '</h1>' + lessonBody(l) + '<p class="xs muted" style="margin-top:12px">' + t("learn.n") + '</p><div class="rowf" style="margin-top:16px"><button class="btn' + (S.done[l.id] ? " on" : "") + '" data-act="ldone" data-arg="' + l.id + '" aria-pressed="' + (!!S.done[l.id]) + '">' + t(S.done[l.id] ? "learn.done" : "learn.markdone") + '</button>' + (nx ? '<button class="btn pri" data-act="lesson" data-arg="' + nx.id + '">' + t("learn.next") + "</button>" : "") + '<button class="btn" data-act="exstart">' + t("ex.start") + "</button></div></article>";
+  return '<div class="rowf"><button class="btn sm" data-act="nav" data-arg="learn">' + (S.lang === "he" ? "→ " : "← ") + t("back") + '</button></div><article class="card" style="margin-top:14px;max-width:760px"><div class="rowf">' + lvChip(l) + "</div><h1 style=\"margin:10px 0\">" + esc(Lx(l.ti)) + '</h1>' + lessonBody(l) + '<p class="xs muted" style="margin-top:12px">' + t("learn.n") + '</p><div class="rowf" style="margin-top:16px"><button class="btn lb-half' + (BL.lstate(l.id) === "half" ? " on" : "") + '" data-act="lmark" data-arg="' + l.id + '|half" aria-pressed="' + (BL.lstate(l.id) === "half") + '">' + t("learn.half") + '</button><button class="btn lb-done' + (BL.lstate(l.id) === "done" ? " on" : "") + '" data-act="lmark" data-arg="' + l.id + '|done" aria-pressed="' + (BL.lstate(l.id) === "done") + '">' + t(BL.lstate(l.id) === "done" ? "learn.done" : "learn.markdone") + '</button>' + (nx ? '<button class="btn pri" data-act="lesson" data-arg="' + nx.id + '">' + t("learn.next") + "</button>" : "") + '<button class="btn" data-act="exstart">' + t("ex.start") + "</button></div></article>";
 }
 function exHtml() {
   var s = EX.step, h = '<div class="rowf"><button class="btn sm" data-act="nav" data-arg="learn">' + (S.lang === "he" ? "→ " : "← ") + t("back") + '</button><span class="sample">' + t("ex.sample") + "</span></div>";
@@ -424,7 +429,13 @@ ACT.exsave = function () {
 };
 ACT.lvl = function (v) { S.f.lv = v; BL.save(); BL.render(false); };
 ACT.lesson = function (id) { S.last = id; BL.save(); BL.go("learn", id); };
-ACT.ldone = function (id) { S.done[id] = !S.done[id]; BL.save(); BL.render(false); };
+ACT.ldone = function (id) { S.done[id] = BL.lstate(id) === "done" ? false : "done"; BL.save(); BL.render(false); };
+ACT.lmark = function (arg, el) {
+  var p = arg.split("|"), id = p[0], k = p[1], was = BL.lstate(id);
+  S.done[id] = was === k ? false : k; BL.save();
+  var yPos = window.scrollY; BL.render(false); window.scrollTo(0, yPos);
+  if (k === "done" && was !== "done") { var b = document.querySelector('[data-act="lmark"][data-arg="' + arg + '"]'); BL.cele({ el: b, cap: t("learn.cele") }); }
+};
 
 /* ------------------------------------------------------------ help */
 var MAT = [

@@ -712,3 +712,19 @@ html[dir=rtl] .intro-bar i{transform-origin:right}
 .wopline{margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .obend .btn[disabled]{opacity:.55;cursor:not-allowed}
 .obtri.wide span{font-size:12px}
+
+/* numbered lesson sequence with progress colors */
+.lseq{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:10px}
+.lrow{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1.5px solid var(--line,rgba(18,60,58,.14));border-radius:16px;padding:12px;transition:border-color .3s,background .3s,box-shadow .3s}
+.lrow .lno{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 14px Inter,sans-serif;background:var(--mint);color:var(--ink);transition:all .35s}
+.lrow .lmain{flex:1;min-width:0;display:grid;gap:10px}
+.lrow h3{margin:2px 0 0;font-size:16px}
+.lbtns{gap:8px}
+.lrow.is-half{border-color:#E8A33D;background:color-mix(in srgb,#E8A33D 9%,var(--surface))}
+.lrow.is-half .lno{background:linear-gradient(90deg,#E8A33D 50%,var(--mint) 50%);color:var(--ink)}
+.lrow.is-done{border-color:#2F9E6E;background:color-mix(in srgb,#2F9E6E 9%,var(--surface))}
+.lrow.is-done .lno{background:#2F9E6E;color:#fff;animation:inPop .5s cubic-bezier(.2,1.3,.4,1)}
+.btn.lb-half{border-color:#E8A33D;color:#8a5a0c}
+.btn.lb-half.on{background:#E8A33D;border-color:#E8A33D;color:#2a1a02}
+.btn.lb-done{border-color:#2F9E6E;color:#1d6b49}
+.btn.lb-done.on{background:#2F9E6E;border-color:#2F9E6E;color:#fff}

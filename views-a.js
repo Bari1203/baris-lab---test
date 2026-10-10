@@ -109,7 +109,7 @@ V.home = {
     var evs = BL.eventsNext(2);
     var nextJ = (S.journal || []).filter(function (e) { return e.rem && e.status === "open" && e.date >= BL.ymd(today()); }).sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); })[0];
     var lesson = D.lessons.filter(function (l) { return l.id === S.last; })[0] || D.lessons[0];
-    var done = Object.keys(S.done).filter(function (k) { return S.done[k]; }).length;
+    var done = BL.doneCount();
     var wkc = D.weeks[0];
     h += '<div class="sectitle"><h2>' + t("home.now") + '</h2></div><div class="grid g3 hgrid">';
     h += homeCard(t("home.changed"), ch.length ? '<div class="stack">' + ch.map(function (s) { return '<div><button class="btn sm ghost" data-act="open" data-arg="' + s.t + '"><b class="ltr">' + s.t + "</b></button> " + esc(Lx(s.ch)) + "</div>"; }).join("") + "</div>" : '<p class="muted">' + t("home.nochange") + "</p>", goBtn("radar", t("nav.radar")), "radar");
