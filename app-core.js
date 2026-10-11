@@ -254,7 +254,7 @@ function renderShell() {
 function renderMini() {
   var a = AU.cfg;
   $("#mini").setAttribute("role", "group"); $("#mini").setAttribute("aria-label", t("music"));
-  $("#mini").innerHTML = '<button class="iconbtn" data-act="mplay" aria-label="' + esc(AU.playing ? t("mus.pause") : t("mus.play")) + '">' + ic(AU.playing ? "pause" : "play") + '</button><span class="mt">' + t("trk." + D.tracks[a.track]) + '</span><button class="iconbtn" data-act="mnext" aria-label="' + esc(t("mus.next")) + '">' + ic("next") + '</button><button class="iconbtn" data-act="music" aria-label="' + esc(t("mus.open")) + '">' + ic("expand", 18) + "</button>";
+  $("#mini").innerHTML = '<button class="iconbtn" data-act="mplay" aria-label="' + esc(AU.playing ? t("mus.pause") : t("mus.play")) + '">' + ic(AU.playing ? "pause" : "play") + '</button><span class="mt">' + t("trk." + D.tracks[a.track]) + '</span><button class="iconbtn" data-act="mnext" aria-label="' + esc(t("mus.next")) + '">' + ic("next") + '</button><canvas id="vizm" class="vizm" width="36" height="22" aria-hidden="true"></canvas><button class="iconbtn" data-act="music" aria-label="' + esc(t("mus.open")) + '">' + ic("expand", 18) + "</button>";
 }
 
 /* in-page section menu: each big screen gets a short list of its parts, so nothing is a screen inside a screen */
@@ -468,7 +468,7 @@ BL.tour = tour;
 
 /* music panel */
 function musicBody() {
-  var a = AU.cfg, h = '<p class="muted xs">' + t("mus.note") + "</p>";
+  var a = AU.cfg, h = '<div class="vizbox t' + a.track + (AU.playing ? " on" : "") + '"><canvas id="viz" class="viz" aria-hidden="true"></canvas><p class="vizcap">' + t(AU.playing ? "mus.now" : "mus.idle") + " · " + t("trk." + D.tracks[a.track]) + '</p></div><p class="muted xs">' + t("mus.note") + "</p>";
   if (!AU.supported) h += '<div class="notice">' + t("mus.unsupported") + "</div>";
   h += '<div class="rowf"><button class="btn pri" data-act="mplay">' + t(AU.playing ? "mus.pause" : "mus.play") + '</button><button class="btn" data-act="mprev">' + t("mus.prev") + '</button><button class="btn" data-act="mnext">' + t("mus.next") + "</button></div>";
   h += '<div class="stack">' + D.tracks.map(function (k, i) { return '<button class="tkbtn" data-act="mtrack" data-arg="' + i + '" aria-pressed="' + (a.track === i) + '"><span>' + t("trk." + k) + '</span><span class="xs">' + (a.track === i && AU.playing ? t("mus.now") : "") + "</span></button>"; }).join("") + "</div>";
@@ -478,8 +478,8 @@ function musicBody() {
   return h;
 }
 function paintMusic() { var b = $("#mbody"); if (b && $("#mv")) b.innerHTML = musicBody(); }
-BL.openMusic = function () { openModal({ title: t("music"), body: musicBody() }); };
-AU.onchange = function () { renderMini(); paintMusic(); };
+BL.openMusic = function () { openModal({ title: t("music"), body: musicBody() }); BL.vizStart(); };
+AU.onchange = function () { renderMini(); paintMusic(); document.body.classList.toggle("playing", !!AU.playing); BL.vizStart(); };
 
 /* actions */
 ACT.close = function () { closeModal(); };

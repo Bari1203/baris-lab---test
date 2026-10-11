@@ -7,7 +7,7 @@ var AU = window.AU = {
   cfg: { track: 0, vol: 25, muted: false, eq: [0, 0, 0] },
   onchange: null
 };
-var ctx, master, comp, bands = [], bus, timer = null, live = [], noiseBuf = null;
+var ctx, master, comp, bands = [], bus, timer = null, live = [], noiseBuf = null, an = null, fbuf = null;
 
 var TRACKS = [
   { chords: [[0, 7, 12, 16, 19], [-3, 4, 9, 12, 16], [-5, 2, 7, 11, 14]], base: 130.81, lp: 1100, step: 9 },
@@ -33,6 +33,7 @@ function build() {
   });
   bus.connect(bands[0]); bands[0].connect(bands[1]); bands[1].connect(bands[2]);
   bands[2].connect(comp); comp.connect(master); master.connect(ctx.destination);
+  an = ctx.createAnalyser(); an.fftSize = 256; an.smoothingTimeConstant = 0.78; master.connect(an); fbuf = new Uint8Array(an.frequencyBinCount);
   applyVol();
 }
 function applyVol() {
@@ -127,6 +128,8 @@ AU.setEq = function (i, db) {
   AU.cfg.eq[i] = clamp(+db || 0, -9, 9);
   if (bands[i]) bands[i].gain.setTargetAtTime(AU.cfg.eq[i], ctx.currentTime, 0.03);
 };
+/* live frequency data for the visualizer: array of 0..255 (empty when nothing is playing) */
+AU.freq = function () { if (!an || !AU.playing) return null; an.getByteFrequencyData(fbuf); return fbuf; };
 AU.presets = {
   flat: [0, 0, 0], warm: [4, 1, -3], clear: [-2, 2, 4], soft: [2, -1, -5]
 };
