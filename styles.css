@@ -1043,3 +1043,17 @@ html.reduce .mkc,html.reduce .mk-res,html.reduce .mk-pr .bar i{animation:none}
 .mk-tb th{text-align:start;font-size:12px;letter-spacing:.04em;color:var(--muted);padding:12px 16px;background:var(--bg);border-bottom:1.5px solid var(--line)}
 .mk-tb td{padding:14px 16px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
 .mk-tb tr:last-child td{border-bottom:0}.mk-tb td:not(:first-child),.mk-tb th:not(:first-child){text-align:end}
+
+/* track record panel */
+.hp{margin-bottom:14px}
+.hp-top{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;margin-top:14px}
+.hp-ring{display:grid;justify-items:center;gap:6px;max-width:150px;text-align:center}
+.hp-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.hp-t{display:grid;gap:2px;background:var(--bg);border-radius:16px;padding:10px 12px}
+.hp-t b{font-size:20px}
+.hp-bars{width:100%;height:auto;background:var(--bg);border-radius:18px;padding:8px}
+.hp-bars .z{stroke:var(--line2);stroke-dasharray:4 4}
+.hp-bars .u{fill:var(--up)}.hp-bars .d{fill:var(--down)}.hp-bars .e{fill:var(--line2)}
+.hp-bars text{font:600 11px Inter,sans-serif;fill:var(--muted)}.hp-bars .v{fill:var(--ink)}
+@media(max-width:560px){.hp-top{grid-template-columns:1fr;justify-items:center}.hp-tiles{width:100%}}
+.hp-t b span{margin-inline:0 6px}.hp-t b .mu{color:var(--muted);font-weight:400}

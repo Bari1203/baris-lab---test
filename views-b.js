@@ -424,6 +424,68 @@ V.history = {
   }
 };
 CH.hif = function (v, el, k) { hf()[k] = v; BL.save(); BL.render(false); };
+/* ===== track record: win rate, curve and buckets per period, for the day book, the swing book and the scenarios themselves ===== */
+var HPER = { day: 1, week: 7, month: 30, quarter: 91, half: 182, year: 365, y5: 1826, all: 0 }, HSTEP = { day: 1, week: 1, month: 7, quarter: 7, half: 30, year: 30, y5: 182, all: 30 };
+function hpf() { return S.f.hp || (S.f.hp = { bk: "day", per: "year" }); }
+function hpTrades(bk, demo) {
+  var a = demo ? (bk === "swing" ? demoSwing() : demoTrades()) : realTrades().filter(function (e) { return (e.tr.book || "day") === bk; });
+  return a.map(function (e) { return { ds: bdate(e, bk), e: e }; });
+}
+function hpScen() {
+  return hRecs().filter(function (r) { return r.st === "dev" || r.st === "cancel"; }).map(function (r) { return { ds: ymd(new Date(r.ts)), r: r }; });
+}
+function hpBuckets(items, per) {
+  var days = HPER[per], step = HSTEP[per], tdy = today(), first;
+  if (days) first = addDays(tdy, -(days - 1));
+  else { var ds = items.map(function (x) { return x.ds; }).sort(); first = ds.length ? pd(ds[0]) : addDays(tdy, -29); }
+  var span = Math.max(1, Math.round((tdy - first) / 864e5) + 1); if (!days) step = span <= 120 ? 7 : span <= 400 ? 30 : 182; var nb = Math.ceil(span / step), out = [], i;
+  for (i = 0; i < nb; i++) out.push({ from: addDays(first, i * step), items: [] });
+  var f0 = ymd(first), inRange = [];
+  items.forEach(function (x) { if (x.ds < f0 || x.ds > ymd(tdy)) return; var idx = Math.min(nb - 1, Math.floor((pd(x.ds) - first) / 864e5 / step)); out[idx].items.push(x); inRange.push(x); });
+  return { b: out, all: inRange.sort(function (a, b) { return a.ds.localeCompare(b.ds); }) };
+}
+function hpBars(bs, rateFn) {
+  var W = 640, H = 150, n = bs.length, gap = n > 20 ? 2 : 6, bw = (W - 12 - gap * (n - 1)) / n, h = '<svg class="hp-bars ltr" viewBox="0 0 ' + W + " " + (H + 24) + '" role="img" aria-label="' + esc(t("hp2.bars")) + '"><line x1="0" x2="' + W + '" y1="' + (8 + (H - 16) / 2) + '" y2="' + (8 + (H - 16) / 2) + '" class="z"/>';
+  bs.forEach(function (b, i) {
+    var x = 6 + i * (bw + gap), r = rateFn(b.items), lab = BL.fmtD(b.from, { day: "numeric", month: "numeric" });
+    if (r == null) { h += '<rect x="' + x.toFixed(1) + '" y="' + (H - 6) + '" width="' + bw.toFixed(1) + '" height="3" rx="1.5" class="e"/>'; }
+    else { var bh = Math.max(4, r.pct / 100 * (H - 34)); h += '<rect x="' + x.toFixed(1) + '" y="' + (H - 8 - bh).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="4" class="' + (r.pct >= 50 ? "u" : "d") + '"><title>' + r.pct + "% · " + r.n + "</title></rect>" + (n <= 14 ? '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 12 - bh).toFixed(1) + '" text-anchor="middle" class="v">' + r.pct + "</text>" : ""); }
+    if (n <= 14 || i % Math.ceil(n / 8) === 0) h += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H + 14) + '" text-anchor="middle" class="x">' + lab + "</text>";
+  });
+  return h + "</svg>";
+}
+function hpTile(k, v, cls) { return '<div class="hp-t"><span class="xs muted">' + k + '</span><b class="num ltr ' + (cls || "") + '">' + v + "</b></div>"; }
+function hpPanel() {
+  var f = hpf(), bk = f.bk, scen = bk === "scen", real = scen ? 0 : realTrades().filter(function (e) { return (e.tr.book || "day") === bk; }).length;
+  var demo = scen ? false : (f.demo == null ? real === 0 : f.demo);
+  var items = scen ? hpScen() : hpTrades(bk, demo), bb = hpBuckets(items, f.per), all = bb.all, n = all.length, h = "", rate, tiles = "", curve = "", rf;
+  if (scen) {
+    var dev = all.filter(function (x) { return x.r.st === "dev"; }).length, can = n - dev;
+    rate = n ? Math.round(dev / n * 100) : 0;
+    tiles = hpTile(t("hp2.dev"), dev, "upc") + hpTile(t("hp2.can"), can, can ? "dnc" : "") + hpTile(t("hp2.decided"), n) + hpTile(t("hp2.open"), hRecs().filter(function (r) { return r.st === "open"; }).length);
+    rf = function (it) { if (!it.length) return null; var d = it.filter(function (x) { return x.r.st === "dev"; }).length; return { pct: Math.round(d / it.length * 100), n: it.length }; };
+  } else {
+    var st = bookStats(all.map(function (x) { return x.e; }), bk); rate = st.pct;
+    tiles = hpTile(t("hp2.wlb"), '<span class="upc">' + st.W + '</span><span class="mu">·</span><span class="dnc">' + st.L + '</span><span class="mu">·</span><span>' + st.B + "</span>") + (st.hasV ? hpTile(t("jb.net"), fmtV(st.net, bk), st.net > 0 ? "upc" : st.net < 0 ? "dnc" : "") + hpTile(t("jb.pf"), st.pf == null ? "—" : st.pf === Infinity ? "∞" : st.pf.toFixed(2)) : "") + hpTile(t("jb.daywin"), st.dayPct + "%");
+    curve = equitySvg(all.map(function (x) { return x.e; }), function (e) { return bval(e, bk); });
+    rf = function (it) { if (!it.length) return null; var w = it.filter(function (x) { return x.e.tr.res === "win"; }).length; return { pct: Math.round(w / it.length * 100), n: it.length }; };
+  }
+  h += '<section class="card hp"><div class="rowf" style="justify-content:space-between"><div><h2>' + t("hp2.h") + '</h2><p class="xs muted">' + t(scen ? "hp2.sub.s" : "hp2.sub.t") + "</p></div>" + (scen ? "" : '<button class="btn sm" data-act="hpdemo">' + t(demo ? "hp2.mine" : "hp2.demo") + "</button>") + "</div>";
+  h += '<div class="pillset scroll" style="margin-top:10px">' + [["day", t("jb.tab.day")], ["swing", t("jb.tab.swing")], ["scen", t("hp2.scen")]].map(function (x) { return '<button class="btn' + (bk === x[0] ? " on" : "") + '" data-act="hpset" data-arg="bk:' + x[0] + '" aria-pressed="' + (bk === x[0]) + '">' + x[1] + "</button>"; }).join("") + "</div>";
+  h += '<div class="pillset scroll" style="margin-top:6px">' + ["day", "week", "month", "quarter", "half", "year", "y5", "all"].map(function (k) { return '<button class="btn sm' + (f.per === k ? " on" : "") + '" data-act="hpset" data-arg="per:' + k + '" aria-pressed="' + (f.per === k) + '">' + t("hp2.p." + k) + "</button>"; }).join("") + "</div>";
+  if (demo) h += '<p class="notice" style="margin-top:10px"><span class="sample">' + t("sample") + "</span> " + t("hp2.demo.n") + "</p>";
+  if (!n) return h + '<div class="empty" style="margin-top:12px"><strong>' + t("hp2.none") + "</strong><span>" + t(scen ? "hp2.none.s" : "hp2.none.t") + "</span></div></section>";
+  h += '<div class="hp-top"><div class="hp-ring"><div class="sring big" style="--v:' + rate + '"><b class="num">' + rate + '%</b></div><span class="xs muted">' + t(scen ? "hp2.rate.s" : "hp2.rate.t") + "</span></div><div class=\"hp-tiles\">" + hpTile(t("hp2.count"), n) + tiles + "</div></div>";
+  if (n < 30) h += '<p class="notice mint xs">' + t("hp2.small", { n: n }) + "</p>";
+  h += "<h3 class=\"jd-t\">" + t("hp2.bars") + '</h3><p class="xs muted">' + t(scen ? "hp2.bars.n.s" : "hp2.bars.n") + "</p>" + hpBars(bb.b, rf);
+  if (curve) h += '<h3 class="jd-t" style="margin-top:14px">' + t("hp2.curve") + "</h3>" + curve;
+  return h + '<p class="xs muted" style="margin-top:10px">' + t(scen ? "hp2.def.s" : "hp2.def.t") + "</p></section>";
+}
+ACT.hpset = function (arg) { var p = String(arg).split(":"); hpf()[p[0]] = p[1]; BL.save(); BL.render(false); };
+ACT.hpdemo = function () { var f = hpf(), real = realTrades().filter(function (e) { return (e.tr.book || "day") === f.bk; }).length, cur = f.demo == null ? real === 0 : f.demo; f.demo = !cur; BL.save(); BL.render(false); };
+var _hiHtml = V.history.html;
+V.history.html = function () { var h = _hiHtml(), i = h.indexOf('<div class="toolbar">'); return i < 0 ? h + hpPanel() : h.slice(0, i) + hpPanel() + h.slice(i); };
+
 ACT.hdet = function (id) {
   var r = hRecs().filter(function (x) { return x.id === id; })[0]; if (!r) return;
   BL.openModal({ title: r.t + " " + t("hi.detail"), body: '<div class="rowf"><span class="chip">' + t("hs." + r.st) + '</span><span class="chip">' + t("hz." + r.tf) + "</span>" + (r.sample ? '<span class="sample">' + t("hi.sample") + "</span>" : "") + "</div>" + kv(t("hi.date"), BL.fmtD(new Date(r.ts))) + kv(t("l3.zone"), ltr(r.zone)) + kv(t("hi.orig"), esc(r.txt)) + (r.plus ? kv(t("l3.plus"), esc(r.plus)) + kv(t("l3.minus"), esc(r.minus)) : "") + kv(t("hi.ver"), "v" + r.ver + " (" + t("hi.nochg") + ")") + kv(t("hi.res"), esc(r.res)) + kv(t("hi.rev"), esc(r.rev || t("hi.norev"))) + '<p class="xs muted">' + t("hi.immut") + "</p>" });
