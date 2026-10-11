@@ -109,10 +109,21 @@ function trForm(r) {
   return '<fieldset class="trbox"><legend>' + t("tr.title") + '</legend><p class="xs muted">' + t("tr.note") + '</p><div class="fgrid">' +
     trSel("book", "book", r.book, 1).replace('id="tr-book"', 'id="tr-book" data-ch="trbook"') + trSel("acct", "acct", r.acct, 1) + trSel("side", "side", r.side, 1) + trSel("grade", "grade", r.grade) + trSel("ctype", "ctype", r.ctype) + trSel("smt", "smt", r.smt, 1) + trSel("tp", "tp", r.tp, 1) + trSel("dir", "dir", r.dir, 1) + trSel("ent", "ent", r.ent, 1) + trSel("lvl", "lvl", r.lvl, 1) + trSel("res", "res", r.res, 1) +
     trTxt("bisus", r.bisus, "8h, D, W...") + trTxt("etf", r.etf, "15m") + trTxt("poi", r.poi) + trTxt("candle", r.candle) + trTxt("exit", r.exit) +
-    trTxt("entry", r.entry) + trTxt("stop", r.stop) + trTxt("target", r.target) + trTxt("pnl", r.pnl, t("tr.pnl.ph")) + trTxt("link", r.link) + "</div>" +
+    trTxt("entry", r.entry) + trTxt("stop", r.stop) + trTxt("target", r.target) + trTxt("pnl", r.pnl, t("tr.pnl.ph")) + trTxt("link", r.link) + trTxt("pct", r.pct, t("tr.pct.ph")) + "</div>" + trExtra(r) +
     '<div id="tr-sw"' + (r.book === "swing" ? "" : " hidden") + '><h3 class="xs" style="margin:12px 0 4px">' + t("sw.h") + '</h3><p class="xs muted">' + t("sw.note") + '</p><div class="fgrid">' +
     trSel("sstat", "sstat", r.sstat, 1) + trTxt("sector", r.sector) + trSel("svs", "svs", r.svs, 1) + swDate("d1", r.d1) + swDate("d2", r.d2) + swDate("earn", r.earn) + trTxt("xprice", r.xprice) + "</div></div></fieldset>";
 }
+function trExtra(r) {
+  return '<div class="fld" style="margin-top:10px"><label for="tr-concl">' + t("tr.concl") + '</label><textarea id="tr-concl" rows="2">' + esc(r.concl || "") + '</textarea></div><div class="fld"><label for="tr-imgf">' + t("tr.img") + '</label><input type="file" id="tr-imgf" accept="image/*" data-ch="trimg"><input type="hidden" id="tr-img" value="' + esc(r.img || "") + '"><div id="tr-imgp" class="hp-prev">' + (r.img ? '<img src="' + esc(r.img) + '" alt="">' : "") + '</div><span class="xs muted">' + t("tr.img.n") + "</span></div>";
+}
+CH.trimg = function (v, el) {
+  var f = el.files && el.files[0]; if (!f) return; var fr = new FileReader();
+  fr.onload = function () { var im = new Image(); im.onload = function () {
+    var w = Math.min(900, im.width), h = Math.round(im.height * w / im.width), c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(im, 0, 0, w, h);
+    var u = c.toDataURL("image/jpeg", .72), hid = document.getElementById("tr-img"), pv = document.getElementById("tr-imgp"); if (hid) hid.value = u; if (pv) pv.innerHTML = '<img src="' + u + '" alt="">'; };
+    im.src = fr.result; };
+  fr.readAsDataURL(f);
+};
 function swDate(id, cur) { return '<div class="fld"><label for="tr-' + id + '">' + t("sw." + id) + '</label><input type="date" id="tr-' + id + '" value="' + esc(cur || "") + '"></div>'; }
 /* swing: holding days and P&L % are computed, never typed */
 function swHold(r) { if (!r.d1 || !r.d2) return null; var n = Math.round((new Date(r.d2) - new Date(r.d1)) / 864e5); return n >= 0 ? n : null; }
@@ -120,7 +131,7 @@ function swPct(r) { var e = parseFloat(r.entry), x = parseFloat(r.xprice); if (i
 BL.swHold = swHold; BL.swPct = swPct;
 CH.trbook = function (v) { var b = document.getElementById("tr-sw"); if (b) b.hidden = v !== "swing"; };
 function trRead(f) {
-  var r = {}; ["dir", "ent", "lvl", "book", "sstat", "sector", "svs", "d1", "d2", "earn", "xprice", "acct", "side", "grade", "ctype", "smt", "tp", "res", "bisus", "etf", "poi", "candle", "exit", "entry", "stop", "target", "pnl", "link"].forEach(function (k) { var el = f.querySelector("#tr-" + k); r[k] = el ? el.value.trim() : ""; });
+  var r = {}; ["dir", "ent", "lvl", "book", "sstat", "sector", "svs", "d1", "d2", "earn", "xprice", "acct", "side", "grade", "ctype", "smt", "tp", "res", "bisus", "etf", "poi", "candle", "exit", "entry", "stop", "target", "pnl", "link", "pct", "concl", "img"].forEach(function (k) { var el = f.querySelector("#tr-" + k); r[k] = el ? el.value.trim() : ""; });
   return r;
 }
 function trRR(r) { var e = parseFloat(r.entry), s2 = parseFloat(r.stop), tg = parseFloat(r.target); if (isNaN(e) || isNaN(s2) || isNaN(tg) || e === s2) return null; return Math.abs(tg - e) / Math.abs(e - s2); }
@@ -429,7 +440,7 @@ var HPER = { day: 1, week: 7, month: 30, quarter: 91, half: 182, year: 365, y5: 
 function hpf() { return S.f.hp || (S.f.hp = { bk: "day", per: "year" }); }
 function hpTrades(bk, demo) {
   var a = demo ? (bk === "swing" ? demoSwing() : demoTrades()) : realTrades().filter(function (e) { return (e.tr.book || "day") === bk; });
-  return a.map(function (e) { return { ds: bdate(e, bk), e: e }; });
+  return a.map(function (e) { return { ds: bdate(e, bk), e: e, demo: demo, bk: bk }; });
 }
 function hpScen() {
   return hRecs().filter(function (r) { return r.st === "dev" || r.st === "cancel"; }).map(function (r) { return { ds: ymd(new Date(r.ts)), r: r }; });
@@ -455,6 +466,32 @@ function hpBars(bs, rateFn) {
   return h + "</svg>";
 }
 function hpTile(k, v, cls) { return '<div class="hp-t"><span class="xs muted">' + k + '</span><b class="num ltr ' + (cls || "") + '">' + v + "</b></div>"; }
+function pctOf(x) {
+  var tr = x.e.tr, m = parseFloat(String(tr.pct || "").replace(/[%\s,]/g, "")), v;
+  if (!isNaN(m)) return tr.res === "loss" ? -Math.abs(m) : tr.res === "win" ? Math.abs(m) : m;
+  v = swPct(tr); if (v != null) return v;
+  if (x.demo && x.bk === "day") { v = pnlNum(tr); return v == null ? null : +(v / 380).toFixed(2); }
+  return null;
+}
+function hpTk(x) { return x.e.ticker || (x.demo ? ["NQ", "ES", "YM"][(parseInt(x.e.date.slice(-2), 10) || 0) % 3] : "—"); }
+function hpPic(x) {
+  var e = x.e, tr = e.tr;
+  if (tr.img) return '<img class="hp-img" src="' + esc(tr.img) + '" alt="' + esc(hpTk(x)) + '">';
+  if (!x.demo) return '<div class="hp-img ph"><span class="xs muted">' + t("hp2.noimg") + "</span></div>";
+  var sr = D.series(hpTk(x) + e.date, 40, 1.4, 100).map(function (c) { return c.c; }), mn = Math.min.apply(null, sr), mx = Math.max.apply(null, sr), r = (mx - mn) || 1, up = tr.res === "win" ? 1 : tr.res === "loss" ? -1 : 0;
+  var pts = sr.map(function (v, i) { return (i * 300 / 39).toFixed(1) + " " + (8 + (mx - v) / r * 84).toFixed(1); });
+  return '<svg class="hp-img ltr" viewBox="0 0 300 100" preserveAspectRatio="none" role="img" aria-label="' + esc(t("hp2.sampleimg")) + '"><path d="M' + pts.join(" L") + '" fill="none" stroke="' + (up < 0 ? "var(--down)" : "var(--up)") + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function hpCards(all, bk) {
+  var rows = all.slice().reverse().slice(0, 24);
+  return '<h3 class="jd-t" style="margin-top:16px">' + t("hp2.trades") + '</h3><div class="hp-cards">' + rows.map(function (x) {
+    var e = x.e, tr = e.tr, v = pctOf(x), cl = tr.res === "win" ? "w" : tr.res === "loss" ? "l" : "b", gr = { PERFECT: t("hp2.g.p"), GOOD: t("hp2.g.g"), BAD: t("hp2.g.b") }[tr.grade];
+    var concl = tr.concl || (x.demo ? t("hp2.demo.c." + (tr.res === "win" ? "w" : tr.res === "loss" ? "l" : "b") + ((parseInt(x.ds.slice(-2), 10) || 0) % 3)) : (e.note || ""));
+    return '<article class="hp-c ' + cl + '">' + hpPic(x) + '<div class="hp-cb"><div class="rowf" style="justify-content:space-between"><b class="ltr tk">' + esc(hpTk(x)) + '</b><span class="chip res-' + tr.res + '">' + (tr.res === "win" ? t("hp2.worked1") : tr.res === "loss" ? t("hp2.notw1") : t("tr.res." + tr.res)) + '</span></div><div class="rowf" style="justify-content:space-between"><b class="num ltr hp-p ' + (v > 0 ? "upc" : v < 0 ? "dnc" : "") + '">' + (v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(1) + "%") + '</b><span class="xs muted ltr">' + esc(x.ds) + "</span></div>" +
+      '<div class="rowf">' + [tr.side && t("tr.side." + tr.side), gr, tr.etf].filter(Boolean).map(function (c) { return '<span class="chip">' + esc(c) + "</span>"; }).join("") + "</div>" +
+      (concl ? '<p class="xs hp-k"><b>' + t("hp2.concl") + ":</b> " + esc(concl.length > 140 ? concl.slice(0, 140) + "…" : concl) + "</p>" : "") + "</div></article>";
+  }).join("") + "</div>";
+}
 function hpPanel() {
   var f = hpf(), bk = f.bk, scen = bk === "scen", real = scen ? 0 : realTrades().filter(function (e) { return (e.tr.book || "day") === bk; }).length;
   var demo = scen ? false : (f.demo == null ? real === 0 : f.demo);
@@ -465,9 +502,11 @@ function hpPanel() {
     tiles = hpTile(t("hp2.dev"), dev, "upc") + hpTile(t("hp2.can"), can, can ? "dnc" : "") + hpTile(t("hp2.decided"), n) + hpTile(t("hp2.open"), hRecs().filter(function (r) { return r.st === "open"; }).length);
     rf = function (it) { if (!it.length) return null; var d = it.filter(function (x) { return x.r.st === "dev"; }).length; return { pct: Math.round(d / it.length * 100), n: it.length }; };
   } else {
-    var st = bookStats(all.map(function (x) { return x.e; }), bk); rate = st.pct;
-    tiles = hpTile(t("hp2.wlb"), '<span class="upc">' + st.W + '</span><span class="mu">·</span><span class="dnc">' + st.L + '</span><span class="mu">·</span><span>' + st.B + "</span>") + (st.hasV ? hpTile(t("jb.net"), fmtV(st.net, bk), st.net > 0 ? "upc" : st.net < 0 ? "dnc" : "") + hpTile(t("jb.pf"), st.pf == null ? "—" : st.pf === Infinity ? "∞" : st.pf.toFixed(2)) : "") + hpTile(t("jb.daywin"), st.dayPct + "%");
-    curve = equitySvg(all.map(function (x) { return x.e; }), function (e) { return bval(e, bk); });
+    var ps = all.map(function (x) { return pctOf(x); }).filter(function (v) { return v != null; }), wv = ps.filter(function (v) { return v > 0; }), lv = ps.filter(function (v) { return v < 0; }), nW = all.filter(function (x) { return x.e.tr.res === "win"; }).length, nL = all.filter(function (x) { return x.e.tr.res === "loss"; }).length;
+    rate = n ? Math.round(nW / n * 100) : 0;
+    var avg = function (a) { return a.length ? a.reduce(function (x, y) { return x + y; }, 0) / a.length : null; }, pc = function (v) { return v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(1) + "%"; };
+    tiles = hpTile(t("hp2.worked"), nW, "upc") + hpTile(t("hp2.notw"), nL, nL ? "dnc" : "") + hpTile(t("hp2.avgw"), pc(avg(wv)), "upc") + hpTile(t("hp2.avgl"), pc(avg(lv)), "dnc") + hpTile(t("hp2.best"), ps.length ? pc(Math.max.apply(null, ps)) : "—", "upc");
+    curve = equitySvg(all, pctOf);
     rf = function (it) { if (!it.length) return null; var w = it.filter(function (x) { return x.e.tr.res === "win"; }).length; return { pct: Math.round(w / it.length * 100), n: it.length }; };
   }
   h += '<section class="card hp"><div class="rowf" style="justify-content:space-between"><div><h2>' + t("hp2.h") + '</h2><p class="xs muted">' + t(scen ? "hp2.sub.s" : "hp2.sub.t") + "</p></div>" + (scen ? "" : '<button class="btn sm" data-act="hpdemo">' + t(demo ? "hp2.mine" : "hp2.demo") + "</button>") + "</div>";
@@ -479,6 +518,7 @@ function hpPanel() {
   if (n < 30) h += '<p class="notice mint xs">' + t("hp2.small", { n: n }) + "</p>";
   h += "<h3 class=\"jd-t\">" + t("hp2.bars") + '</h3><p class="xs muted">' + t(scen ? "hp2.bars.n.s" : "hp2.bars.n") + "</p>" + hpBars(bb.b, rf);
   if (curve) h += '<h3 class="jd-t" style="margin-top:14px">' + t("hp2.curve") + "</h3>" + curve;
+  if (!scen) h += hpCards(all, bk);
   return h + '<p class="xs muted" style="margin-top:10px">' + t(scen ? "hp2.def.s" : "hp2.def.t") + "</p></section>";
 }
 ACT.hpset = function (arg) { var p = String(arg).split(":"); hpf()[p[0]] = p[1]; BL.save(); BL.render(false); };
