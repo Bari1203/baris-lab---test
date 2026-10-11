@@ -4,15 +4,15 @@
 var AU = window.AU = {
   playing: false,
   supported: !!(window.AudioContext || window.webkitAudioContext),
-  cfg: { track: 0, vol: 25, muted: false, eq: [0, 0, 0] },
+  cfg: { track: 0, vol: 70, muted: false, eq: [0, 0, 0] },
   onchange: null
 };
 var ctx, master, comp, bands = [], bus, timer = null, live = [], noiseBuf = null, an = null, fbuf = null;
 
 var TRACKS = [
-  { chords: [[0, 7, 12, 16, 19], [-3, 4, 9, 12, 16], [-5, 2, 7, 11, 14]], base: 130.81, lp: 1100, step: 9 },
-  { chords: [[-3, 4, 9, 12], [-7, 0, 5, 9, 12], [-5, 2, 7, 10, 14]], base: 130.81, lp: 800, step: 11 },
-  { chords: [[2, 9, 14, 17], [-2, 5, 10, 14, 17], [0, 7, 12, 16]], base: 110, lp: 650, step: 12 },
+  { chords: [[0, 7, 12, 16, 19], [-3, 4, 9, 12, 16], [-5, 2, 7, 11, 14]], base: 261.63, lp: 2600, step: 9 },
+  { chords: [[-3, 4, 9, 12], [-7, 0, 5, 9, 12], [-5, 2, 7, 10, 14]], base: 261.63, lp: 2000, step: 11 },
+  { chords: [[2, 9, 14, 17], [-2, 5, 10, 14, 17], [0, 7, 12, 16]], base: 220, lp: 1800, step: 12 },
   { noise: true }
 ];
 
@@ -38,7 +38,7 @@ function build() {
 }
 function applyVol() {
   if (!master) return;
-  var v = AU.cfg.muted ? 0 : clamp(AU.cfg.vol, 0, 100) / 100 * 0.45;
+  var v = AU.cfg.muted ? 0 : clamp(AU.cfg.vol, 0, 100) / 100 * 1.0;
   master.gain.setTargetAtTime(v, ctx.currentTime, 0.05);
 }
 function note(base, semis) { return base * Math.pow(2, semis / 12); }
@@ -48,16 +48,16 @@ function playChord(tr, idx) {
   var g = ctx.createGain(), lp = ctx.createBiquadFilter();
   lp.type = "lowpass"; lp.frequency.value = tr.lp; lp.Q.value = 0.4;
   g.gain.setValueAtTime(0.0001, now);
-  g.gain.linearRampToValueAtTime(0.5, now + 3.5);
-  g.gain.setValueAtTime(0.5, now + dur - 0.5);
+  g.gain.linearRampToValueAtTime(0.8, now + 3.5);
+  g.gain.setValueAtTime(0.8, now + dur - 0.5);
   g.gain.linearRampToValueAtTime(0.0001, now + dur + 4);
   lp.connect(g); g.connect(bus);
   var oscs = [];
   chord.forEach(function (s) {
     [-5, 5].forEach(function (det) {
       var o = ctx.createOscillator();
-      o.type = "sine"; o.frequency.value = note(tr.base, s); o.detune.value = det;
-      var og = ctx.createGain(); og.gain.value = 0.9 / (chord.length * 2);
+      o.type = (s % 2 === 0) ? "triangle" : "sine"; o.frequency.value = note(tr.base, s); o.detune.value = det;
+      var og = ctx.createGain(); og.gain.value = 1.3 / (chord.length * 2);
       o.connect(og); og.connect(lp); o.start(now); o.stop(now + dur + 4.2);
       oscs.push(o);
     });
@@ -73,8 +73,8 @@ function noiseTrack() {
     for (var i = 0; i < len; i++) { var w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
   }
   var src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
-  var f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900;
-  var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, ctx.currentTime); g.gain.linearRampToValueAtTime(0.55, ctx.currentTime + 2);
+  var f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1400;
+  var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, ctx.currentTime); g.gain.linearRampToValueAtTime(1.3, ctx.currentTime + 2);
   var lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.08; lg.gain.value = 250;
   lfo.connect(lg); lg.connect(f.frequency); lfo.start();
   src.connect(f); f.connect(g); g.connect(bus); src.start();
@@ -113,6 +113,7 @@ AU.play = function () {
     startGen(); AU.playing = true; changed(); return true;
   } catch (e) { AU.playing = false; changed(); return false; }
 };
+AU.state = function () { return ctx ? ctx.state : "none"; };
 AU.pause = function () { stopGen(true); AU.playing = false; changed(); };
 AU.toggle = function () { return AU.playing ? (AU.pause(), true) : AU.play(); };
 AU.setTrack = function (i) {
@@ -144,7 +145,7 @@ AU.beep = function () {
     if (!ctx) build();
     var o = ctx.createOscillator(), g = ctx.createGain(), n = ctx.currentTime;
     o.frequency.value = 660; g.gain.setValueAtTime(0.0001, n);
-    g.gain.linearRampToValueAtTime(0.25, n + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, n + 0.4);
+    g.gain.linearRampToValueAtTime(0.5, n + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, n + 0.4);
     o.connect(g); g.connect(bus); o.start(n); o.stop(n + 0.45);
   } catch (e) {}
 };

@@ -499,7 +499,7 @@ ACT.hint = function (a, el) {
 };
 ACT.toastact = function () { var f = toastFn; $("#toast").classList.remove("on"); if (f) f(); };
 ACT.music = function () { closeModal(); BL.openMusic(); };
-ACT.mplay = function () { if (!AU.toggle() && !AU.playing) toast(t("mus.unsupported")); S.audio = AU.cfg; save(); };
+ACT.mplay = function () { if (!AU.toggle() && !AU.playing) toast(t("mus.unsupported")); S.audio = AU.cfg; save(); if (AU.playing && AU.state() !== "running") setTimeout(function () { if (AU.playing && AU.state() !== "running") toast(t("mus.blocked")); }, 600); };
 ACT.mnext = function () { AU.next(); save(); };
 ACT.mprev = function () { AU.prev(); save(); };
 ACT.mtrack = function (i) { AU.setTrack(+i); save(); };
@@ -563,7 +563,7 @@ document.addEventListener("keydown", function (e) {
 var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { if (BL.redrawChart) BL.redrawChart(); }, 150); });
 
 BL.start = function () {
-  AU.cfg = S.audio; if (!AU.cfg.eq) AU.cfg.eq = [0, 0, 0];
+  AU.cfg = S.audio; if (!AU.cfg.eq) AU.cfg.eq = [0, 0, 0]; if (!AU.cfg.v2) { AU.cfg.v2 = 1; if (AU.cfg.vol < 60) AU.cfg.vol = 70; AU.cfg.muted = false; }
   applySettings(); seeds(); render(false);
   /* first visit after signing: ask the personalization questions once (visitors who signed earlier get them once too) */
   if (!BL.needTerms() && !S.pz) setTimeout(function () { if (BL.intro) BL.intro(S.name, null, { skipOpen: true }); }, 700);
