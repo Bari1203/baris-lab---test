@@ -1065,12 +1065,13 @@ html.reduce .mkc,html.reduce .mk-res,html.reduce .mk-pr .bar i{animation:none}
 .hp-prev img{max-width:100%;max-height:160px;border-radius:12px;margin-top:6px}
 
 /* sound visualizer */
-.vizbox{position:relative;border-radius:24px;overflow:hidden;background:var(--hero-bg)}
+.vizbox{position:relative;border-radius:24px;overflow:hidden;background:radial-gradient(110% 90% at 50% 40%,#232a28 0%,#101514 62%,#080b0a 100%)}
 .viz{display:block;width:100%;height:300px}
-.vizcap{position:absolute;inset-inline:0;bottom:14px;text-align:center;color:var(--hero-sub);font-size:13px;font-weight:600}
+.vizcap{position:absolute;inset-inline:0;bottom:14px;text-align:center;color:#9AA5A1;font-size:13px;font-weight:600}
 .vizm{width:36px;height:22px;margin-inline:4px;flex:none}
-body.playing [data-act=music] .ic{color:var(--coral-deep)}
+
 @keyframes mpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.22) rotate(-6deg)}}
 
 .vizbox{height:300px;min-height:300px;flex:none}@media(max-width:560px){.vizbox,.viz{height:250px;min-height:250px}}
 .vizbox,.viz{height:240px;min-height:240px}@media(max-width:560px){.vizbox,.viz{height:200px;min-height:200px}}
+.vizm{color:var(--ink)}
