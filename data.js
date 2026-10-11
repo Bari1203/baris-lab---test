@@ -125,14 +125,30 @@ D.stocks.forEach(function (s) {
   while (diff !== 0 && k2 < 200) { var j = k2 % q.length; if (diff > 0 && q[j] < D.weights[j]) { q[j]++; diff--; } else if (diff < 0 && q[j] > 0) { q[j]--; diff++; } k2++; }
   s.p = q;
 });
+/* One column per market. Radar, waiting room and search hold only stocks and indices; forex, futures and crypto live in their own columns for day and swing traders; the shekel converter is for the Israeli mode. */
 D.stocks.forEach(function (s) { s.sty = ["invest", "swing"]; });
-D.assets.forEach(function (a) {
-  a.sty = a.kind === "index" ? ["invest"] : a.kind === "crypto" ? ["invest", "swing"] : a.kind === "futures" ? ["day"] : ["invest", "swing", "day"];
-});
+D.fut = D.assets.filter(function (a) { return a.kind === "futures"; });
+D.cry = D.assets.filter(function (a) { return a.kind === "crypto"; });
+D.ilsRates = { USD: 3.7, EUR: 4.02, GBP: 4.72 }; /* sample rates, not a bank rate */
+D.fx = D.assets.filter(function (a) { return a.kind === "fx" && a.mkt === "us"; });
+D.fx.push(A("USDCAD", "C$/$", B("דולר / דולר קנדי", "USD/CAD"), "fx", "us", 1.3652, 4, [0, 0], "watch", "low", 1, "M1", 8, B("כמה דולרים קנדיים שווה דולר אמריקאי אחד", "How many Canadian dollars one US dollar is worth"), B("", ""), B("", ""), B("", "")));
+D.fx = ["EURUSD", "GBPUSD", "USDCAD", "DXY"].map(function (k) { return D.fx.filter(function (x) { return x.t === k; })[0]; });
+D.fx.forEach(function (x) { x.role = x.t === "DXY" ? "index" : "pair"; });
+D.assets = D.assets.filter(function (a) { return a.kind === "index"; });
+D.assets.forEach(function (a) { a.sty = ["invest"]; });
+D.fut.concat(D.cry, D.fx).forEach(function (a) { a.sty = ["swing", "day"]; });
+D.fx.forEach(function (a) { a.vol = a.role === "index" ? 0.3 : 0.35; });
+D.fut.forEach(function (a) { a.vol = 0.8; });
+D.cry.forEach(function (a) { a.vol = 2.5; });
 D.items = D.stocks.concat(D.assets);
+D.mkt = D.fut.concat(D.cry, D.fx);
+/* Correlation among the three crypto assets Bari follows: SAMPLE values only, never measured */
+D.corr = { pairs: [["BTC", "ETH", { 7: 0.91, 30: 0.87, 90: 0.82 }], ["BTC", "XRP", { 7: 0.74, 30: 0.71, 90: 0.66 }], ["ETH", "XRP", { 7: 0.8, 30: 0.79, 90: 0.72 }]] };
 
 D.stock = function (t) {
-  for (var i = 0; i < D.items.length; i++) if (D.items[i].t === t) return D.items[i];
+  var i;
+  for (i = 0; i < D.items.length; i++) if (D.items[i].t === t) return D.items[i];
+  for (i = 0; i < D.mkt.length; i++) if (D.mkt[i].t === t) return D.mkt[i];
   return null;
 };
 D.score = function (s) { return s.p.reduce(function (a, b) { return a + b; }, 0); };

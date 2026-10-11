@@ -34,6 +34,10 @@ function uid() { return "i" + Date.now().toString(36) + Math.random().toString(3
 
 var ICONS = {
   home: "M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
+  fx: "M4 8h13l-3.5-3.5M20 16H7l3.5 3.5",
+  fut: "M7 3v4M7 17v4M4 7h6v10H4zM17 3v2M17 15v6M14 5h6v10h-6z",
+  cry: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9.5 8v8M9.5 8h3.8a2 2 0 0 1 0 4H9.5h4.3a2 2 0 0 1 0 4H9.5M11.5 6.5V8M11.5 16v1.5",
+  ils: "M6 20V5h6.5A3.5 3.5 0 0 1 16 8.5V15M18 4v15h-6.5A3.5 3.5 0 0 1 8 15.5V9",
   radar: "M12 3a9 9 0 1 0 9 9M12 7.5a4.5 4.5 0 1 0 4.5 4.5M12 12l7-7",
   wait: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2",
   weekly: "M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7",
@@ -160,8 +164,9 @@ BL.mkt = function () {
 
 /* navigation */
 var NAV = [
-  { id: "home", ic: "home", g: "a" }, { id: "radar", ic: "radar", g: "a" }, { id: "wait", ic: "wait", g: "a" }, { id: "weekly", ic: "weekly", g: "a" },
-  { id: "charts", ic: "chart", g: "b" }, { id: "events", ic: "events", g: "b", news: 1 },
+  { id: "home", ic: "home", g: "a" }, { id: "radar", ic: "radar", g: "a", st: ["invest", "swing"] }, { id: "wait", ic: "wait", g: "a", st: ["invest", "swing"] }, { id: "weekly", ic: "weekly", g: "a" },
+  { id: "charts", ic: "chart", g: "b", st: ["invest", "swing"] }, { id: "events", ic: "events", g: "b", news: 1 }, { id: "ils", ic: "ils", g: "b", ils: 1 },
+  { id: "fx", ic: "fx", g: "m", st: ["swing", "day"] }, { id: "fut", ic: "fut", g: "m", st: ["swing", "day"] }, { id: "cry", ic: "cry", g: "m", st: ["swing", "day"] },
   { id: "journal", ic: "journal", g: "c" }, { id: "alerts", ic: "bell", g: "c" },
   { id: "learn", ic: "learn", g: "d" }, { id: "help", ic: "help", g: "d" },
   { id: "history", ic: "history", g: "e" }, { id: "israel", ic: "shield", g: "e", il: 1 }, { id: "settings", ic: "settings", g: "e" }, { id: "admin", ic: "admin", g: "e", admin: 1 }
@@ -176,7 +181,7 @@ BL.hasSite = function () { return BL.path() !== "learn"; };
 BL.homeView = function () { return BL.hasSite() ? "home" : "learn"; };
 var LEARN_ONLY = ["learn", "help", "settings", "admin"];
 function pathOk(n) { var p = BL.path(); return p === "learn" ? LEARN_ONLY.indexOf(n.id) > -1 : p === "site" ? n.id !== "learn" : true; }
-function visibleItems() { return NAV.filter(function (n) { return pathOk(n) && !(n.il && !il()) && !(n.news && !newsOn()) && !(n.admin && S.role !== "admin") && styleOk(n); }); }
+function visibleItems() { return NAV.filter(function (n) { return pathOk(n) && !(n.il && !il()) && !(n.ils && S.market === "us") && !(n.news && !newsOn()) && !(n.admin && S.role !== "admin") && styleOk(n); }); }
 /* modes: market (us / il / both) and style (invest / swing / day, any mix) */
 BL.inMarket = function (x) { return S.market === "both" || (x.mkt || "us") === S.market; };
 BL.inStyle = function (x) { return !x.sty || x.sty.some(function (k) { return BL.style(k); }); };
@@ -221,7 +226,7 @@ BL.go = go;
 BL.back = function () { var p = stack.pop(); if (p) { R.view = p.view; R.arg = p.arg; render(true); } else go("radar"); };
 
 function renderShell() {
-  var items = visibleItems(), groups = ["a", "b", "c", "d", "e"];
+  var items = visibleItems(), groups = ["a", "b", "m", "c", "d", "e"];
   $("#skip").textContent = t("skip");
   $("#side").innerHTML = '<button class="brand" data-act="nav" data-arg="' + BL.homeView() + '" aria-label="' + esc(t("nav.home")) + '">' + logo() + '<span class="bt">BARI\'S LAB<small>' + t("brand.sub") + "</small></span></button><nav aria-label=\"" + esc(t("nav.label")) + '">' +
     groups.map(function (g) { var it = items.filter(function (n) { return n.g === g; }); return it.length ? '<div class="ng"><h3>' + t("ng." + g) + "</h3>" + it.map(function (n) { return navBtn(n, "nl"); }).join("") + "</div>" : ""; }).join("") +

@@ -285,7 +285,7 @@ ACT.jbwnav = function (d) { var v = jv(); v.bsel = ymd(addDays(pd(v.bsel || ymd(
 ACT.jtab = function (k) { jv().tab = k; jv().bcal = ""; jrefresh(); };
 ACT.jrng = function (k) { jv().rng = k; jv().bcal = ""; jrefresh(); };
 ACT.jbnav = function (d) { var c = pd(jv().bcal); jv().bcal = ymd(new Date(c.getFullYear(), c.getMonth() + (+d), 1)); jrefresh(); };
-ACT.jtrade = function (book, el) { var d = el && el.getAttribute("data-d"); BL.openEntry(Object.assign({ type: "trade", tr: { book: book, res: "open" } }, d ? { date: d } : {})); };
+ACT.jtrade = function (book, el) { var d = el && el.getAttribute("data-d"), tk = el && el.getAttribute("data-tk"); BL.openEntry(Object.assign({ type: "trade", tr: { book: book, res: "open" } }, d ? { date: d } : {}, tk ? { ticker: tk } : {})); };
 ACT.jdemo = function () { BL.jDemo = !BL.jDemo; BL.render(false); };
 BL.openEntry = function (pre) {
   pre = pre || {};
@@ -294,7 +294,7 @@ BL.openEntry = function (pre) {
   var f = function (id, label, inner) { return '<div class="fld"><label for="' + id + '">' + label + "</label>" + inner + "</div>"; };
   var body = '<form data-form="jentry" class="stack" novalidate><input type="hidden" id="je-id" value="' + esc(ex ? ex.id : "") + '">' +
     f("je-title", t("je.title"), '<input type="text" id="je-title" value="' + esc(d.title) + '" autofocus><span class="err" id="je-err" role="alert"></span>') +
-    '<div class="fgrid">' + f("je-date", t("je.date"), '<input type="date" id="je-date" value="' + esc(d.date) + '">') + f("je-time", t("je.time"), '<input type="time" id="je-time" value="' + esc(d.time) + '">') + f("je-type", t("je.type"), '<select id="je-type" data-ch="jtype">' + JT.map(function (k) { return opt(k, t("jt." + k), d.type); }).join("") + "</select>") + f("je-ticker", t("je.ticker"), '<input type="text" id="je-ticker" class="ltr" list="je-tk" value="' + esc(d.ticker) + '" autocapitalize="characters"><datalist id="je-tk">' + D.items.map(function (s) { return '<option value="' + s.t + '">'; }).join("") + "</datalist>") + "</div>" +
+    '<div class="fgrid">' + f("je-date", t("je.date"), '<input type="date" id="je-date" value="' + esc(d.date) + '">') + f("je-time", t("je.time"), '<input type="time" id="je-time" value="' + esc(d.time) + '">') + f("je-type", t("je.type"), '<select id="je-type" data-ch="jtype">' + JT.map(function (k) { return opt(k, t("jt." + k), d.type); }).join("") + "</select>") + f("je-ticker", t("je.ticker"), '<input type="text" id="je-ticker" class="ltr" list="je-tk" value="' + esc(d.ticker) + '" autocapitalize="characters"><datalist id="je-tk">' + D.items.concat(D.mkt).map(function (s) { return '<option value="' + s.t + '">'; }).join("") + "</datalist>") + "</div>" +
     f("je-note", t("je.note"), '<textarea id="je-note">' + esc(d.note) + "</textarea>") +
     '<div id="je-trw"' + (d.type === "trade" ? "" : " hidden") + ">" + trForm(d.tr || {}) + "</div>" +
     '<div id="je-exw"' + (d.type === "trade" ? "" : " hidden") + ">" + f("je-exec", t("je.exec"), '<textarea id="je-exec" rows="3">' + esc(d.exec) + '</textarea><span class="xs muted">' + t("je.exec.n") + "</span>") + "</div>" +

@@ -36,3 +36,6 @@
 - Intro: first visit must be read to the end before the site opens; personalization lives in Settings.
 - Removed the 9-step wizard, the old general journal code and unused text keys; slower infinite animations now stop or run on hover only.
 - Fixed: global `[hidden]` rule (the page no longer depends on the host), phone header overflow, missing `sec.futures` label.
+
+## Markets restructure (Oct 11)
+Radar, waiting room and search: stocks and indices only. Separate columns: forex (price only, DXY as indication), futures, crypto (BTC/ETH/XRP with targets and correlation) for swing/day users; shekel converter for the Israeli mode. All data is sample.
