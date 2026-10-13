@@ -39,3 +39,8 @@
 
 ## Markets restructure (Oct 11)
 Radar, waiting room and search: stocks and indices only. Separate columns: forex (price only, DXY as indication), futures, crypto (BTC/ETH/XRP with targets and correlation) for swing/day users; shekel converter for the Israeli mode. All data is sample.
+
+## עדכון 13/10/2026: מודל NQ ל-TradingView
+- תיקייה חדשה `tradingview/`: אסטרטגיה ב-Pine Script v6 (`bari_nq_model.pine`) ל-NQ/MNQ, בגרפים של 5 דקות ומעלה.
+- הלוגיקה: סחיטה של הגבוה או הנמוך של נר ייחוס, אישור בסגירה, SMT מול ES, ונזילות פתוחה כיעד. הציון בנוי מעשרת פרמטרי הרדאר. שרשרת הטיימפריימים נבחרת אוטומטית לפי הגרף.
+- פירוט, התקנה, והסבר מה פרשנות ומה עוד פתוח: `tradingview/README.md`. המשקלות וניהול הסיכון זמניים. לא המלצה.

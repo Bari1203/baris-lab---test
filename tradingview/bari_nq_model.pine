@@ -1,0 +1,538 @@
+// BARI'S LAB · NQ model v0.1 (Pine Script v6, TradingView)
+// A price-action model for NQ / MNQ on 5-minute charts and above, translated from Bari's method
+// (see data.js, "השיטה של ברי"). No indicators are drawn: every rule reads closed candles, levels and ES.
+//
+//   1. Reference candle (bigger TF) closed. Its high and low are liquidity.
+//   2. The current reference candle takes (passes, not touches) that high or low: the sweep / ML.
+//   3. A confirmation-TF candle closes back inside, in the trade direction, near its extreme.
+//   4. Stop beyond the protected high/low of the sweep. Target slightly beyond the nearest open
+//      liquidity on the other side that pays the minimum R:R. TP1 at the nearest open level.
+//   5. A ten-part score (v0.3 radar parameters) orders setups. Weights are placeholders until
+//      they are calibrated against the journal after 30 to 50 trades.
+//
+// The method is intuition-based; this script is a rough, testable translation, not Bari's rules.
+// Risk management, sessions and mandatory-vs-bonus items are not defined by Bari yet: the
+// defaults below are placeholders. Educational only. Not a recommendation and not advice.
+
+//@version=6
+strategy("BARI'S LAB · NQ model v0.1", shorttitle = "BARI NQ", overlay = true,
+     initial_capital = 100000, default_qty_type = strategy.fixed, default_qty_value = 2,
+     commission_type = strategy.commission.cash_per_contract, commission_value = 2.0,
+     slippage = 1, pyramiding = 0, max_lines_count = 500, max_labels_count = 500)
+
+// ───────────────────────── Inputs ─────────────────────────
+grpTf = "Timeframes"
+tfMode  = input.string("Auto", "Timeframe mode", options = ["Auto", "Manual"], group = grpTf,
+     tooltip = "Auto picks the chain from the chart TF. 15m chart: 8H reference, 15m confirmation, W chain (Bari's NQ short of 8/10/2026).")
+refIn   = input.timeframe("480", "Manual: reference TF (the level that is swept)", group = grpTf)
+confIn  = input.timeframe("15", "Manual: confirmation TF (the close)", group = grpTf)
+chainIn = input.timeframe("W", "Manual: chain TF (context)", group = grpTf)
+esSym   = input.symbol("CME_MINI:ES1!", "ES symbol for SMT", group = grpTf)
+
+grpS = "Setup rules"
+confPosMax = input.float(0.35, "Confirmation close: max distance from its extreme (0-1)", minval = 0.05, maxval = 1, step = 0.05, group = grpS)
+maxExcess  = input.float(0.5, "Max sweep excess (fraction of the reference range)", minval = 0.05, maxval = 2, step = 0.05, group = grpS,
+     tooltip = "Bari avoids a big overshoot past the level. A small, precise wick is best.")
+minRR      = input.float(2.0, "Min R:R to the final target", minval = 0.5, step = 0.1, group = grpS)
+maxRR      = input.float(6.0, "Ignore targets beyond this R:R (too far = not relevant)", minval = 1, step = 0.5, group = grpS)
+minScore   = input.int(60, "Min score to trade (0-100)", minval = 0, maxval = 100, group = grpS)
+stopBufT   = input.int(4, "Stop buffer beyond the sweep (ticks)", minval = 0, group = grpS)
+beyondT    = input.int(2, "Target slightly beyond the open liquidity (ticks)", minval = 0, group = grpS)
+reqSmt     = input.bool(false, "Require SMT vs ES", group = grpS)
+allowShort = input.bool(true, "Shorts", group = grpS)
+allowLong  = input.bool(true, "Longs", group = grpS)
+
+grpT = "Trade management (placeholders, not defined by Bari yet)"
+qty        = input.int(2, "Contracts", minval = 1, group = grpT)
+useTp1     = input.bool(true, "TP1: half at the nearest open liquidity (needs 2+ contracts)", group = grpT)
+beAfter    = input.bool(false, "Move the stop to entry after TP1", group = grpT)
+maxTrades  = input.int(2, "Max trades per day", minval = 1, group = grpT)
+maxDayLoss = input.float(0, "Max daily loss in $ (0 = off)", minval = 0, group = grpT)
+useSess    = input.bool(false, "Enter only inside the session (NY time)", group = grpT)
+sessStr    = input.session("0800-1600", "Session (NY time)", group = grpT)
+
+grpD = "Display"
+showLv    = input.bool(true, "Show open liquidity levels", group = grpD)
+showTaken = input.bool(true, "Keep taken levels (dotted)", group = grpD)
+maxLv     = input.int(14, "Max open levels kept per side", minval = 2, maxval = 40, group = grpD)
+showWatch = input.bool(true, "Mark setups that passed the rules but not the score", group = grpD)
+showCrit  = input.bool(true, "Highlight NY critical hours (17:00, 04:00)", group = grpD)
+showTbl   = input.bool(true, "Info panel", group = grpD)
+
+grpW = "Score weights (placeholders, calibrate from the journal)"
+wLiq    = input.int(13, "Liquidity taken", minval = 0, group = grpW)
+wPrec   = input.int(9,  "Sweep precision", minval = 0, group = grpW)
+wClose  = input.int(11, "Close type a-d (reference)", minval = 0, group = grpW)
+wMom    = input.int(10, "Momentum (confirmation)", minval = 0, group = grpW)
+wOpen   = input.int(11, "Open liquidity opposite", minval = 0, group = grpW)
+wCandle = input.int(9,  "Current candle (weak move first)", minval = 0, group = grpW)
+wWick   = input.int(7,  "Wick (weak = target)", minval = 0, group = grpW)
+wSmt    = input.int(8,  "SMT vs ES", minval = 0, group = grpW)
+wRR     = input.int(9,  "R:R", minval = 0, group = grpW)
+wChain  = input.int(13, "Timeframe chain", minval = 0, group = grpW)
+
+weights  = array.from(wLiq, wPrec, wClose, wMom, wOpen, wCandle, wWick, wSmt, wRR, wChain)
+wSum     = weights.sum()
+compName = array.from("Liquidity taken", "Sweep precision", "Close type (ref)", "Momentum (conf)", "Open liquidity opposite",
+     "Current candle", "Wick (weak = target)", "SMT vs ES", "R:R", "TF chain")
+
+// ───────────────────────── Timeframes ─────────────────────────
+chartSec = timeframe.in_seconds()
+if chartSec < 300
+    runtime.error("BARI NQ model runs on 5 minutes and above. Switch the chart to 5m or higher.")
+
+string autoRef   = chartSec <= 300 ? "60"  : chartSec <= 900 ? "480" : chartSec <= 3600 ? "D"  : chartSec <= 14400 ? "W"   : chartSec <= 86400 ? "M"  : "3M"
+string autoConf  = chartSec <= 300 ? "15"  : chartSec <= 900 ? "15"  : chartSec <= 3600 ? "60" : chartSec <= 14400 ? "240" : chartSec <= 86400 ? "D"  : "W"
+string autoChain = chartSec <= 300 ? "240" : chartSec <= 900 ? "W"   : chartSec <= 3600 ? "W"  : chartSec <= 14400 ? "M"   : chartSec <= 86400 ? "3M" : "12M"
+
+string confTf0 = tfMode == "Auto" ? autoConf : confIn
+string confTf  = timeframe.in_seconds(confTf0) < chartSec ? timeframe.period : confTf0
+string refTf   = tfMode == "Auto" ? autoRef : refIn
+string chainTf = tfMode == "Auto" ? autoChain : chainIn
+
+refSec   = timeframe.in_seconds(refTf)
+chainSec = timeframe.in_seconds(chainTf)
+daySec   = timeframe.in_seconds("D")
+weekSec  = timeframe.in_seconds("W")
+if refSec <= timeframe.in_seconds(confTf)
+    runtime.error("The reference TF must be higher than the confirmation TF (and the chart TF).")
+if chainSec < refSec
+    runtime.error("The chain TF must be equal to or higher than the reference TF.")
+
+f_tfName(simple string tf) =>
+    s = timeframe.in_seconds(tf)
+    s < 3600 ? str.tostring(math.round(s / 60)) + "m" : s < 86400 ? str.tostring(math.round(s / 3600)) + "H" : tf
+
+refName   = f_tfName(refTf)
+confName  = f_tfName(confTf)
+chainName = f_tfName(chainTf)
+
+useD     = daySec > refSec
+useW     = weekSec > refSec
+useChain = chainSec > refSec and chainSec != daySec and chainSec != weekSec
+
+// ───────────────────────── Candles built from chart bars ─────────────────────────
+// Every candle is aggregated from closed chart bars, so nothing looks ahead and nothing repaints.
+type Candle
+    float o = na
+    float h = na
+    float l = na
+    float c = na
+
+type Agg
+    Candle cur
+    Candle p1
+    Candle p2
+    bool opened = false
+    bool closed = false
+    bool late = false
+    bool done = true
+
+// opened: this bar starts a new candle. closed: this bar is the last bar of `cur`.
+// late: the previous candle ended without its close being seen (early session close); p1 is it.
+method update(Agg a, simple string tf, float o, float h, float l, float c) =>
+    a.opened := timeframe.change(tf) or na(a.cur.o)
+    a.late := false
+    if a.opened
+        a.late := not a.done and not na(a.cur.o)
+        a.p2 := a.p1
+        a.p1 := a.cur
+        a.cur := Candle.new(o, h, l, c)
+        a.done := false
+    else
+        a.cur.h := math.max(a.cur.h, h)
+        a.cur.l := math.min(a.cur.l, l)
+        a.cur.c := c
+    tc = time_close(tf)
+    a.closed := not a.done and not na(tc) and time_close >= tc
+    if a.closed
+        a.done := true
+    a
+
+[esO, esH, esL, esC] = request.security(esSym, timeframe.period, [open, high, low, close])
+
+var Agg rA  = Agg.new(Candle.new(), Candle.new(), Candle.new())   // reference, NQ
+var Agg cA  = Agg.new(Candle.new(), Candle.new(), Candle.new())   // confirmation, NQ
+var Agg chA = Agg.new(Candle.new(), Candle.new(), Candle.new())   // chain, NQ
+var Agg dA  = Agg.new(Candle.new(), Candle.new(), Candle.new())   // daily, NQ
+var Agg wA  = Agg.new(Candle.new(), Candle.new(), Candle.new())   // weekly, NQ
+var Agg esA = Agg.new(Candle.new(), Candle.new(), Candle.new())   // reference, ES
+
+rA.update(refTf, open, high, low, close)
+cA.update(confTf, open, high, low, close)
+chA.update(chainTf, open, high, low, close)
+dA.update("D", open, high, low, close)
+wA.update("W", open, high, low, close)
+esA.update(refTf, esO, esH, esL, esC)
+
+// ───────────────────────── Liquidity: open and closed levels ─────────────────────────
+// A level is the high or low of a closed candle. Open = not taken yet = a target.
+// Taken = price passed it (a touch is not enough).
+type Level
+    float price
+    bool isHigh
+    string src
+    bool big
+    int born
+    line ln
+    label lb
+
+var array<Level> highs = array.new<Level>()
+var array<Level> lows  = array.new<Level>()
+
+colRef   = color.new(#9aa0a6, 0)
+colDay   = color.new(#f0b429, 0)
+colWeek  = color.new(#b388ff, 0)
+colChain = color.new(#4dd0e1, 0)
+
+f_push(array<Level> arr, float p, bool isHigh, string src, bool big, color col) =>
+    bool dup = false
+    for lv in arr
+        if math.abs(lv.price - p) < syminfo.mintick / 2
+            dup := true
+            if big
+                lv.big := true
+    if not dup and not na(p)
+        line ln = na
+        label lb = na
+        if showLv
+            ln := line.new(bar_index, p, bar_index + 1, p, extend = extend.right, color = color.new(col, 30), width = big ? 2 : 1)
+            lb := label.new(bar_index, p, src + (isHigh ? " H" : " L"), style = label.style_none, textcolor = col, size = size.tiny)
+        arr.push(Level.new(p, isHigh, src, big, bar_index, ln, lb))
+        if arr.size() > maxLv
+            old = arr.shift()
+            if not na(old.ln)
+                line.delete(old.ln)
+            if not na(old.lb)
+                label.delete(old.lb)
+
+// Removes the levels price passed on this bar. Returns how many of them were big (D, W, chain).
+f_take(array<Level> arr, bool isHigh) =>
+    int bigCount = 0
+    int i = arr.size() - 1
+    while i >= 0
+        lv = arr.get(i)
+        if lv.born < bar_index and (isHigh ? high > lv.price : low < lv.price)
+            if lv.big
+                bigCount += 1
+            if not na(lv.ln)
+                if showTaken
+                    line.set_extend(lv.ln, extend.none)
+                    line.set_x2(lv.ln, bar_index)
+                    line.set_style(lv.ln, line.style_dotted)
+                    line.set_color(lv.ln, color.new(color.gray, 50))
+                    label.set_textcolor(lv.lb, color.new(color.gray, 50))
+                else
+                    line.delete(lv.ln)
+                    label.delete(lv.lb)
+            arr.remove(i)
+        i -= 1
+    bigCount
+
+f_pushAgg(Agg a, string src, bool big, color col) =>
+    if a.closed
+        f_push(highs, a.cur.h, true, src, big, col)
+        f_push(lows, a.cur.l, false, src, big, col)
+    if a.late
+        if a.p1.h >= high
+            f_push(highs, a.p1.h, true, src, big, col)
+        if a.p1.l <= low
+            f_push(lows, a.p1.l, false, src, big, col)
+
+// ───────────────────────── State of the current reference candle ─────────────────────────
+var float preLow   = na      // lowest price before the high was swept (weak rise check)
+var float preHigh  = na      // highest price before the low was swept (weak drop check)
+var int   bigUp    = 0       // big levels taken upward during this reference candle
+var int   bigDn    = 0
+var bool  markedUp = false
+var bool  markedDn = false
+var bool  tradedS  = false
+var bool  tradedL  = false
+
+if rA.opened
+    preLow   := low
+    preHigh  := high
+    bigUp    := 0
+    bigDn    := 0
+    markedUp := false
+    markedDn := false
+    tradedS  := false
+    tradedL  := false
+if not markedUp
+    preLow := math.min(preLow, low)
+if not markedDn
+    preHigh := math.max(preHigh, high)
+
+bigUp += f_take(highs, true)
+bigDn += f_take(lows, false)
+
+f_pushAgg(rA, refName, false, colRef)
+if useD
+    f_pushAgg(dA, "D", true, colDay)
+if useW
+    f_pushAgg(wA, "W", true, colWeek)
+if useChain
+    f_pushAgg(chA, chainName, true, colChain)
+
+nqUp = rA.cur.h > rA.p1.h
+nqDn = rA.cur.l < rA.p1.l
+esUp = esA.cur.h > esA.p1.h
+esDn = esA.cur.l < esA.p1.l
+
+// ───────────────────────── Scoring helpers (dir: -1 short, 1 long) ─────────────────────────
+// Distance of the close from the extreme in the trade direction, 0 = closed on the extreme.
+f_pos(Candle k, int dir) =>
+    rng = k.h - k.l
+    rng > 0 ? (dir == -1 ? (k.c - k.l) / rng : (k.h - k.c) / rng) : 1.0
+
+// The four closes, read on the reference candle (short shown, long is the mirror):
+// a: took the previous high, closed black and below the previous low (all liquidity closed).
+// b: took the previous high and closed black, but the previous low stays open nearby.
+// c: no take, but a strong black candle (full body, close near the low).
+// d: anything else (opposite momentum without ML). Wait for the next candle.
+f_closeType(Candle p1, Candle p2, int dir) =>
+    rng    = p1.h - p1.l
+    tookAg = dir == -1 ? p1.h > p2.h : p1.l < p2.l
+    withD  = dir == -1 ? p1.c < p1.o : p1.c > p1.o
+    body   = rng > 0 ? math.abs(p1.c - p1.o) / rng : 0.0
+    beyond = dir == -1 ? p1.c < p2.l : p1.c > p2.h
+    tookAg and withD and beyond ? "a" : tookAg and withD ? "b" : withD and body >= 0.6 and f_pos(p1, dir) <= 0.33 ? "c" : "d"
+
+f_mom(Candle k, Candle kp, int dir) =>
+    rng  = k.h - k.l
+    pos  = f_pos(k, dir)
+    body = rng > 0 ? math.abs(k.c - k.o) / rng : 0.0
+    brk  = dir == -1 ? k.c < kp.l : k.c > kp.h
+    (pos <= 0.2 ? 0.5 : pos <= 0.35 ? 0.3 : 0.0) + (body >= 0.5 ? 0.25 : 0.0) + (brk ? 0.25 : 0.0)
+
+f_chain(Candle k, Candle k2, int dir) =>
+    pos     = f_pos(k, dir)
+    tookBack = dir == -1 ? k.h > k2.h and k.c < k2.h : k.l < k2.l and k.c > k2.l
+    withD   = dir == -1 ? k.c < k.o : k.c > k.o
+    tookBack or (withD and pos <= 0.5) ? 1.0 : pos >= 0.67 ? 0.0 : 0.5
+
+f_tier(float sc) =>
+    sc >= 75 ? "perfect" : sc >= 60 ? "good" : "watch"
+
+// Evaluates a setup on the confirmation candle that closes on this bar.
+f_eval(int dir) =>
+    k    = cA.cur
+    p1   = rA.p1
+    cur  = rA.cur
+    rng  = p1.h - p1.l
+    tick = syminfo.mintick
+    swept  = dir == -1 ? cur.h > p1.h : cur.l < p1.l
+    esTook = dir == -1 ? esA.cur.h > esA.p1.h : esA.cur.l < esA.p1.l
+    back   = dir == -1 ? k.c < p1.h : k.c > p1.l
+    withD  = dir == -1 ? k.c < k.o : k.c > k.o
+    kpos   = f_pos(k, dir)
+    excess = dir == -1 ? cur.h - p1.h : p1.l - cur.l
+    exFrac = rng > 0 ? excess / rng : 99.0
+    entry  = k.c
+    stop   = dir == -1 ? cur.h + stopBufT * tick : cur.l - stopBufT * tick
+    risk   = dir == -1 ? stop - entry : entry - stop
+    // Open liquidity on the other side, nearest first.
+    pool  = dir == -1 ? lows : highs
+    dists = array.new<float>()
+    for lv in pool
+        d = dir == -1 ? entry - lv.price : lv.price - entry
+        if d > tick
+            dists.push(d)
+    dists.sort(order.ascending)
+    float tgtD = na
+    if risk > 0
+        for d in dists
+            r = (d + beyondT * tick) / risk
+            if r >= minRR and r <= maxRR
+                tgtD := d
+                break
+    float nearD = dists.size() > 0 ? dists.first() : na
+    float tp1 = na
+    float tgt = na
+    float rr  = 0.0
+    if not na(tgtD)
+        tgt := dir == -1 ? entry - tgtD - beyondT * tick : entry + tgtD + beyondT * tick
+        rr  := (tgtD + beyondT * tick) / risk
+        if nearD < tgtD and nearD >= 0.5 * risk
+            tp1 := dir == -1 ? entry - nearD : entry + nearD
+    // The ten parameters, each 0..1.
+    sLiq    = math.min(1.0, 0.6 + 0.2 * (dir == -1 ? bigUp : bigDn))
+    sPrec   = exFrac <= 0.1 ? 1.0 : exFrac <= 0.25 ? 0.7 : exFrac <= 0.5 ? 0.35 : 0.0
+    ct      = f_closeType(p1, rA.p2, dir)
+    sClose  = ct == "a" ? 1.0 : ct == "b" ? 0.7 : ct == "c" ? 0.4 : 0.0
+    sMom    = f_mom(k, cA.p1, dir)
+    sOpen   = na(tgtD) ? 0.0 : nearD < 0.5 * risk ? 0.6 : 1.0
+    weak    = dir == -1 ? preLow >= cur.o - 0.1 * rng : preHigh <= cur.o + 0.1 * rng
+    sCandle = weak ? 1.0 : 0.3
+    sWick   = (dir == -1 ? p1.l > rA.p2.l : p1.h < rA.p2.h) ? 1.0 : 0.5
+    smt     = swept and not esTook
+    sSmt    = smt ? 1.0 : 0.5
+    sRR     = rr >= 3 ? 1.0 : rr >= 2 ? 0.7 : rr >= 1.5 ? 0.4 : 0.0
+    sChain  = f_chain(chA.p1, chA.p2, dir)
+    comps = array.from(sLiq, sPrec, sClose, sMom, sOpen, sCandle, sWick, sSmt, sRR, sChain)
+    float score = 0.0
+    for [i, c] in comps
+        score += c * weights.get(i)
+    score := wSum > 0 ? 100.0 * score / wSum : 0.0
+    hard = swept and back and withD and kpos <= confPosMax and exFrac <= maxExcess and risk > 0 and not na(tgtD) and (not reqSmt or smt)
+    [hard, hard and score >= minScore, entry, stop, tp1, tgt, score, ct, smt, rr, comps]
+
+[hardS, okS, eS, stS, tp1S, tgS, scS, ctS, smtS, rrS, compsS] = f_eval(-1)
+[hardL, okL, eL, stL, tp1L, tgL, scL, ctL, smtL, rrL, compsL] = f_eval(1)
+
+// ───────────────────────── Sweep markers ─────────────────────────
+f_fmt(float p) =>
+    str.tostring(p, format.mintick)
+
+if nqUp and not markedUp
+    markedUp := true
+    msg = "NQ took " + refName + " high " + f_fmt(rA.p1.h) + (esUp ? " · ES took too" : " · ES not yet (SMT?)")
+    label.new(bar_index, high, "sweep " + refName + " H" + (esUp ? "" : "\nES not yet"), style = label.style_label_down,
+         color = color.new(color.red, 75), textcolor = color.white, size = size.tiny)
+    alert(syminfo.ticker + " · " + msg, alert.freq_once_per_bar_close)
+if nqDn and not markedDn
+    markedDn := true
+    msg = "NQ took " + refName + " low " + f_fmt(rA.p1.l) + (esDn ? " · ES took too" : " · ES not yet (SMT?)")
+    label.new(bar_index, low, "sweep " + refName + " L" + (esDn ? "" : "\nES not yet"), style = label.style_label_up,
+         color = color.new(color.green, 75), textcolor = color.white, size = size.tiny)
+    alert(syminfo.ticker + " · " + msg, alert.freq_once_per_bar_close)
+
+// ───────────────────────── Entries and exits ─────────────────────────
+var int   tradesToday = 0
+var float dayStartEq  = strategy.initial_capital
+if timeframe.change("D")
+    tradesToday := 0
+    dayStartEq  := strategy.equity
+dayLossHit = maxDayLoss > 0 and strategy.equity - dayStartEq <= -maxDayLoss
+if dayLossHit and strategy.position_size != 0
+    strategy.close_all(comment = "daily loss")
+inSess   = not useSess or not na(time(timeframe.period, sessStr, "America/New_York"))
+canTrade = cA.closed and strategy.position_size == 0 and tradesToday < maxTrades and not dayLossHit and inSess
+
+var int   tDir   = 0
+var float tTgt   = na
+var bool  beDone = false
+var bool  live   = false
+var int   ctAtEntry = 0
+var line  lnE  = na
+var line  lnS  = na
+var line  lnT1 = na
+var line  lnT  = na
+var array<float> lastComps = array.new<float>(10, 0.0)
+var string lastSig = "none yet"
+
+f_signalText(string side, float sc, string ct, bool smt, float rr, float e, float st, float t1, float tg) =>
+    side + " · " + str.tostring(sc, "#") + " (" + f_tier(sc) + ")\nclose " + ct + " · " + (smt ? "SMT" : "no SMT") + " · R:R 1:" + str.tostring(rr, "#.#") +
+         "\nentry " + f_fmt(e) + " · stop " + f_fmt(st) + (na(t1) ? "" : " · TP1 " + f_fmt(t1)) + " · target " + f_fmt(tg)
+
+f_lines(float e, float st, float t1, float tg) =>
+    le = line.new(bar_index, e, bar_index + 1, e, color = color.gray, width = 1)
+    ls = line.new(bar_index, st, bar_index + 1, st, color = color.red, width = 1)
+    lt1 = na(t1) ? line(na) : line.new(bar_index, t1, bar_index + 1, t1, color = color.new(color.teal, 30), style = line.style_dashed)
+    lt = line.new(bar_index, tg, bar_index + 1, tg, color = color.teal, width = 2)
+    [le, ls, lt1, lt]
+
+goShort = canTrade and allowShort and okS and not tradedS
+goLong  = canTrade and allowLong and okL and not tradedL and not goShort
+
+if goShort
+    strategy.entry("S", strategy.short, qty = qty)
+    if useTp1 and qty >= 2 and not na(tp1S)
+        strategy.exit("S-TP1", "S", qty_percent = 50, limit = tp1S, stop = stS)
+    strategy.exit("S-TP", "S", limit = tgS, stop = stS)
+    tradedS := true
+    tradesToday += 1
+    tDir := -1
+    tTgt := tgS
+    beDone := false
+    live := true
+    ctAtEntry := strategy.closedtrades
+    [a1, a2, a3, a4] = f_lines(eS, stS, tp1S, tgS)
+    lnE := a1
+    lnS := a2
+    lnT1 := a3
+    lnT := a4
+    txt = f_signalText("SHORT", scS, ctS, smtS, rrS, eS, stS, tp1S, tgS)
+    label.new(bar_index, high, txt, style = label.style_label_down, color = color.new(color.black, 10), textcolor = color.white, size = size.small)
+    lastComps := compsS
+    lastSig := "SHORT " + str.tostring(scS, "#") + " (" + f_tier(scS) + ")"
+    alert(syminfo.ticker + " · " + str.replace_all(txt, "\n", " · "), alert.freq_once_per_bar_close)
+
+if goLong
+    strategy.entry("L", strategy.long, qty = qty)
+    if useTp1 and qty >= 2 and not na(tp1L)
+        strategy.exit("L-TP1", "L", qty_percent = 50, limit = tp1L, stop = stL)
+    strategy.exit("L-TP", "L", limit = tgL, stop = stL)
+    tradedL := true
+    tradesToday += 1
+    tDir := 1
+    tTgt := tgL
+    beDone := false
+    live := true
+    ctAtEntry := strategy.closedtrades
+    [b1, b2, b3, b4] = f_lines(eL, stL, tp1L, tgL)
+    lnE := b1
+    lnS := b2
+    lnT1 := b3
+    lnT := b4
+    txt = f_signalText("LONG", scL, ctL, smtL, rrL, eL, stL, tp1L, tgL)
+    label.new(bar_index, low, txt, style = label.style_label_up, color = color.new(color.black, 10), textcolor = color.white, size = size.small)
+    lastComps := compsL
+    lastSig := "LONG " + str.tostring(scL, "#") + " (" + f_tier(scL) + ")"
+    alert(syminfo.ticker + " · " + str.replace_all(txt, "\n", " · "), alert.freq_once_per_bar_close)
+
+// Setups that passed every rule but scored under the minimum: shown to learn from, not traded.
+if showWatch and cA.closed and hardS and not okS and not tradedS
+    label.new(bar_index, high, "watch S " + str.tostring(scS, "#"), style = label.style_label_down, color = color.new(color.gray, 60), textcolor = color.white, size = size.tiny)
+if showWatch and cA.closed and hardL and not okL and not tradedL
+    label.new(bar_index, low, "watch L " + str.tostring(scL, "#"), style = label.style_label_up, color = color.new(color.gray, 60), textcolor = color.white, size = size.tiny)
+
+// Optional: stop to entry once TP1 is filled.
+if beAfter and not beDone and strategy.position_size != 0 and math.abs(strategy.position_size) < qty
+    beDone := true
+    if tDir == -1
+        strategy.exit("S-TP", "S", limit = tTgt, stop = strategy.position_avg_price)
+    else
+        strategy.exit("L-TP", "L", limit = tTgt, stop = strategy.position_avg_price)
+
+// Extend the trade lines until the trade is fully closed.
+if live
+    line.set_x2(lnE, bar_index)
+    line.set_x2(lnS, bar_index)
+    line.set_x2(lnT, bar_index)
+    if not na(lnT1)
+        line.set_x2(lnT1, bar_index)
+    if strategy.position_size == 0 and strategy.closedtrades > ctAtEntry
+        live := false
+
+// ───────────────────────── NY critical hours ─────────────────────────
+nyH = hour(time_close, "America/New_York")
+nyM = minute(time_close, "America/New_York")
+critBar = showCrit and chartSec < 14400 and nyM == 0 and (nyH == 17 or nyH == 4)
+bgcolor(critBar ? color.new(color.yellow, 85) : na, title = "NY critical hours")
+
+// ───────────────────────── Info panel ─────────────────────────
+var table tbl = table.new(position.top_right, 3, 18, bgcolor = color.new(color.black, 15), border_width = 1, border_color = color.new(color.gray, 70))
+if showTbl and barstate.islast
+    isNQ = syminfo.root == "NQ" or syminfo.root == "MNQ"
+    tc = color.white
+    table.cell(tbl, 0, 0, "BARI NQ v0.1", text_color = tc, text_size = size.small)
+    table.cell(tbl, 1, 0, isNQ ? syminfo.ticker : syminfo.ticker + " (built for NQ)", text_color = isNQ ? tc : color.orange, text_size = size.small)
+    table.cell(tbl, 2, 0, "", text_size = size.small)
+    table.cell(tbl, 0, 1, "Ref · conf · chain", text_color = tc, text_size = size.small)
+    table.cell(tbl, 1, 1, refName + " · " + confName + " · " + chainName, text_color = tc, text_size = size.small)
+    table.cell(tbl, 0, 2, "Last " + refName + " close", text_color = tc, text_size = size.small)
+    table.cell(tbl, 1, 2, "short " + f_closeType(rA.p1, rA.p2, -1) + " · long " + f_closeType(rA.p1, rA.p2, 1), text_color = tc, text_size = size.small)
+    table.cell(tbl, 0, 3, refName + " high " + f_fmt(rA.p1.h), text_color = tc, text_size = size.small)
+    table.cell(tbl, 1, 3, "NQ " + (nqUp ? "took" : "open") + " · ES " + (esUp ? "took" : "open") + (nqUp != esUp ? " · SMT" : ""), text_color = nqUp != esUp ? color.yellow : tc, text_size = size.small)
+    table.cell(tbl, 0, 4, refName + " low " + f_fmt(rA.p1.l), text_color = tc, text_size = size.small)
+    table.cell(tbl, 1, 4, "NQ " + (nqDn ? "took" : "open") + " · ES " + (esDn ? "took" : "open") + (nqDn != esDn ? " · SMT" : ""), text_color = nqDn != esDn ? color.yellow : tc, text_size = size.small)
+    table.cell(tbl, 0, 5, "Last signal", text_color = tc, text_size = size.small)
+    table.cell(tbl, 1, 5, lastSig, text_color = tc, text_size = size.small)
+    table.cell(tbl, 2, 5, "weight", text_color = color.gray, text_size = size.small)
+    for i = 0 to 9
+        v = lastComps.get(i)
+        table.cell(tbl, 0, 6 + i, compName.get(i), text_color = color.gray, text_size = size.small)
+        table.cell(tbl, 1, 6 + i, str.tostring(v * 100, "#") + "%", text_color = v >= 0.7 ? color.teal : v >= 0.4 ? tc : color.red, text_size = size.small)
+        table.cell(tbl, 2, 6 + i, str.tostring(weights.get(i)), text_color = color.gray, text_size = size.small)
+    table.cell(tbl, 0, 16, "Weights are placeholders. Not advice.", text_color = color.gray, text_size = size.tiny)
