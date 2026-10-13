@@ -375,10 +375,22 @@ f_eval(int dir) =>
         score += c * weights.get(i)
     score := wSum > 0 ? 100.0 * score / wSum : 0.0
     hard = swept and back and withD and kpos <= confPosMax and exFrac <= maxExcess and risk > 0 and not na(tgtD) and (not reqSmt or smt)
-    [hard, hard and score >= minScore, entry, stop, tp1, tgt, score, ct, smt, rr, comps]
+    // How far the setup got: 0 no sweep, 1 swept, 2 confirmed, 3 precise, 4 has target, 5 passed the score.
+    stage = not swept ? 0 : not (back and withD and kpos <= confPosMax) ? 1 : exFrac > maxExcess ? 2 :
+         risk <= 0 or na(tgtD) or (reqSmt and not smt) ? 3 : score < minScore ? 4 : 5
+    [hard, hard and score >= minScore, entry, stop, tp1, tgt, score, ct, smt, rr, comps, stage]
 
-[hardS, okS, eS, stS, tp1S, tgS, scS, ctS, smtS, rrS, compsS] = f_eval(-1)
-[hardL, okL, eL, stL, tp1L, tgL, scL, ctL, smtL, rrL, compsL] = f_eval(1)
+[hardS, okS, eS, stS, tp1S, tgS, scS, ctS, smtS, rrS, compsS, stageS] = f_eval(-1)
+[hardL, okL, eL, stL, tp1L, tgL, scL, ctL, smtL, rrL, compsL, stageL] = f_eval(1)
+
+// Funnel over the whole history, counted on confirmation closes after a sweep (both sides).
+// Shows which rule filters the setups out when the backtest has few or no trades.
+var array<int> funnel = array.new<int>(5, 0)
+if cA.closed
+    for st in array.from(stageS, stageL)
+        for j = 1 to 5
+            if st >= j
+                funnel.set(j - 1, funnel.get(j - 1) + 1)
 
 // ───────────────────────── Sweep markers ─────────────────────────
 f_fmt(float p) =>
@@ -535,4 +547,7 @@ if showTbl and barstate.islast
         table.cell(tbl, 0, 6 + i, compName.get(i), text_color = color.gray, text_size = size.small)
         table.cell(tbl, 1, 6 + i, str.tostring(v * 100, "#") + "%", text_color = v >= 0.7 ? color.teal : v >= 0.4 ? tc : color.red, text_size = size.small)
         table.cell(tbl, 2, 6 + i, str.tostring(weights.get(i)), text_color = color.gray, text_size = size.small)
-    table.cell(tbl, 0, 16, "Weights are placeholders. Not advice.", text_color = color.gray, text_size = size.tiny)
+    table.cell(tbl, 0, 16, "Funnel: swept › confirmed › precise › target › score", text_color = color.gray, text_size = size.small)
+    table.cell(tbl, 1, 16, str.tostring(funnel.get(0)) + " › " + str.tostring(funnel.get(1)) + " › " + str.tostring(funnel.get(2)) + " › " +
+         str.tostring(funnel.get(3)) + " › " + str.tostring(funnel.get(4)), text_color = color.yellow, text_size = size.small)
+    table.cell(tbl, 0, 17, "Weights are placeholders. Not advice.", text_color = color.gray, text_size = size.tiny)
