@@ -18,7 +18,9 @@
 strategy("BARI'S LAB · NQ model v0.1", shorttitle = "BARI NQ", overlay = true,
      initial_capital = 100000, default_qty_type = strategy.fixed, default_qty_value = 2,
      commission_type = strategy.commission.cash_per_contract, commission_value = 2.0,
-     slippage = 1, pyramiding = 0, max_lines_count = 500, max_labels_count = 500)
+     slippage = 1, pyramiding = 0, margin_long = 0, margin_short = 0, max_lines_count = 500, max_labels_count = 500)
+// margin 0: Pine v6 defaults to 100% margin, so one NQ contract (about $600k notional) never fits a $100k test account
+// and the backtest shows no trades. Futures need a few % margin; 0 turns the check off for the test.
 
 // ───────────────────────── Inputs ─────────────────────────
 grpTf = "Timeframes"
@@ -143,8 +145,15 @@ method update(Agg a, simple string tf, float o, float h, float l, float c) =>
         a.cur.h := math.max(a.cur.h, h)
         a.cur.l := math.min(a.cur.l, l)
         a.cur.c := c
-    tc = time_close(tf)
-    a.closed := not a.done and not na(tc) and time_close >= tc
+    // Three ways to see the last bar of the candle, so one quirk cannot hide every close:
+    // its full length has passed, the TF close time is reached, or the CME day ends (17:00 NY).
+    tfSec   = timeframe.in_seconds(tf)
+    t0      = time(tf)
+    tc      = time_close(tf)
+    sessEnd = hour(time_close, "America/New_York") == 17 and minute(time_close, "America/New_York") == 0
+    byLen   = tfSec < 86400 and not na(t0) and time_close >= t0 + tfSec * 1000
+    byTc    = not na(tc) and time_close >= tc
+    a.closed := not a.done and (byLen or byTc or (tfSec <= 86400 and sessEnd))
     if a.closed
         a.done := true
     a
@@ -316,7 +325,9 @@ f_tier(float sc) =>
 
 // Evaluates a setup on the confirmation candle that closes on this bar.
 f_eval(int dir) =>
-    k    = cA.cur
+    // The confirmation candle: the one closing on this bar, or (fallback) the one that just ended unseen.
+    k    = cA.closed ? cA.cur : cA.p1
+    kPrev = cA.closed ? cA.p1 : cA.p2
     p1   = rA.p1
     cur  = rA.cur
     rng  = p1.h - p1.l
@@ -360,7 +371,7 @@ f_eval(int dir) =>
     sPrec   = exFrac <= 0.1 ? 1.0 : exFrac <= 0.25 ? 0.7 : exFrac <= 0.5 ? 0.35 : 0.0
     ct      = f_closeType(p1, rA.p2, dir)
     sClose  = ct == "a" ? 1.0 : ct == "b" ? 0.7 : ct == "c" ? 0.4 : 0.0
-    sMom    = f_mom(k, cA.p1, dir)
+    sMom    = f_mom(k, kPrev, dir)
     sOpen   = na(tgtD) ? 0.0 : nearD < 0.5 * risk ? 0.6 : 1.0
     weak    = dir == -1 ? preLow >= cur.o - 0.1 * rng : preHigh <= cur.o + 0.1 * rng
     sCandle = weak ? 1.0 : 0.3
@@ -380,13 +391,16 @@ f_eval(int dir) =>
          risk <= 0 or na(tgtD) or (reqSmt and not smt) ? 3 : score < minScore ? 4 : 5
     [hard, hard and score >= minScore, entry, stop, tp1, tgt, score, ct, smt, rr, comps, stage]
 
+// Evaluate on a confirmation close. Fallback: the bar after an unseen close, unless the reference candle also rolled.
+confBar = cA.closed or (cA.late and not rA.opened)
+
 [hardS, okS, eS, stS, tp1S, tgS, scS, ctS, smtS, rrS, compsS, stageS] = f_eval(-1)
 [hardL, okL, eL, stL, tp1L, tgL, scL, ctL, smtL, rrL, compsL, stageL] = f_eval(1)
 
 // Funnel over the whole history, counted on confirmation closes after a sweep (both sides).
 // Shows which rule filters the setups out when the backtest has few or no trades.
 var array<int> funnel = array.new<int>(5, 0)
-if cA.closed
+if confBar
     for st in array.from(stageS, stageL)
         for j = 1 to 5
             if st >= j
@@ -419,7 +433,7 @@ dayLossHit = maxDayLoss > 0 and strategy.equity - dayStartEq <= -maxDayLoss
 if dayLossHit and strategy.position_size != 0
     strategy.close_all(comment = "daily loss")
 inSess   = not useSess or not na(time(timeframe.period, sessStr, "America/New_York"))
-canTrade = cA.closed and strategy.position_size == 0 and tradesToday < maxTrades and not dayLossHit and inSess
+canTrade = confBar and strategy.position_size == 0 and tradesToday < maxTrades and not dayLossHit and inSess
 
 var int   tDir   = 0
 var float tTgt   = na
@@ -494,9 +508,9 @@ if goLong
     alert(syminfo.ticker + " · " + str.replace_all(txt, "\n", " · "), alert.freq_once_per_bar_close)
 
 // Setups that passed every rule but scored under the minimum: shown to learn from, not traded.
-if showWatch and cA.closed and hardS and not okS and not tradedS
+if showWatch and confBar and hardS and not okS and not tradedS
     label.new(bar_index, high, "watch S " + str.tostring(scS, "#"), style = label.style_label_down, color = color.new(color.gray, 60), textcolor = color.white, size = size.tiny)
-if showWatch and cA.closed and hardL and not okL and not tradedL
+if showWatch and confBar and hardL and not okL and not tradedL
     label.new(bar_index, low, "watch L " + str.tostring(scL, "#"), style = label.style_label_up, color = color.new(color.gray, 60), textcolor = color.white, size = size.tiny)
 
 // Optional: stop to entry once TP1 is filled.
