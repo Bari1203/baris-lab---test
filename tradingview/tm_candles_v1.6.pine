@@ -1,0 +1,237 @@
+//@version=6
+// TM Candles v1.6 — higher-timeframe candle blocks, drawn at real price, right of TRADE_MOR
+indicator("TM Candles v1.6", "TM Candles", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+// ───────── Inputs
+grpB = "Blocks"
+nC       = input.int(1, "Closed candles per block", minval = 1, maxval = 19, group = grpB)
+nBlk     = input.int(3, "Number of blocks", minval = 1, maxval = 5, group = grpB)
+midRatio = input.float(3.0, "Min TF ratio (start + between blocks)", minval = 1.5, step = 0.5, group = grpB)
+fitBars  = input.int(100, "Max block size = range of last X chart bars", minval = 10, maxval = 5000, group = grpB)
+holdTF   = input.bool(true, "Hold TF until its candle closes", group = grpB)
+
+grpL = "Layout"
+offB    = input.int(45, "Distance from price (bars)", minval = 0, maxval = 450, group = grpL)
+gapB    = input.int(4, "Gap between blocks (bars)", minval = 1, maxval = 50, group = grpL)
+cW      = input.int(2, "Candle width (bars)", minval = 1, maxval = 10, group = grpL)
+showTmr = input.bool(true, "Show time to close", group = grpL)
+txtSz   = input.string(size.small, "Text size", options = [size.tiny, size.small, size.normal], group = grpL)
+
+grpC = "Colors"
+upCol  = input.color(color.white, "Up", group = grpC)
+dnCol  = input.color(#5D606B, "Down", group = grpC)
+frmCol = input.color(#5D606B, "Frame / text", group = grpC)
+
+grpT = "Timeframes"
+on00 = input.bool(true, "5m",  inline = "t1", group = grpT)
+on01 = input.bool(true, "10m", inline = "t1", group = grpT)
+on02 = input.bool(true, "15m", inline = "t1", group = grpT)
+on03 = input.bool(true, "20m", inline = "t1", group = grpT)
+on04 = input.bool(true, "30m", inline = "t2", group = grpT)
+on05 = input.bool(true, "45m", inline = "t2", group = grpT)
+on06 = input.bool(true, "1H",  inline = "t2", group = grpT)
+on07 = input.bool(true, "90m", inline = "t2", group = grpT)
+on08 = input.bool(true, "2H",  inline = "t3", group = grpT)
+on09 = input.bool(true, "3H",  inline = "t3", group = grpT)
+on10 = input.bool(true, "4H",  inline = "t3", group = grpT)
+on11 = input.bool(true, "6H",  inline = "t3", group = grpT)
+on12 = input.bool(true, "8H",  inline = "t4", group = grpT)
+on13 = input.bool(true, "12H", inline = "t4", group = grpT)
+on14 = input.bool(true, "D",   inline = "t4", group = grpT)
+on15 = input.bool(true, "2D",  inline = "t4", group = grpT)
+on16 = input.bool(true, "3D",  inline = "t5", group = grpT)
+on17 = input.bool(true, "W",   inline = "t5", group = grpT)
+on18 = input.bool(true, "M",   inline = "t5", group = grpT)
+
+// ───────── Timeframe table (ascending)
+chartSec = timeframe.in_seconds()
+N        = nC + 1   // closed candles + current
+
+var string[] NAMES = array.from("5m", "10m", "15m", "20m", "30m", "45m", "1H", "90m", "2H", "3H", "4H", "6H", "8H", "12H", "D", "2D", "3D", "W", "M")
+var int[]    SECS  = array.from(300, 600, 900, 1200, 1800, 2700, 3600, 5400, 7200, 10800, 14400, 21600, 28800, 43200, 86400, 172800, 259200, 604800, 2592000)
+
+// ───────── Data: packed string "time_close|o|h|l|c|o|h|l|c..." (index 0 = current candle), only on recent bars
+f_pack(simple int n, simple int sec, bool on) =>
+    string s = ""
+    if on and time >= timenow - ((n + 2) * sec + 4 * 86400) * 1000
+        s := str.tostring(time_close)
+        for i = 0 to n
+            s += "|" + str.tostring(open[i]) + "|" + str.tostring(high[i]) + "|" + str.tostring(low[i]) + "|" + str.tostring(close[i])
+    s
+
+f_req(simple string tf, simple int sec, simple bool on) =>
+    bool use = on and sec > chartSec
+    request.security(syminfo.tickerid, use ? tf : timeframe.period, f_pack(nC, sec, use))
+
+s00 = f_req("5",    300,     on00)
+s01 = f_req("10",   600,     on01)
+s02 = f_req("15",   900,     on02)
+s03 = f_req("20",   1200,    on03)
+s04 = f_req("30",   1800,    on04)
+s05 = f_req("45",   2700,    on05)
+s06 = f_req("60",   3600,    on06)
+s07 = f_req("90",   5400,    on07)
+s08 = f_req("120",  7200,    on08)
+s09 = f_req("180",  10800,   on09)
+s10 = f_req("240",  14400,   on10)
+s11 = f_req("360",  21600,   on11)
+s12 = f_req("480",  28800,   on12)
+s13 = f_req("720",  43200,   on13)
+s14 = f_req("D",    86400,   on14)
+s15 = f_req("2D",   172800,  on15)
+s16 = f_req("3D",   259200,  on16)
+s17 = f_req("W",    604800,  on17)
+s18 = f_req("M",    2592000, on18)
+
+rngChart = ta.highest(high, fitBars) - ta.lowest(low, fitBars)
+
+// ───────── Helpers
+f_tmr(float ms) =>
+    string r = ""
+    if not na(ms) and ms > 0
+        int s  = math.floor(ms / 1000)
+        int d  = math.floor(s / 86400)
+        int h  = math.floor((s % 86400) / 3600)
+        int m  = math.floor((s % 3600) / 60)
+        int sc = s % 60
+        r := d > 0 ? str.format("{0}d {1}h", d, h) : h > 0 ? str.format("{0}h {1}m", h, m) : str.tostring(m) + ":" + (sc < 10 ? "0" : "") + str.tostring(sc)
+    r
+
+// Selection memory across realtime ticks
+varip string selStr = ""
+varip string tcStr  = ""
+
+// ───────── Main (last bar only)
+if barstate.islast
+    string[] S = array.from(s00, s01, s02, s03, s04, s05, s06, s07, s08, s09, s10, s11, s12, s13, s14, s15, s16, s17, s18)
+
+    float[]  O   = array.new_float(19 * N, na)
+    float[]  H   = array.new_float(19 * N, na)
+    float[]  L   = array.new_float(19 * N, na)
+    float[]  C   = array.new_float(19 * N, na)
+    float[]  TC  = array.new_float(19, na)
+    string[] TCS = array.new_string(19, "")
+    float[]  OS  = array.new_float(19, na)
+    float[]  BH  = array.new_float(19, na)
+    float[]  BL  = array.new_float(19, na)
+    bool[]   OK  = array.new_bool(19, false)
+    int      nData = 0
+    int      nFit  = 0
+
+    // parse + size filter + overshoot (current candle vs last closed)
+    for i = 0 to 18
+        string s = S.get(i)
+        if str.length(s) > 0
+            string[] p = str.split(s, "|")
+            if p.size() >= 1 + 4 * N
+                bool  good = true
+                float bh   = na
+                float bl   = na
+                for j = 0 to N - 1
+                    float o = str.tonumber(p.get(1 + 4 * j))
+                    float h = str.tonumber(p.get(2 + 4 * j))
+                    float l = str.tonumber(p.get(3 + 4 * j))
+                    float c = str.tonumber(p.get(4 + 4 * j))
+                    if na(o) or na(h) or na(l) or na(c)
+                        good := false
+                    else
+                        O.set(i * N + j, o)
+                        H.set(i * N + j, h)
+                        L.set(i * N + j, l)
+                        C.set(i * N + j, c)
+                        bh := na(bh) ? h : math.max(bh, h)
+                        bl := na(bl) ? l : math.min(bl, l)
+                if good
+                    TC.set(i, str.tonumber(p.get(0)))
+                    TCS.set(i, p.get(0))
+                    BH.set(i, bh)
+                    BL.set(i, bl)
+                    OS.set(i, math.max(0, H.get(i * N) - H.get(i * N + 1)) + math.max(0, L.get(i * N + 1) - L.get(i * N)))
+                    OK.set(i, bh - bl <= rngChart)
+                    nData += 1
+                    nFit  += bh - bl <= rngChart ? 1 : 0
+
+    // keep previous selection while all its candles are still open and still fit
+    int[] sel  = array.new_int()
+    bool  keep = holdTF and str.length(selStr) > 0
+    if keep
+        string[] a = str.split(selStr, ",")
+        string[] b = str.split(tcStr, ",")
+        for k = 0 to a.size() - 1
+            int i = int(str.tonumber(a.get(k)))
+            if not OK.get(i) or TCS.get(i) != b.get(k)
+                keep := false
+            else
+                sel.push(i)
+
+    // new selection: smallest TF >= minSec whose current candle is inside the last closed one; else least overshoot
+    if not keep
+        sel.clear()
+        float minSec = chartSec * midRatio
+        for k = 1 to nBlk
+            int   pick   = -1
+            int   best   = -1
+            float bestOs = na
+            for i = 0 to 18
+                if OK.get(i) and SECS.get(i) >= minSec
+                    float os = OS.get(i)
+                    if os == 0
+                        pick := i
+                        break
+                    if best == -1 or os < bestOs
+                        best   := i
+                        bestOs := os
+            if pick == -1
+                pick := best
+            if pick == -1
+                break
+            sel.push(pick)
+            minSec := SECS.get(pick) * midRatio
+        string[] sa = array.new_string()
+        string[] sb = array.new_string()
+        for i in sel
+            sa.push(str.tostring(i))
+            sb.push(TCS.get(i))
+        selStr := array.join(sa, ",")
+        tcStr  := array.join(sb, ",")
+
+    // ───────── Draw
+    box[] oldB = box.all
+    if oldB.size() > 0
+        for k = 0 to oldB.size() - 1
+            box.delete(oldB.get(k))
+    line[] oldL = line.all
+    if oldL.size() > 0
+        for k = 0 to oldL.size() - 1
+            line.delete(oldL.get(k))
+    label[] oldT = label.all
+    if oldT.size() > 0
+        for k = 0 to oldT.size() - 1
+            label.delete(oldT.get(k))
+
+    int wBlk = N * cW + (N - 1)
+    int x    = bar_index + offB
+    int xm0  = math.floor(cW / 2)
+    for i in sel
+        if x + wBlk > bar_index + 499
+            break
+        for j = N - 1 to 0
+            int   x0  = x + (N - 1 - j) * (cW + 1)
+            float o   = O.get(i * N + j)
+            float h   = H.get(i * N + j)
+            float l   = L.get(i * N + j)
+            float c   = C.get(i * N + j)
+            float top = math.max(o, c)
+            float bot = math.min(o, c)
+            color col = c >= o ? upCol : dnCol
+            bool  cur = j == 0
+            line.new(x0 + xm0, h, x0 + xm0, top, color = frmCol)
+            line.new(x0 + xm0, bot, x0 + xm0, l, color = frmCol)
+            box.new(x0, top, x0 + cW, bot, border_color = cur ? col : frmCol, border_style = cur ? line.style_dashed : line.style_solid, bgcolor = cur ? color.new(col, 75) : col)
+        int xc = x + math.floor(wBlk / 2)
+        label.new(xc, BH.get(i), NAMES.get(i), style = label.style_label_down, color = color.new(color.black, 100), textcolor = frmCol, size = txtSz)
+        if showTmr
+            label.new(xc, BL.get(i), f_tmr(TC.get(i) - timenow), style = label.style_label_up, color = color.new(color.black, 100), textcolor = frmCol, size = txtSz)
+        x += wBlk + gapB
+    if sel.size() == 0
+        label.new(bar_index + offB, close, "TM Candles: no blocks · data " + str.tostring(nData) + " · fit " + str.tostring(nFit), style = label.style_label_left, color = color.new(color.black, 100), textcolor = frmCol, size = txtSz)
