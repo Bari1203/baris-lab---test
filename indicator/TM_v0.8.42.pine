@@ -1,0 +1,1164 @@
+//@version=6
+// TRADE_MOR · v0.8.42 — DEFINE YOUR RANGE – IDENTIFY YOUR TARGET
+// Marks only. No trading. No repaint: levels come only from CLOSED candles.
+//
+// ① LINES  — open liquidity of every chosen TF (internal-extreme first), only the nearest ones,
+//            + the nearest big-TF level (relative to the chart TF) on each side, + what was taken now.
+// ③ TABLE  — NY time, the lines on the chart, and the HTF frame (D / W / M / 3M+).
+indicator("TRADE_MOR · v0.8.42", shorttitle = "TM v0.8.42", overlay = true, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500, max_bars_back = 50)
+
+// ════════ ① LINES ════════
+gL  = "① קווים (רמות נזילות)"
+showLevels = input.bool(true, "הצג קווים", group = gL)
+showTaken  = input.bool(true, "להראות רמות שנלקחו (taken)", group = gL, tooltip = "V = רואים גם קווים שנלקחו (אפור ומקווקו). בלי V = רק רמות פתוחות.")
+nUp        = input.int(3, "כמה רמות פתוחות מעל המחיר", minval = 0, maxval = 8, group = gL)
+nDn        = input.int(3, "כמה רמות פתוחות מתחת למחיר", minval = 0, maxval = 8, group = gL)
+perTF      = input.int(3, "רמות פתוחות מכל טיימפריים (פנימי-קיצוני ראשון)", minval = 1, maxval = 10, group = gL)
+inRange    = input.bool(true, "להראות את כל הרמות הפתוחות בתוך הטווח", group = gL, tooltip = "הטווח = בין הרמה הפתוחה הקרובה של זמן גדול למעלה, לזו שלמטה. כל נמוך/גבוה פתוח בתוכו מסומן.")
+rangeMax   = input.int(6, "…כמה לכל היותר בכל צד", minval = 1, maxval = 12, group = gL)
+int nTaken = 1
+alwaysBig  = input.bool(true, "תמיד להראות את הרמה הקרובה של זמן גדול", group = gL)
+bigLadder  = input.bool(true, "להראות את הרמה הפתוחה הקרובה של כל זמן גדול", group = gL, tooltip = "כל טיימפריים גדול (גרף × 'זמן גדול') מקבל את הרמה הפתוחה הקרובה שלו בכל צד — אם היא קרובה מספיק למחיר.")
+bigDist    = input.float(1.0, "…עד מרחק (× הטווח היומי הממוצע)", minval = 0.1, step = 0.1, group = gL, tooltip = "1.0 = עד טווח יומי ממוצע אחד מהמחיר (ממוצע 5 הימים האחרונים).")
+bigMax     = input.int(10, "…כמה טיימפריימים לכל היותר בכל צד", minval = 1, maxval = 20, group = gL)
+bool bigTaken = true
+int takenRatio = 1
+int takenMax = 4
+bigRatio   = input.int(24, "זמן גדול = הגרף ×", minval = 2, group = gL, tooltip = "24: גרף 5m → מ-2h, 15m → מ-6h, 1h → מיומי, 4h → משבועי, יומי → מחודשי")
+hrAll      = input.bool(true, "אף גבוה/נמוך לא מתפספס", group = gL, tooltip = "כל טיימפריים (מעל הגרף), בטווח מהמחיר: כל גבוה/נמוך שנלקח בנרות האחרונים של אותו טיימפריים מסומן taken / sweep / break, גם אם הנר שלקח כבר נסגר. ולכל טיימפריים מ-1h ומעלה: הרמה הפתוחה הקרובה למעלה ולמטה תמיד מסומנת.")
+int hrRecent = 2
+hrMinMin   = input.int(5, "…הרמה הפתוחה הקרובה של כל טיימפריים מ- (דקות) — תמיד מסומנת", minval = 1, group = gL, tooltip = "5 = לכל טיימפריים מ-5m ומעלה (ומעל הגרף): הגבוה הפתוח הקרוב והנמוך הפתוח הקרוב תמיד מופיעים, בטווח מהמחיר. 2m/3m לא.")
+minRatio   = input.int(1, "הטיימפריים הקטן ביותר = הגרף ×", minval = 1, group = gL, tooltip = "תמיד רק טיימפריימים שגדולים מהגרף. 1 = כל מה שמעל הגרף. 3 בגרף 5m = מ-15m.")
+
+gLT = "① קווים · טיימפריימים"
+hideBig = input.string("W ומעלה", "בגרפים מתחת ליומי — להסתיר", options = ["כלום", "W ומעלה", "M ומעלה", "3M ומעלה"], group = gLT, tooltip = "בגרף יומי ומעלה הכל מופיע. בגרפים קטנים מיומי (16h, 8h … 1m) — הרמות של הטיימפריימים האלה מוסתרות.")
+L_2 = input.bool(false, "2m ", inline = "Lrm", group = gLT, tooltip = "2m ו-3m מופיעים רק בגרף דקתי (1m).")
+L_3 = input.bool(false, "3m ", inline = "Lrm", group = gLT)
+L_5 = input.bool(true, "5m ", inline = "Lr0", group = gLT)
+L_10 = input.bool(true, "10m", inline = "Lr0", group = gLT)
+L_15 = input.bool(true, "15m", inline = "Lr0", group = gLT)
+L_20 = input.bool(true, "20m", inline = "Lr0", group = gLT)
+L_30 = input.bool(true, "30m", inline = "Lr0", group = gLT)
+L_45 = input.bool(true, "45m", inline = "Lr0", group = gLT)
+L_60 = input.bool(true, "1h ", inline = "Lr1", group = gLT)
+L_90 = input.bool(true, "90m", inline = "Lr1", group = gLT)
+L_120 = input.bool(true, "2h ", inline = "Lr1", group = gLT)
+L_180 = input.bool(true, "3h ", inline = "Lr1", group = gLT)
+L_240 = input.bool(true, "4h ", inline = "Lr2", group = gLT)
+L_360 = input.bool(true, "6h ", inline = "Lr2", group = gLT)
+L_420 = input.bool(true, "7h ", inline = "Lr2", group = gLT)
+L_480 = input.bool(true, "8h ", inline = "Lr2", group = gLT)
+L_720 = input.bool(true, "12h", inline = "Lr2b", group = gLT)
+L_960 = input.bool(true, "16h", inline = "Lr3", group = gLT)
+L_D1 = input.bool(true, "D  ", inline = "Lr3", group = gLT)
+L_D2 = input.bool(true, "2D ", inline = "Lr3", group = gLT)
+L_D3 = input.bool(true, "3D ", inline = "Lr3", group = gLT)
+L_W1 = input.bool(true, "W  ", inline = "Lr4", group = gLT)
+L_W2 = input.bool(true, "2W ", inline = "Lr4", group = gLT)
+L_W3 = input.bool(true, "3W ", inline = "Lr4", group = gLT)
+L_M1 = input.bool(true, "M  ", inline = "Lr4", group = gLT)
+L_M2 = input.bool(true, "2M ", inline = "Lr5", group = gLT)
+L_M3 = input.bool(true, "3M ", inline = "Lr5", group = gLT)
+L_M6 = input.bool(true, "6M ", inline = "Lr5", group = gLT)
+L_1M2 = input.bool(true, "12M", inline = "Lr5", group = gLT)
+L_4Y = input.bool(true, "4Y ", inline = "Lr6", group = gLT)
+
+// ════════ ①b AGE: the older the level, the bigger its TF must be ════════
+gAG = "① קווים · לפי גיל הרמה"
+ageOn  = input.bool(true, "ככל שהרמה ישנה יותר — רק טיימפריימים גדולים", group = gAG, tooltip = "היום (מ-18:00 ניו יורק) — כל הטיימפריימים. ימים אחרונים — מטיימפריים בינוני. לפני כמה ימים — רק 7h/8h ומעלה. ישן יותר — רק יומי ומעלה. ימים = ימי מסחר (סוף שבוע לא נספר). בגרף יומי ומעלה — כבוי.")
+ageB   = input.int(2, "עד כמה ימים אחורה…", minval = 1, maxval = 10, inline = "agB", group = gAG)
+tfB    = input.string("30", "…מטיימפריים", options = ["5", "15", "30", "60", "120", "240"], inline = "agB", group = gAG, tooltip = "דקות. 30 = מ-30m ומעלה. 60 = מ-1h ומעלה.")
+ageC   = input.int(5, "עד כמה ימים אחורה…", minval = 2, maxval = 30, inline = "agC", group = gAG)
+tfC    = input.string("420", "…מטיימפריים", options = ["120", "240", "360", "420", "480", "720", "960"], inline = "agC", group = gAG, tooltip = "דקות. 420 = 7h ומעלה. 480 = 8h ומעלה.")
+tfOld  = input.string("1D", "ישן יותר — רק מטיימפריים", options = ["720", "960", "1D", "1W"], group = gAG)
+
+// ════════ ③ TABLE ════════
+gT = "③ טבלה"
+showTable = input.bool(false, "הצג טבלה", group = gT)
+chkOn     = input.bool(false, "מצב בדיקה: לכל טיימפריים — הגבוה והנמוך הפתוחים הקרובים, והאם הם על הגרף", group = gT, tooltip = "טבלה בפינה השמאלית התחתונה. ✓ = מסומן על הגרף. גיל = מוסתר כי הרמה ישנה מדי לטיימפריים הזה. רחוק = מעבר לטווח היומי הממוצע. — = אין רמה פתוחה. כדי לבדוק אם הבוט מפספס משהו.")
+showFrame = input.bool(true, "HTF frame (D / W / M / 3M+)", group = gT)
+tblPos    = input.string("Top right", "מיקום", options = ["Top right", "Bottom right", "Top left", "Bottom left"], group = gT)
+
+// ════════ ④ STYLE ════════
+gS = "④ עיצוב"
+colOpen    = input.color(color.black, "קו פתוח", group = gS)
+colTaken   = input.color(color.new(color.gray, 40), "קו שנלקח", group = gS)
+wOpen      = input.int(1, "עובי קו", minval = 1, maxval = 4, group = gS)
+cfWidth    = input.int(2, "עובי קו כשכמה טיימפריימים חולקים אותו", minval = 1, maxval = 4, group = gS)
+cfTicks    = input.int(4, "אותה רמה אם המרחק עד (טיקים)", minval = 0, group = gS)
+lineStep   = input.int(4, "אורך הקו אחרי המחיר (נרות)", minval = 1, maxval = 60, group = gS)
+showLabels = input.bool(true, "תוויות על הקווים", group = gS)
+showPrice  = input.bool(false, "מחיר בתווית", group = gS)
+cfMark     = input.string("ללא", "סימן כשכמה טיימפריימים על אותו קו", options = ["ללא", "◆", "●", "■", "★", "◇", "○"], group = gS, tooltip = "ללא = בלי סימן. אחרת — הסימן מופיע לפני שם הטיימפריים.")
+lblSize    = input.string("small", "גודל הכתב ליד הקווים", options = ["tiny", "small", "normal", "large", "huge"], group = gS, tooltip = "tiny = הכי קטן · huge = הכי גדול")
+lblPos     = input.string("ימין — בסוף הקו", "מיקום הכתב של הקו", options = ["ימין — בסוף הקו", "מעל הקו", "מתחת לקו", "שמאל — בתחילת הקו"], group = gS)
+esPos      = input.string("ימין — צמוד לקו", "מיקום הסימון ES ✕", options = ["ימין — צמוד לקו", "ימין — מעל הקו", "ימין — מתחת לקו"], group = gS)
+
+// ════════ ⑥ SWEEP / BREAK / SMT ════════
+gSX = "⑥ סוויפ / שבירה / SMT"
+showSB    = input.bool(false, "לסמן sweep ✕ / break ▲▼ על רמות שנלקחו", group = gSX, tooltip = "sweep = פתיל עבר ונר נסגר בחזרה. break = נר של הגרף נסגר מעבר לרמה. נגיעה מדויקת לא נחשבת.")
+showTkWord = input.bool(false, "לכתוב taken ליד קו שנלקח", group = gSX, tooltip = "כבוי = קו שנלקח רק מטושטש (אפור ומקווקו), בלי המילה taken.")
+showX     = input.bool(false, "✕ קטן על הפתיל שעשה את הסוויפ", group = gSX)
+smtOn     = input.bool(true, "ES ✕ = ES לקח את הרמה ואני עוד לא (בגרף ES — NQ ✕)", group = gSX, tooltip = "לכל קו: הבוט מוצא ב-ES את אותו נר בדיוק (אותו טיימפריים, אותה שעה), ובודק אם ES כבר עבר את הגבוה/נמוך של הנר הזה אצלו. אם ES לקח ו-NQ עוד לא — ליד הקו כתוב ES ✕. אם שניהם לקחו, או ש-ES לא לקח — לא כתוב כלום.")
+smtMinMin = input.int(5, "…רק לרמות מטיימפריים של (דקות) ומעלה", minval = 1, group = gSX)
+colSmt    = input.color(#9B1C1C, "צבע ES", group = gSX)
+smtText   = input.string("{X} ✕", "הטקסט של הסימון", group = gSX, tooltip = "כתוב מה שאתה רוצה. {X} = שם המדד השני (ES בגרף NQ, NQ בגרף ES). דוגמאות: {X} ✕ · {X} לקח · SMT · ✕")
+smtSize   = input.string("small", "גודל הסימון", options = ["tiny", "small", "normal", "large", "huge"], group = gSX, tooltip = "במיקום צמוד לקו — הסימון באותו גודל של שם הטיימפריים, כדי שיעמוד בדיוק אחריו. במעל/מתחת — הגודל שבחרת כאן.")
+smtFont   = input.string("רגיל", "גופן הסימון", options = ["רגיל", "מונוספייס"], group = gSX)
+smtBgOn   = input.bool(true, "רקע מתחת לסימון (מסתיר את הקו מתחת לטקסט)", group = gSX)
+
+// ════════ ⑦ ALERTS ════════
+gA = "⑦ התראות"
+alertOn    = input.bool(true, "הפעל התראות", group = gA, tooltip = "ב-TradingView: Alerts → Create → Condition: TRADE_MOR → Any alert() function call → Notifications: Notify in app. אחרי כל עדכון של הקוד — למחוק את ההתראה וליצור אותה מחדש.")
+alTaken    = input.bool(true, "המחיר חצה קו (רמה נלקחה)", group = gA)
+alBreak    = input.bool(true, "נר נסגר מעבר לקו (break)", group = gA)
+alES       = input.bool(true, "ES לקח רמה שמסומנת על הגרף", group = gA)
+alNear     = input.bool(false, "המחיר מתקרב לקו של זמן גדול", group = gA)
+nearTicks  = input.int(40, "…מרחק התקרבות (טיקים)", minval = 4, group = gA, tooltip = "40 טיקים ב-NQ = 10 נקודות")
+
+gAT = "⑦ התראות · מאיזה טיימפריימים"
+A_2 = input.bool(false, "2m ", inline = "Arm", group = gAT)
+A_3 = input.bool(false, "3m ", inline = "Arm", group = gAT)
+A_5 = input.bool(true, "5m ", inline = "Ar0", group = gAT)
+A_10 = input.bool(true, "10m", inline = "Ar0", group = gAT)
+A_15 = input.bool(true, "15m", inline = "Ar0", group = gAT)
+A_20 = input.bool(true, "20m", inline = "Ar0", group = gAT)
+A_30 = input.bool(true, "30m", inline = "Ar0", group = gAT)
+A_45 = input.bool(true, "45m", inline = "Ar0", group = gAT)
+A_60 = input.bool(true, "1h ", inline = "Ar1", group = gAT)
+A_90 = input.bool(true, "90m", inline = "Ar1", group = gAT)
+A_120 = input.bool(true, "2h ", inline = "Ar1", group = gAT)
+A_180 = input.bool(true, "3h ", inline = "Ar1", group = gAT)
+A_240 = input.bool(true, "4h ", inline = "Ar2", group = gAT)
+A_360 = input.bool(true, "6h ", inline = "Ar2", group = gAT)
+A_420 = input.bool(true, "7h ", inline = "Ar2", group = gAT)
+A_480 = input.bool(true, "8h ", inline = "Ar2", group = gAT)
+A_720 = input.bool(true, "12h", inline = "Ar2b", group = gAT)
+A_960 = input.bool(true, "16h", inline = "Ar3", group = gAT)
+A_D1 = input.bool(true, "D  ", inline = "Ar3", group = gAT)
+A_D2 = input.bool(true, "2D ", inline = "Ar3", group = gAT)
+A_D3 = input.bool(true, "3D ", inline = "Ar3", group = gAT)
+A_W1 = input.bool(true, "W  ", inline = "Ar4", group = gAT)
+A_W2 = input.bool(true, "2W ", inline = "Ar4", group = gAT)
+A_W3 = input.bool(true, "3W ", inline = "Ar4", group = gAT)
+A_M1 = input.bool(true, "M  ", inline = "Ar4", group = gAT)
+A_M2 = input.bool(true, "2M ", inline = "Ar5", group = gAT)
+A_M3 = input.bool(true, "3M ", inline = "Ar5", group = gAT)
+A_M6 = input.bool(true, "6M ", inline = "Ar5", group = gAT)
+A_1M2 = input.bool(true, "12M", inline = "Ar5", group = gAT)
+A_4Y = input.bool(true, "4Y ", inline = "Ar6", group = gAT)
+
+// ════════ ⑤ 4 YEARS ════════
+gY = "⑤ נר 4 שנים"
+y4Mode  = input.string("Launch year (Jan)", "עוגן", options = ["Launch year (Jan)", "Launch month"], group = gY, tooltip = "NQ נפתח ביוני 1999, ES בספטמבר 1997. בסימבול אחר: מתחילת הנתונים.")
+
+lblSz = lblSize == "tiny" ? size.tiny : lblSize == "normal" ? size.normal : lblSize == "large" ? size.large : lblSize == "huge" ? size.huge : size.small
+int chartSec = timeframe.in_seconds()
+int hrMinSec = hrMinMin * 60
+// below the daily chart: hide every TF from this rank up (W = 22, M = 25, 3M = 27, 4Y = 30)
+int hideFrom = chartSec >= 86400 ? 99 : hideBig == "W ומעלה" ? 22 : hideBig == "M ומעלה" ? 25 : hideBig == "3M ומעלה" ? 27 : 99
+tPos = tblPos == "Top right" ? position.top_right : tblPos == "Bottom right" ? position.bottom_right : tblPos == "Top left" ? position.top_left : position.bottom_left
+
+string root = syminfo.root
+bool isNQ = root == "NQ" or root == "MNQ"
+bool isES = root == "ES" or root == "MES"
+// anchor comes from the symbol only (no inputs inside data requests)
+string otherSym = isNQ ? (root == "MNQ" ? "CME_MINI:MES1!" : "CME_MINI:ES1!") : isES ? (root == "MES" ? "CME_MINI:MNQ1!" : "CME_MINI:NQ1!") : syminfo.tickerid
+string otherName = isNQ ? "ES" : "NQ"
+string myName = isNQ ? "NQ" : isES ? "ES" : root
+bool smtAvail = isNQ or isES
+int ay = isNQ ? 1999 : isES ? 1997 : 1970
+int amL = isNQ ? 6 : isES ? 9 : 1
+
+// ════════ Storage (rebuilt on the last bar only) ════════
+// o/h/l/c arrays: index 0 = current candle, 1 = last closed, 2 = the one before …
+type TFD
+    int          rank
+    string       name
+    int          sec
+    bool         candles
+    array<float> o
+    array<float> h
+    array<float> l
+    array<float> c
+    int          t0
+    int          tc
+    int          t1
+    array<float> oh
+    array<int>   oht
+    array<float> ol
+    array<int>   olt
+    float        th
+    int          tht
+    float        tl
+    int          tlt
+    array<float> kh
+    array<int>   kht
+    array<int>   khx
+    array<float> kl
+    array<int>   klt
+    array<int>   klx
+
+var tfs = array.new<TFD>()
+var cP  = array.new<float>()
+var cT  = array.new<int>()
+var cN  = array.new<string>()
+var cR  = array.new<int>()
+var cK  = array.new<bool>()
+var cC  = array.new<int>()
+var cS  = array.new<int>()
+var cB  = array.new<int>()
+var cX  = array.new<int>()
+var cM  = array.new<string>()
+var cNw = array.new<bool>()
+var cNb = array.new<bool>()
+var drawnLines  = array.new<line>()
+var drawnLabels = array.new<label>()
+var drawnBoxes  = array.new<box>()
+var alertKeys   = array.new<string>()
+var alertMsgs   = array.new<string>()
+// remembers which alerts were already sent (survives the live updates of the same bar)
+varip string sentKeys = ""
+
+if barstate.islast
+    for x in drawnLines
+        line.delete(x)
+    for x in drawnLabels
+        label.delete(x)
+    for x in drawnBoxes
+        box.delete(x)
+    array.clear(drawnLines)
+    array.clear(drawnLabels)
+    array.clear(drawnBoxes)
+    array.clear(tfs)
+    array.clear(cP)
+    array.clear(cT)
+    array.clear(cN)
+    array.clear(cR)
+    array.clear(cK)
+    array.clear(cC)
+    array.clear(cS)
+    array.clear(cB)
+    array.clear(cX)
+    array.clear(cM)
+    array.clear(cNw)
+    array.clear(cNb)
+    array.clear(alertKeys)
+    array.clear(alertMsgs)
+
+// ════════ Helpers ════════
+f_left(int ms) =>
+    string r = ""
+    if not na(ms) and ms > 0
+        int mins = int(ms / 60000)
+        int d = int(mins / 1440)
+        int h = int((mins % 1440) / 60)
+        int m = mins % 60
+        r := d > 0 ? str.tostring(d) + "d " + str.tostring(h) + "h" : h > 0 ? str.tostring(h) + "h " + str.tostring(m) + "m" : str.tostring(m) + "m"
+    r
+
+// start of today's trading day (the daily candle open, 18:00 New York) — set on the last bar
+var int dayStart = na
+
+// age of a level in TRADING days before today (weekends are not counted)
+f_ageDays(int t) =>
+    int anchor = 1578139200000
+    int wkNow = int(math.floor((dayStart - anchor) / 604800000.0))
+    int wkT = int(math.floor((t - anchor) / 604800000.0))
+    (dayStart - t) / 86400000.0 - 2 * (wkNow - wkT)
+
+// is a level of this TF still relevant at this age?
+f_ageOk(int t, int sec) =>
+    bool ok = true
+    if ageOn and chartSec < 86400 and not na(dayStart) and not na(t) and t < dayStart
+        float ag = f_ageDays(t)
+        int need = ag <= ageB ? int(str.tonumber(tfB)) * 60 : ag <= ageC ? int(str.tonumber(tfC)) * 60 : timeframe.in_seconds(tfOld)
+        ok := sec >= need
+    ok
+
+f_cand(string tag, float p, int t, int rank, bool taken, int tc, int sec, string smt) =>
+    if not na(p) and not na(t) and f_ageOk(t, sec)
+        array.push(cP, p)
+        array.push(cT, t)
+        array.push(cN, tag)
+        array.push(cR, rank)
+        array.push(cK, taken)
+        array.push(cC, tc)
+        array.push(cS, sec)
+        array.push(cB, 0)
+        array.push(cX, int(na))
+        array.push(cM, smt)
+        array.push(cNw, false)
+        array.push(cNb, false)
+
+f_szOf(string sz) =>
+    sz == "tiny" ? size.tiny : sz == "normal" ? size.normal : sz == "large" ? size.large : sz == "huge" ? size.huge : size.small
+
+f_alert(string key, string msg) =>
+    if not array.includes(alertKeys, key)
+        array.push(alertKeys, key)
+        array.push(alertMsgs, msg)
+
+f_atF(array<float> a, int i) =>
+    int sz = array.size(a)
+    sz > i ? array.get(a, sz - 1 - i) : na
+
+f_atI(array<int> a, int i) =>
+    int sz = array.size(a)
+    sz > i ? array.get(a, sz - 1 - i) : na
+
+// "x" marks an empty value (keeps every field in its place)
+f_sF(float x) =>
+    na(x) ? "x" : str.tostring(x)
+
+f_sI(int x) =>
+    na(x) ? "x" : str.tostring(x)
+
+f_nF(array<string> a, int i) =>
+    string v = i < array.size(a) ? array.get(a, i) : "x"
+    v == "x" ? na : str.tonumber(v)
+
+f_nI(array<string> a, int i) =>
+    float v = f_nF(a, i)
+    na(v) ? int(na) : int(math.round(v))
+
+// Liquidity engine (runs inside each TF): every closed candle high/low enters the OPEN list.
+// A later candle that passes it (strictly — a touch is not enough) takes it.
+// The list is ordered far → near, so the nearest open level (internal-extreme) is always last.
+f_all() =>
+    var array<float> oH  = array.new<float>()
+    var array<int>   oHT = array.new<int>()
+    var array<float> oL  = array.new<float>()
+    var array<int>   oLT = array.new<int>()
+    // recently TAKEN levels: price, its candle time, time of the candle that took it
+    var array<float> kH  = array.new<float>()
+    var array<int>   kHT = array.new<int>()
+    var array<int>   kHX = array.new<int>()
+    var array<float> kL  = array.new<float>()
+    var array<int>   kLT = array.new<int>()
+    var array<int>   kLX = array.new<int>()
+    if bar_index > 0 and not na(high[1]) and not na(low[1])
+        array.push(oH, high[1])
+        array.push(oHT, time[1])
+        array.push(oL, low[1])
+        array.push(oLT, time[1])
+        if array.size(oH) > 400
+            array.shift(oH)
+            array.shift(oHT)
+        if array.size(oL) > 400
+            array.shift(oL)
+            array.shift(oLT)
+    float th = na
+    int tht = na
+    float tl = na
+    int tlt = na
+    while array.size(oH) > 0 and array.last(oH) < high
+        th := array.pop(oH)
+        tht := array.pop(oHT)
+        array.push(kH, th)
+        array.push(kHT, tht)
+        array.push(kHX, time)
+        if array.size(kH) > 12
+            array.shift(kH)
+            array.shift(kHT)
+            array.shift(kHX)
+    while array.size(oL) > 0 and array.last(oL) > low
+        tl := array.pop(oL)
+        tlt := array.pop(oLT)
+        array.push(kL, tl)
+        array.push(kLT, tlt)
+        array.push(kLX, time)
+        if array.size(kL) > 12
+            array.shift(kL)
+            array.shift(kLT)
+            array.shift(kLX)
+    // Everything this TF needs is packed into ONE text value (TradingView limits how many values a request may carry).
+    // It is built only on the last bar, so it costs nothing on history.
+    string out = ""
+    if barstate.islast
+        parts = array.new<string>()
+        array.push(parts, f_sI(time[1]))
+        array.push(parts, f_sI(time))
+        array.push(parts, f_sI(time_close))
+        // the 10 nearest open highs and lows (was 6) — more levels of every TF reach the chart
+        for k = 0 to 9
+            array.push(parts, f_sF(f_atF(oH, k)))
+            array.push(parts, f_sI(f_atI(oHT, k)))
+        for k = 0 to 9
+            array.push(parts, f_sF(f_atF(oL, k)))
+            array.push(parts, f_sI(f_atI(oLT, k)))
+        array.push(parts, f_sF(th))
+        array.push(parts, f_sI(tht))
+        array.push(parts, f_sF(tl))
+        array.push(parts, f_sI(tlt))
+        for k = 0 to 20
+            array.push(parts, f_sF(open[k]))
+            array.push(parts, f_sF(high[k]))
+            array.push(parts, f_sF(low[k]))
+            array.push(parts, f_sF(close[k]))
+        for k = 0 to 5
+            array.push(parts, f_sF(f_atF(kH, k)))
+            array.push(parts, f_sI(f_atI(kHT, k)))
+            array.push(parts, f_sI(f_atI(kHX, k)))
+        for k = 0 to 5
+            array.push(parts, f_sF(f_atF(kL, k)))
+            array.push(parts, f_sI(f_atI(kLT, k)))
+            array.push(parts, f_sI(f_atI(kLX, k)))
+        out := array.join(parts, ",")
+    out
+
+// Data request for one TF: one text value, no inputs used here (TradingView limits).
+// Every TF from the chart TF up is loaded; the settings are applied afterwards.
+f_tf(simple string tf, string nm, int rank) =>
+    int sec = timeframe.in_seconds(tf)
+    reqTf = sec >= chartSec ? tf : timeframe.period
+    string pk = request.security(syminfo.tickerid, reqTf, f_all(), lookahead = barmerge.lookahead_on)
+    if barstate.islast and sec >= chartSec and str.length(pk) > 0
+        a = str.split(pk, ",")
+        // positions: 0 t1 · 1 t0 · 2 tc · 3..22 open highs (price,time)×10 · 23..42 open lows ×10 · 43 th 44 tht 45 tl 46 tlt · 47..130 candles (o,h,l,c)×21
+        //            131..148 recently taken highs (price,time,taken-at)×6 · 149..166 recently taken lows ×6
+        oa = array.new<float>()
+        ha = array.new<float>()
+        la = array.new<float>()
+        ca = array.new<float>()
+        for k = 0 to 20
+            int b = 47 + k * 4
+            array.push(oa, f_nF(a, b))
+            array.push(ha, f_nF(a, b + 1))
+            array.push(la, f_nF(a, b + 2))
+            array.push(ca, f_nF(a, b + 3))
+        khA = array.new<float>()
+        khtA = array.new<int>()
+        khxA = array.new<int>()
+        klA = array.new<float>()
+        kltA = array.new<int>()
+        klxA = array.new<int>()
+        for k = 0 to 5
+            array.push(khA, f_nF(a, 131 + k * 3))
+            array.push(khtA, f_nI(a, 132 + k * 3))
+            array.push(khxA, f_nI(a, 133 + k * 3))
+            array.push(klA, f_nF(a, 149 + k * 3))
+            array.push(kltA, f_nI(a, 150 + k * 3))
+            array.push(klxA, f_nI(a, 151 + k * 3))
+        ohA = array.new<float>()
+        ohtA = array.new<int>()
+        olA = array.new<float>()
+        oltA = array.new<int>()
+        for k = 0 to 9
+            array.push(ohA, f_nF(a, 3 + k * 2))
+            array.push(ohtA, f_nI(a, 4 + k * 2))
+            array.push(olA, f_nF(a, 23 + k * 2))
+            array.push(oltA, f_nI(a, 24 + k * 2))
+        if not na(array.get(ha, 1))
+            array.push(tfs, TFD.new(rank, nm, sec, false, oa, ha, la, ca, f_nI(a, 1), f_nI(a, 2), f_nI(a, 0), ohA, ohtA, olA, oltA, f_nF(a, 43), f_nI(a, 44), f_nF(a, 45), f_nI(a, 46), khA, khtA, khxA, klA, kltA, klxA))
+
+f_4yCore(int ancY, int ancM) =>
+    int mi = (year - ancY) * 12 + (month - ancM)
+    int per = int(math.floor(mi / 48.0))
+    var float cH = na
+    var float cL = na
+    var int cT0 = na
+    var float p1H = na
+    var float p1L = na
+    var int p1T = na
+    bool newPer = bar_index == 0 or per != per[1]
+    if newPer
+        p1H := cH
+        p1L := cL
+        p1T := cT0
+        cH := high
+        cL := low
+        cT0 := time
+    else
+        cH := math.max(cH, high)
+        cL := math.min(cL, low)
+    [p1H, p1L, p1T, cH, cL]
+
+f_4y(int ancY, int ancMLaunch) =>
+    [aH, aL, aT, acH, acL] = f_4yCore(ancY, 1)
+    [bH, bL, bT, bcH, bcL] = f_4yCore(ancY, ancMLaunch)
+    [aH, aL, aT, acH, acL, bH, bL, bT, bcH, bcL]
+
+// The exact chart bar where the level was printed (inside its HTF candle), so the line starts ON the wick.
+// If that bar is older than the chart's history, the line starts at the HTF candle open as before.
+// FAST: index of the first chart bar (counting back from now) whose time is OLDER than t.
+// Bars 0 … result-1 have time >= t. Binary search → a few steps instead of thousands.
+f_firstOlder(int t, int mb) =>
+    int lo = 0
+    int hi = mb + 1
+    while lo < hi
+        int mid = int((lo + hi) / 2)
+        if time[mid] < t
+            hi := mid
+        else
+            lo := mid + 1
+    lo
+
+f_exactTime(float p, int t0, int sec, bool isH) =>
+    int best = t0
+    float bestD = na
+    int endT = t0 + sec * 1000
+    int maxBack = math.min(bar_index, 3999)
+    // only the bars INSIDE the level's candle are scanned
+    int i0 = f_firstOlder(endT, maxBack)
+    int i1 = math.min(f_firstOlder(t0, maxBack), maxBack + 1)
+    if i0 < i1
+        for bi = i0 to i1 - 1
+            float v = isH ? high[bi] : low[bi]
+            float dd = math.abs(v - p)
+            if na(bestD) or dd <= bestD
+                bestD := dd
+                best := time[bi]
+    not na(bestD) and bestD <= 2 * syminfo.mintick ? best : t0
+
+// ════════ Every TF ════════
+f_tf("2", "2m", 1)
+f_tf("3", "3m", 2)
+f_tf("5", "5m", 3)
+f_tf("10", "10m", 4)
+f_tf("15", "15m", 5)
+f_tf("20", "20m", 6)
+f_tf("30", "30m", 7)
+f_tf("45", "45m", 8)
+f_tf("60", "1h", 9)
+f_tf("90", "90m", 10)
+f_tf("120", "2h", 11)
+f_tf("180", "3h", 12)
+f_tf("240", "4h", 13)
+f_tf("360", "6h", 14)
+f_tf("420", "7h", 15)
+f_tf("480", "8h", 16)
+f_tf("720", "12h", 17)
+f_tf("960", "16h", 18)
+f_tf("1D", "D", 19)
+f_tf("2D", "2D", 20)
+f_tf("3D", "3D", 21)
+f_tf("1W", "W", 22)
+f_tf("2W", "2W", 23)
+f_tf("3W", "3W", 24)
+f_tf("1M", "M", 25)
+f_tf("2M", "2M", 26)
+f_tf("3M", "3M", 27)
+f_tf("6M", "6M", 28)
+f_tf("12M", "12M", 29)
+
+// the other index (ES for NQ, NQ for ES) on the chart TF — used for SMT
+[oxH, oxL] = request.security(otherSym, timeframe.period, [high, low], lookahead = barmerge.lookahead_off)
+max_bars_back(oxH, 4000)
+max_bars_back(oxL, 4000)
+
+[jH, jL, jT, jcH, jcL, mH, mL, mT, mcH, mcL] = request.security(syminfo.tickerid, "1M", f_4y(ay, amL), lookahead = barmerge.lookahead_on)
+bool useJan = y4Mode == "Launch year (Jan)"
+float y1H = useJan ? jH : mH
+float y1L = useJan ? jL : mL
+int   y1T = useJan ? jT : mT
+float ycH = useJan ? jcH : mcH
+float ycL = useJan ? jcL : mcL
+
+// ════════ Apply the settings to the loaded TFs ════════
+// index = rank - 1
+var lineOnArr   = array.from(L_2, L_3, L_5, L_10, L_15, L_20, L_30, L_45, L_60, L_90, L_120, L_180, L_240, L_360, L_420, L_480, L_720, L_960, L_D1, L_D2, L_D3, L_W1, L_W2, L_W3, L_M1, L_M2, L_M3, L_M6, L_1M2)
+var alertOnArr  = array.from(A_2, A_3, A_5, A_10, A_15, A_20, A_30, A_45, A_60, A_90, A_120, A_180, A_240, A_360, A_420, A_480, A_720, A_960, A_D1, A_D2, A_D3, A_W1, A_W2, A_W3, A_M1, A_M2, A_M3, A_M6, A_1M2, A_4Y)
+
+if barstate.islast and array.size(tfs) > 0
+    // today's trading day start = the open of the current daily candle
+    for z = 0 to array.size(tfs) - 1
+        TFD dz = array.get(tfs, z)
+        if dz.rank == 19
+            dayStart := dz.t0
+    for z = 0 to array.size(tfs) - 1
+        TFD d = array.get(tfs, z)
+        // only TFs ABOVE the chart TF (what you can't already see on your own chart)
+        bool forLines = showLevels and array.get(lineOnArr, d.rank - 1) and d.sec > chartSec and d.sec >= chartSec * minRatio and d.rank < hideFrom and (d.rank > 2 or chartSec <= 60)
+        if forLines
+            float h0 = array.get(d.h, 0)
+            float h1 = array.get(d.h, 1)
+            float l0 = array.get(d.l, 0)
+            float l1 = array.get(d.l, 1)
+            // open liquidity of this TF, nearest first (internal-extreme)
+            // with "inside the range" on, all 6 nearest open levels are candidates (only the ones inside the range are drawn)
+            int kMax = inRange ? 9 : perTF - 1
+            for k = 0 to kMax
+                f_cand(d.name + " H", array.get(d.oh, k), array.get(d.oht, k), d.rank, false, d.tc, d.sec, "")
+                f_cand(d.name + " L", array.get(d.ol, k), array.get(d.olt, k), d.rank, false, d.tc, d.sec, "")
+            // taken now: previous candle high/low, and the most extreme level the current candle took
+            if h0 > h1
+                f_cand(d.name + " H", h1, d.t1, d.rank, true, d.tc, d.sec, "")
+            if l0 < l1
+                f_cand(d.name + " L", l1, d.t1, d.rank, true, d.tc, d.sec, "")
+            if not na(d.th) and d.tht != d.t1
+                f_cand(d.name + " H", d.th, d.tht, d.rank, true, d.tc, d.sec, "")
+            if not na(d.tl) and d.tlt != d.t1
+                f_cand(d.name + " L", d.tl, d.tlt, d.rank, true, d.tc, d.sec, "")
+            // 1h+: every level taken in its last X candles (also when the candle that took it already closed)
+            if hrAll and not na(d.t0)
+                int since = d.t0 - hrRecent * d.sec * 1000
+                for k = 0 to 5
+                    int xh = array.get(d.khx, k)
+                    if not na(xh) and xh >= since
+                        f_cand(d.name + " H", array.get(d.kh, k), array.get(d.kht, k), d.rank, true, d.tc, d.sec, "")
+                    int xl = array.get(d.klx, k)
+                    if not na(xl) and xl >= since
+                        f_cand(d.name + " L", array.get(d.kl, k), array.get(d.klt, k), d.rank, true, d.tc, d.sec, "")
+
+if showLevels and L_4Y and barstate.islast and 30 < hideFrom
+    int s4 = timeframe.in_seconds("12M") * 4
+    f_cand("4Y H", y1H, y1T, 30, ycH > y1H, na, s4, "")
+    f_cand("4Y L", y1L, y1T, 30, ycL < y1L, na, s4, "")
+
+// ════════ Safety check: was the level passed after its candle closed? ════════
+// Every level is checked again against the chart's own candles (up to 4000 bars back).
+// If any later price passed it (strictly), it is marked "taken" — no taken level is shown as open.
+max_bars_back(time, 4000)
+max_bars_back(high, 4000)
+max_bars_back(low, 4000)
+max_bars_back(close, 4000)
+if barstate.islast and array.size(cP) > 0
+    int nC = array.size(cP)
+    aft = array.new<int>()
+    for z = 0 to nC - 1
+        array.push(aft, array.get(cT, z) + array.get(cS, z) * 1000)
+    ordA = array.sort_indices(aft, order.descending)
+    // running values over the chart bars AFTER each level's candle closed
+    float runH = na    // highest high (all bars)
+    float runL = na
+    int runHt = na     // time of the bar with that high (the sweep wick)
+    int runLt = na
+    float runH1 = na   // highest high without the current bar → "taken on THIS bar?"
+    float runL1 = na
+    float runCH = na   // highest CLOSE of closed bars → break
+    float runCL = na
+    float runCH2 = na  // same without the last closed bar → "broken on the LAST close?"
+    float runCL2 = na
+    int bi = 0
+    int maxBack = math.min(bar_index, 3999)
+    for q = 0 to nC - 1
+        int z = array.get(ordA, q)
+        int af = array.get(aft, z)
+        while bi <= maxBack and time[bi] >= af
+            if na(runH) or high[bi] > runH
+                runH := high[bi]
+                runHt := time[bi]
+            if na(runL) or low[bi] < runL
+                runL := low[bi]
+                runLt := time[bi]
+            if bi >= 1
+                runH1 := na(runH1) ? high[bi] : math.max(runH1, high[bi])
+                runL1 := na(runL1) ? low[bi] : math.min(runL1, low[bi])
+            if bi >= 1 or barstate.isconfirmed
+                runCH := na(runCH) ? close[bi] : math.max(runCH, close[bi])
+                runCL := na(runCL) ? close[bi] : math.min(runCL, close[bi])
+            if bi >= 2
+                runCH2 := na(runCH2) ? close[bi] : math.max(runCH2, close[bi])
+                runCL2 := na(runCL2) ? close[bi] : math.min(runCL2, close[bi])
+            bi += 1
+        // only judge when the chart covers the whole time since the candle closed
+        bool covered = bi <= maxBack
+        if covered
+            float pz = array.get(cP, z)
+            bool isH = str.endswith(array.get(cN, z), " H")
+            bool passed = isH ? (not na(runH) and runH > pz) : (not na(runL) and runL < pz)
+            if passed
+                array.set(cK, z, true)
+                // break = a chart candle CLOSED beyond the level; otherwise it was only a sweep (wick)
+                bool brk = isH ? (not na(runCH) and runCH > pz) : (not na(runCL) and runCL < pz)
+                array.set(cB, z, brk ? 2 : 1)
+                array.set(cX, z, isH ? runHt : runLt)
+                bool passedBefore = isH ? (not na(runH1) and runH1 > pz) : (not na(runL1) and runL1 < pz)
+                array.set(cNw, z, not passedBefore)
+                bool brkBefore = isH ? (not na(runCH2) and runCH2 > pz) : (not na(runCL2) and runCL2 < pz)
+                bool lastClosedBeyond = bar_index >= 1 and time[1] >= af and (isH ? close[1] > pz : close[1] < pz)
+                array.set(cNb, z, lastClosedBeyond and not brkBefore)
+
+// ════════ Alerts: every line that price just crossed / closed beyond (all levels of the chosen TFs) ════════
+if barstate.islast and alertOn and array.size(cP) > 0
+    ordR = array.sort_indices(cR, order.descending)
+    for q = 0 to array.size(ordR) - 1
+        int z = array.get(ordR, q)
+        int rk = array.get(cR, z)
+        if array.get(alertOnArr, rk - 1)
+            string px = str.tostring(array.get(cP, z), format.mintick)
+            string nm = array.get(cN, z)
+            bool isH = str.endswith(nm, " H")
+            if alTaken and array.get(cNw, z)
+                f_alert("T" + px + str.tostring(time), nm + " נחצה " + (isH ? "▲" : "▼") + " · " + px)
+            if alBreak and array.get(cNb, z)
+                f_alert("B" + px + str.tostring(time), nm + " break " + (isH ? "▲" : "▼") + " · נר נסגר מעבר ל-" + px)
+
+// ════════ Build ════════
+var table tb = table.new(tPos, 4, 24, bgcolor = color.white, border_width = 1, border_color = color.new(color.black, 85))
+
+if barstate.islast
+    // 1. merge same prices → one level, named by the biggest TF
+    gPr = array.new<float>()
+    gNm = array.new<string>()
+    gTm = array.new<int>()
+    gRk = array.new<int>()
+    gTk = array.new<bool>()
+    gCt = array.new<int>()
+    gCl = array.new<int>()
+    gSc = array.new<int>()
+    gAll = array.new<string>()
+    gB = array.new<int>()
+    gX = array.new<int>()
+    gM = array.new<string>()
+    gNw = array.new<bool>()
+    gNb = array.new<bool>()
+    gTkN = array.new<string>()
+    gTkS = array.new<int>()
+    int n = array.size(cP)
+    if n > 0
+        idx = array.sort_indices(cP, order.ascending)
+        float tol = cfTicks * syminfo.mintick
+        int i = 0
+        while i < n
+            float anchor = array.get(cP, array.get(idx, i))
+            int j = i
+            int topR = -1
+            float topP = na
+            string topN = ""
+            int topC = na
+            int topS = 0
+            int firstT = na
+            bool allTaken = true
+            int cnt = 0
+            string allN = ""
+            int topB = 0
+            int topX = na
+            bool topNw = false
+            bool topNb = false
+            string grpM = ""
+            // biggest TAKEN member, separately for highs and lows (a high is never named next to a low)
+            int tkRH = -1
+            string tkNH = ""
+            int tkSH = 0
+            int tkRL = -1
+            string tkNL = ""
+            int tkSL = 0
+            while j < n
+                int m = array.get(idx, j)
+                float p = array.get(cP, m)
+                // same level = within the tolerance of the PREVIOUS price in the group (1 tick apart never splits into two lines)
+                if math.abs(p - anchor) > tol
+                    break
+                anchor := p
+                int r = array.get(cR, m)
+                bool open_ = not array.get(cK, m)
+                // an open level always wins over a taken one; among equals the bigger TF wins
+                bool better = (open_ and allTaken) or (open_ == (not allTaken) and r > topR) or topR < 0
+                if better
+                    topR := r
+                    topP := p
+                    topN := array.get(cN, m)
+                    topC := array.get(cC, m)
+                    topS := array.get(cS, m)
+                    firstT := array.get(cT, m)
+                    topB := array.get(cB, m)
+                    topX := array.get(cX, m)
+                    topNw := array.get(cNw, m)
+                    topNb := array.get(cNb, m)
+                if grpM == "" and array.get(cM, m) != ""
+                    grpM := array.get(cM, m)
+                bool mIsH = str.endswith(array.get(cN, m), " H")
+                if not open_ and mIsH and r > tkRH
+                    tkRH := r
+                    tkNH := array.get(cN, m)
+                    tkSH := array.get(cS, m)
+                if not open_ and not mIsH and r > tkRL
+                    tkRL := r
+                    tkNL := array.get(cN, m)
+                    tkSL := array.get(cS, m)
+                if open_
+                    allTaken := false
+                // every TF on this line, with its own status (so nothing hides behind another TF's name)
+                string piece = array.get(cN, m) + (open_ ? "" : " taken")
+                if not str.contains(" · " + allN + " · ", " · " + piece + " · ")
+                    allN := allN == "" ? piece : allN + " · " + piece
+                cnt += 1
+                j += 1
+            array.push(gPr, topP)
+            array.push(gNm, topN)
+            array.push(gTm, firstT)
+            array.push(gRk, topR)
+            array.push(gTk, allTaken)
+            array.push(gCt, cnt)
+            array.push(gCl, topC)
+            array.push(gSc, topS)
+            array.push(gAll, allN)
+            array.push(gB, topB)
+            array.push(gX, topX)
+            array.push(gM, grpM)
+            array.push(gNw, topNw)
+            array.push(gNb, topNb)
+            // an open smaller-TF level on the same price as a TAKEN 1h+ level → the label names both
+            // only the SAME side as the line: an H line gets a taken H, an L line gets a taken L
+            bool topIsH = str.endswith(topN, " H")
+            int tkR = topIsH ? tkRH : tkRL
+            string tkN = topIsH ? tkNH : tkNL
+            int tkS = topIsH ? tkSH : tkSL
+            // an open level that sits on an OLD taken level: the open level is the live one → show only it
+            bool hidTk = false
+            array.push(gTkN, hidTk ? tkN : "")
+            array.push(gTkS, hidTk ? tkS : 0)
+            i := j
+
+    // 2. keep the nearest levels (+ the nearest big-TF level on each side)
+    sel = array.new<int>()
+    int g = array.size(gPr)
+    float maxDistC = na
+    if g > 0
+        int oU = 0
+        int tU = 0
+        for k = 0 to g - 1
+            if array.get(gPr, k) > close
+                if not array.get(gTk, k) and oU < nUp
+                    array.push(sel, k)
+                    oU += 1
+                else if array.get(gTk, k) and tU < nTaken
+                    array.push(sel, k)
+                    tU += 1
+        int oD = 0
+        int tD = 0
+        for k = g - 1 to 0
+            if array.get(gPr, k) <= close
+                if not array.get(gTk, k) and oD < nDn
+                    array.push(sel, k)
+                    oD += 1
+                else if array.get(gTk, k) and tD < nTaken
+                    array.push(sel, k)
+                    tD += 1
+        // the range = between the nearest open big-TF level above and the one below
+        int bu = -1
+        for k = 0 to g - 1
+            if bu < 0 and array.get(gPr, k) > close and not array.get(gTk, k) and array.get(gSc, k) >= chartSec * bigRatio
+                bu := k
+        int bd = -1
+        for k = g - 1 to 0
+            if bd < 0 and array.get(gPr, k) <= close and not array.get(gTk, k) and array.get(gSc, k) >= chartSec * bigRatio
+                bd := k
+        if alwaysBig
+            if bu >= 0 and not array.includes(sel, bu)
+                array.push(sel, bu)
+            if bd >= 0 and not array.includes(sel, bd)
+                array.push(sel, bd)
+        // average daily range (last 5 closed days) — used to judge "close enough"
+        float sumR = 0.0
+        int nR = 0
+        if array.size(tfs) > 0
+            for z = 0 to array.size(tfs) - 1
+                TFD dd = array.get(tfs, z)
+                if dd.rank == 19
+                    for jj = 1 to 5
+                        float hh = array.get(dd.h, jj)
+                        float ll = array.get(dd.l, jj)
+                        if not na(hh) and not na(ll)
+                            sumR += hh - ll
+                            nR += 1
+        float adr = nR > 0 ? sumR / nR : close * 0.01
+        float maxDist = adr * bigDist
+        maxDistC := maxDist
+        // what the big TFs took NOW (e.g. today took yesterday's high) — biggest TF first
+        if bigTaken
+            tkIdx = array.new<int>()
+            tkRk = array.new<int>()
+            for k = 0 to g - 1
+                if array.get(gTk, k) and array.get(gSc, k) >= chartSec * takenRatio
+                    array.push(tkIdx, k)
+                    array.push(tkRk, array.get(gRk, k))
+            if array.size(tkIdx) > 0
+                ordT = array.sort_indices(tkRk, order.descending)
+                int nTU = 0
+                int nTD = 0
+                for q = 0 to array.size(ordT) - 1
+                    int kt = array.get(tkIdx, array.get(ordT, q))
+                    bool upT = array.get(gPr, kt) > close
+                    if upT ? nTU < takenMax : nTD < takenMax
+                        if not array.includes(sel, kt)
+                            array.push(sel, kt)
+                        if upT
+                            nTU += 1
+                        else
+                            nTD += 1
+        // 1h+ guarantee: every recently taken level + the nearest open level of each TF on each side (inside the area)
+        if hrAll
+            hrU = array.new<int>()
+            hrD = array.new<int>()
+            for k = 0 to g - 1
+                float pk = array.get(gPr, k)
+                int scK = math.max(array.get(gSc, k), array.get(gTkS, k))
+                bool near_ = math.abs(pk - close) <= maxDist
+                // what was taken NOW (in the last X candles of its own TF) — every TF, nothing is skipped
+                if near_ and scK > chartSec and (array.get(gTk, k) or array.get(gTkS, k) > 0)
+                    if not array.includes(sel, k)
+                        array.push(sel, k)
+                else if near_ and scK >= hrMinSec and scK > chartSec
+                    if pk > close and not array.includes(hrU, array.get(gRk, k))
+                        array.push(hrU, array.get(gRk, k))
+                        if not array.includes(sel, k)
+                            array.push(sel, k)
+            for k = g - 1 to 0
+                float pk = array.get(gPr, k)
+                int scK = array.get(gSc, k)
+                if pk <= close and close - pk <= maxDist and not array.get(gTk, k) and scK >= hrMinSec and scK > chartSec and not array.includes(hrD, array.get(gRk, k))
+                    array.push(hrD, array.get(gRk, k))
+                    if not array.includes(sel, k)
+                        array.push(sel, k)
+        // the nearest open level of EVERY big TF on each side, if it is close enough (within N × the average daily range)
+        if bigLadder
+            seenU = array.new<int>()
+            seenD = array.new<int>()
+            for k = 0 to g - 1
+                float pk = array.get(gPr, k)
+                int rkk = array.get(gRk, k)
+                if pk > close and pk - close <= maxDist and not array.get(gTk, k) and array.get(gSc, k) >= chartSec * bigRatio and not array.includes(seenU, rkk) and array.size(seenU) < bigMax
+                    array.push(seenU, rkk)
+                    if not array.includes(sel, k)
+                        array.push(sel, k)
+            for k = g - 1 to 0
+                float pk = array.get(gPr, k)
+                int rkk = array.get(gRk, k)
+                if pk <= close and close - pk <= maxDist and not array.get(gTk, k) and array.get(gSc, k) >= chartSec * bigRatio and not array.includes(seenD, rkk) and array.size(seenD) < bigMax
+                    array.push(seenD, rkk)
+                    if not array.includes(sel, k)
+                        array.push(sel, k)
+        // every open level INSIDE the range (nearest first)
+        if inRange
+            if bu > 0
+                int cU = 0
+                for k = 0 to bu - 1
+                    if array.get(gPr, k) > close and not array.get(gTk, k) and cU < rangeMax
+                        if not array.includes(sel, k)
+                            array.push(sel, k)
+                        cU += 1
+            if bd >= 0 and bd < g - 1
+                int cD = 0
+                for k = g - 1 to bd + 1
+                    if array.get(gPr, k) <= close and not array.get(gTk, k) and cD < rangeMax
+                        if not array.includes(sel, k)
+                            array.push(sel, k)
+                        cD += 1
+    // taken levels on/off (one switch)
+    if not showTaken and array.size(sel) > 0
+        for q = array.size(sel) - 1 to 0
+            if array.get(gTk, array.get(sel, q))
+                array.remove(sel, q)
+    int s = array.size(sel)
+
+    // 3. draw lines
+    int barMs = chartSec * 1000
+    // ES running extremes from NOW backwards — computed ONCE per update (fast)
+    int mbE = math.min(bar_index, 3999)
+    esMaxH = array.new<float>(mbE + 1, na)
+    esMinL = array.new<float>(mbE + 1, na)
+    esMaxH1 = array.new<float>(mbE + 1, na)
+    esMinL1 = array.new<float>(mbE + 1, na)
+    if smtOn and smtAvail and s > 0
+        float rH = na
+        float rL = na
+        float rH1 = na
+        float rL1 = na
+        for bi = 0 to mbE
+            float eh = oxH[bi]
+            float el = oxL[bi]
+            if not na(eh)
+                rH := na(rH) ? eh : math.max(rH, eh)
+                if bi >= 1
+                    rH1 := na(rH1) ? eh : math.max(rH1, eh)
+            if not na(el)
+                rL := na(rL) ? el : math.min(rL, el)
+                if bi >= 1
+                    rL1 := na(rL1) ? el : math.min(rL1, el)
+            array.set(esMaxH, bi, rH)
+            array.set(esMinL, bi, rL)
+            array.set(esMaxH1, bi, rH1)
+            array.set(esMinL1, bi, rL1)
+    if s > 0
+        for q = 0 to s - 1
+            int k = array.get(sel, q)
+            float p = array.get(gPr, k)
+            bool tk = array.get(gTk, k)
+            bool isH0 = str.endswith(array.get(gNm, k), " H")
+            // live: if the current chart bar already passed the level (strictly) after its candle closed → taken NOW
+            int lClose = array.get(gTm, k) + array.get(gSc, k) * 1000
+            if not tk and not na(lClose) and time >= lClose and (isH0 ? high > p : low < p)
+                tk := true
+            bool conf = array.get(gCt, k) >= 2
+            int xEnd = time + (1 + int(array.get(gRk, k) / 5)) * lineStep * barMs
+            int xStart = f_exactTime(p, array.get(gTm, k), array.get(gSc, k), str.endswith(array.get(gNm, k), " H"))
+            array.push(drawnLines, line.new(x1 = xStart, y1 = p, x2 = xEnd, y2 = p, xloc = xloc.bar_time, color = tk ? colTaken : colOpen, style = tk ? line.style_dotted : line.style_solid, width = tk ? 1 : (conf ? cfWidth : wOpen)))
+            bool isHk = str.endswith(array.get(gNm, k), " H")
+            int sb = array.get(gB, k)
+            string st = not tk ? "" : not showSB or sb == 0 ? (showTkWord ? " taken" : "") : sb == 2 ? (isHk ? " break ▲" : " break ▼") : " sweep ✕"
+            // ES on the SAME candle: did ES already pass ITS high/low of that exact candle?
+            string smtTx = ""
+            bool esNew = false
+            int lt = array.get(gTm, k)
+            int lsec = array.get(gSc, k)
+            if smtOn and smtAvail and not na(lt) and lsec >= smtMinMin * 60 and not tk
+                int lEnd = lt + lsec * 1000
+                // bars 0 … iEnd-1 are AFTER the candle; bars iEnd … iStart-1 are INSIDE it
+                int iEnd = f_firstOlder(lEnd, mbE)
+                int iStart = f_firstOlder(lt, mbE)
+                bool covE = iStart <= mbE
+                float cH_ = na
+                float cL_ = na
+                if covE and iEnd < iStart
+                    for bi = iEnd to iStart - 1
+                        float eh = oxH[bi]
+                        float el = oxL[bi]
+                        if not na(eh)
+                            cH_ := na(cH_) ? eh : math.max(cH_, eh)
+                        if not na(el)
+                            cL_ := na(cL_) ? el : math.min(cL_, el)
+                float aH_ = iEnd > 0 ? array.get(esMaxH, iEnd - 1) : na
+                float aL_ = iEnd > 0 ? array.get(esMinL, iEnd - 1) : na
+                float aH1 = iEnd > 1 ? array.get(esMaxH1, iEnd - 1) : na
+                float aL1 = iEnd > 1 ? array.get(esMinL1, iEnd - 1) : na
+                if covE and not na(cH_) and not na(aH_)
+                    bool esTook = isHk ? aH_ > cH_ : aL_ < cL_
+                    bool esTookBefore = isHk ? (not na(aH1) and aH1 > cH_) : (not na(aL1) and aL1 < cL_)
+                    // SMT only while MY index has NOT taken it yet — once both took it, it is plain liquidity
+                    if esTook and not tk
+                        smtTx := str.replace_all(smtText, "{X}", otherName)
+                        esNew := not esTookBefore
+            string esIn = ""
+            // ES ✕ glued right AFTER the TF name (same line text, its own colour)
+            bool glue = smtTx != "" and esPos == "ימין — צמוד לקו" and showLabels and lblPos == "ימין — בסוף הקו"
+            string lblFont = esPos == "ימין — צמוד לקו" ? font.family_monospace : font.family_default
+            if showLabels
+                // one name per line: the BIGGEST TF that owns this level (open first)
+                string tkAdd = array.get(gTkN, k) != "" ? " · " + array.get(gTkN, k) + " taken" : ""
+                string tx = esIn + (conf and cfMark != "ללא" ? cfMark + " " : "") + array.get(gNm, k) + st + tkAdd + (showPrice ? "  " + str.tostring(p, format.mintick) : "")
+                int lx = lblPos == "שמאל — בתחילת הקו" ? xStart : xEnd
+                lst = lblPos == "מעל הקו" ? label.style_label_lower_left : lblPos == "מתחת לקו" ? label.style_label_upper_left : lblPos == "שמאל — בתחילת הקו" ? label.style_label_right : label.style_label_left
+                array.push(drawnLabels, label.new(x = lblPos == "מעל הקו" or lblPos == "מתחת לקו" ? xEnd - int((xEnd - time) / 2) : lx, y = p, text = tx, xloc = xloc.bar_time, style = lst, color = color.new(color.white, 100), textcolor = tk ? colTaken : colOpen, size = lblSz, text_font_family = lblFont))
+                // same spot, same size, monospace: blank cells as wide as the name, then ES ✕ → it starts exactly after the name
+                if glue
+                    string pad = str.repeat(" ", str.length(tx) + 1)
+                    array.push(drawnLabels, label.new(x = lx, y = p, text = pad + smtTx, xloc = xloc.bar_time, style = lst, color = color.new(color.white, 100), textcolor = colSmt, size = lblSz, text_font_family = font.family_monospace))
+            // ✕ on the wick that swept the level
+            if tk and showSB and showX and sb == 1 and not na(array.get(gX, k))
+                array.push(drawnLabels, label.new(x = array.get(gX, k), y = p, text = "✕", xloc = xloc.bar_time, style = label.style_label_center, color = color.new(color.white, 100), textcolor = color.black, size = size.normal))
+            // ES tag (own position)
+            // ES ✕ — its own label in its own colour (צבע ES), always at the right end of the line
+            if smtTx != "" and not glue
+                est = esPos == "ימין — מעל הקו" ? label.style_label_lower_right : esPos == "ימין — מתחת לקו" ? label.style_label_upper_right : label.style_label_right
+                // right next to the line: the text sits on the line end, just before the TF name, on the chart background (hides the line under it)
+                color esBg = smtBgOn and esPos == "ימין — צמוד לקו" ? chart.bg_color : color.new(color.white, 100)
+                array.push(drawnLabels, label.new(x = xEnd, y = p, text = smtTx, xloc = xloc.bar_time, style = est, color = esBg, textcolor = colSmt, size = f_szOf(smtSize), text_font_family = smtFont == "מונוספייס" ? font.family_monospace : font.family_default))
+            // ── alerts for the drawn lines: ES took it / price approaching a big level ──
+            if alertOn and array.get(alertOnArr, array.get(gRk, k) - 1)
+                string px = str.tostring(p, format.mintick)
+                if alES and esNew
+                    f_alert("E" + px + str.tostring(time), otherName + " לקח את ה-" + array.get(gNm, k) + " שלו" + (tk ? "" : " · " + myName + " עוד לא (" + px + ")"))
+                if alNear and not tk and array.get(gSc, k) >= chartSec * bigRatio
+                    float zone = nearTicks * syminfo.mintick
+                    bool nearNow = math.abs(close - p) <= zone
+                    bool nearBefore = bar_index >= 1 and math.abs(close[1] - p) <= zone
+                    if nearNow and not nearBefore
+                        f_alert("N" + px + str.tostring(time), "מתקרב ל-" + array.get(gNm, k) + " · " + px)
+
+    // send: ONE alert with everything new (each event only once)
+    if alertOn and array.size(alertMsgs) > 0
+        string out = ""
+        for q = 0 to array.size(alertMsgs) - 1
+            string key = array.get(alertKeys, q)
+            if not str.contains(sentKeys, "|" + key + "|")
+                out := out + (out == "" ? "" : "\n") + array.get(alertMsgs, q)
+                sentKeys := sentKeys + "|" + key + "|"
+        if str.length(sentKeys) > 3000
+            sentKeys := ""
+        if out != ""
+            alert(myName + " " + timeframe.period + "\n" + out, alert.freq_all)
+
+    // check mode: for every TF on the chart — its nearest open high / low and whether it is drawn (and if not, why)
+    if chkOn and array.size(tfs) > 0
+        var table ck = table.new(position.bottom_left, 3, 31, bgcolor = color.new(color.white, 0), border_width = 1, border_color = color.new(color.black, 85))
+        table.clear(ck, 0, 0, 2, 30)
+        table.cell(ck, 0, 0, "TF", text_color = color.gray, text_size = size.tiny)
+        table.cell(ck, 1, 0, "גבוה פתוח קרוב", text_color = color.gray, text_size = size.tiny)
+        table.cell(ck, 2, 0, "נמוך פתוח קרוב", text_color = color.gray, text_size = size.tiny)
+        float tolC = cfTicks * syminfo.mintick
+        int rr = 1
+        for z = 0 to array.size(tfs) - 1
+            TFD d = array.get(tfs, z)
+            bool onTF = array.get(lineOnArr, d.rank - 1) and d.sec > chartSec and d.rank < hideFrom and (d.rank > 2 or chartSec <= 60)
+            if onTF and rr < 31
+                table.cell(ck, 0, rr, d.name, text_color = color.black, text_size = size.tiny)
+                for side = 0 to 1
+                    float pv = side == 0 ? array.get(d.oh, 0) : array.get(d.ol, 0)
+                    int tv = side == 0 ? array.get(d.oht, 0) : array.get(d.olt, 0)
+                    string st = "—"
+                    color sc = color.gray
+                    if not na(pv)
+                        bool shown = false
+                        if array.size(sel) > 0
+                            for q = 0 to array.size(sel) - 1
+                                if math.abs(array.get(gPr, array.get(sel, q)) - pv) <= tolC
+                                    shown := true
+                        string why = shown ? "✓" : not f_ageOk(tv, d.sec) ? "גיל" : not na(maxDistC) and math.abs(pv - close) > maxDistC ? "רחוק" : "לא נבחר"
+                        st := str.tostring(pv, format.mintick) + "  " + why
+                        sc := shown ? color.new(#1B7F3B, 0) : why == "לא נבחר" ? color.new(#B23B3B, 0) : color.gray
+                    table.cell(ck, side + 1, rr, st, text_color = sc, text_size = size.tiny)
+                rr += 1
+
+    // 5. table
+    if showTable
+        table.clear(tb, 0, 0, 3, 23)
+        table.cell(tb, 0, 0, "NY " + str.format_time(timenow, "HH:mm", "America/New_York"), text_color = color.black, text_size = size.small)
+        table.cell(tb, 1, 0, "price", text_color = color.gray, text_size = size.small)
+        table.cell(tb, 2, 0, "dist", text_color = color.gray, text_size = size.small)
+        table.cell(tb, 3, 0, "candle closes in", text_color = color.gray, text_size = size.small)
+        int r = 1
+        if s > 0
+            selP = array.new<float>()
+            for q = 0 to s - 1
+                array.push(selP, array.get(gPr, array.get(sel, q)))
+            ordS = array.sort_indices(selP, order.descending)
+            for q = 0 to s - 1
+                if r < 18
+                    int k = array.get(sel, array.get(ordS, q))
+                    float p = array.get(gPr, k)
+                    bool tk = array.get(gTk, k)
+                    color tcol = tk ? color.gray : color.black
+                    int tc = array.get(gCl, k)
+                    int sbT = array.get(gB, k)
+                    string stT = not tk ? "" : not showSB or sbT == 0 ? " (taken)" : sbT == 2 ? " (break)" : " (sweep)"
+                    string smT = smtOn and array.get(gM, k) != "" ? " · SMT " + array.get(gM, k) : ""
+                    table.cell(tb, 0, r, array.get(gNm, k) + stT + smT, text_color = tcol, text_size = size.small)
+                    table.cell(tb, 1, r, str.tostring(p, format.mintick), text_color = tcol, text_size = size.small)
+                    table.cell(tb, 2, r, (p > close ? "+" : "") + str.tostring((p - close) / close * 100, "#.##") + "%", text_color = tcol, text_size = size.small)
+                    table.cell(tb, 3, r, na(tc) ? "" : f_left(tc - timenow), text_color = tcol, text_size = size.small)
+                    r += 1
+        // HTF frame: nearest open high above / low below for each big-TF tier
+        int nc = array.size(cP)
+        if showFrame and nc > 0
+            table.cell(tb, 0, r, "HTF frame", text_color = color.gray, text_size = size.small)
+            table.cell(tb, 1, r, "▲ nearest open H", text_color = color.gray, text_size = size.small)
+            table.cell(tb, 2, r, "▼ nearest open L", text_color = color.gray, text_size = size.small)
+            table.cell(tb, 3, r, "", text_size = size.small)
+            r += 1
+            for tier = 0 to 3
+                int rLo = tier == 0 ? 19 : tier == 1 ? 22 : tier == 2 ? 25 : 27
+                int rHi = tier == 0 ? 21 : tier == 1 ? 24 : tier == 2 ? 26 : 30
+                string tName = tier == 0 ? "D" : tier == 1 ? "W" : tier == 2 ? "M" : "3M+"
+                float upF = na
+                string upFN = ""
+                float dnF = na
+                string dnFN = ""
+                for z = 0 to nc - 1
+                    int rk = array.get(cR, z)
+                    if rk >= rLo and rk <= rHi and not array.get(cK, z)
+                        float pz = array.get(cP, z)
+                        if pz > close and (na(upF) or pz < upF)
+                            upF := pz
+                            upFN := array.get(cN, z)
+                        if pz <= close and (na(dnF) or pz > dnF)
+                            dnF := pz
+                            dnFN := array.get(cN, z)
+                if (not na(upF) or not na(dnF)) and r < 24
+                    table.cell(tb, 0, r, tName, text_color = color.black, text_size = size.small)
+                    table.cell(tb, 1, r, na(upF) ? "—" : upFN + "  " + str.tostring(upF, format.mintick) + "  +" + str.tostring((upF - close) / close * 100, "#.##") + "%", text_color = color.black, text_size = size.small)
+                    table.cell(tb, 2, r, na(dnF) ? "—" : dnFN + "  " + str.tostring(dnF, format.mintick) + "  " + str.tostring((dnF - close) / close * 100, "#.##") + "%", text_color = color.black, text_size = size.small)
+                    table.cell(tb, 3, r, "", text_size = size.small)
+                    r += 1
